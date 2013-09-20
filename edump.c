@@ -16,9 +16,6 @@
 
 #include "edump.h"
 
-const char *argp_program_version = PACKAGE_VERSION;
-const char *argp_program_bug_address = PACKAGE_BUGREPORT;
-
 int dump;
 
 static struct argp_option argp_cmd_options[] = {
