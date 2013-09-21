@@ -18,6 +18,8 @@
 
 int dump;
 
+static struct edump __edump;
+
 static struct {
 	uint32_t version;
 	const char * name;
@@ -80,23 +82,14 @@ static int is_supported_chipset(struct pci_device *pdev)
 	return 1;
 }
 
-static struct edump* init_pci_device(struct pci_device *pdev)
+static int init_pci_device(struct edump *edump, struct pci_device *pdev)
 {
 	int err;
-	struct edump *edump;
 
 	if (!pdev->regions[0].base_addr) {
 		fprintf(stderr, "Invalid base address\n");
-		return NULL;
+		return EINVAL;
 	}
-
-	edump = malloc(sizeof(struct edump));
-	if (edump == NULL) {
-		fprintf(stderr, "Unable to alloc memory for edump\n");
-		return NULL;
-	}
-
-	memset(edump, 0, sizeof(struct edump));
 
 	edump->pdev = pdev;
 	edump->base_addr = pdev->regions[0].base_addr;
@@ -106,15 +99,12 @@ static struct edump* init_pci_device(struct pci_device *pdev)
 	if ((err = pci_device_map_range(pdev, edump->base_addr, edump->size,
 					0, &edump->io_map)) != 0) {
 		fprintf(stderr, "%s\n", strerror(err));
-		goto map_fail;
+		return err;
 	}
 
 	printf("Mapped IO region at: %p\n", edump->io_map);
-	return edump;
 
-map_fail:
-	free(edump);
-	return NULL;
+	return 0;
 }
 
 static void cleanup_pci_device(struct edump *edump)
@@ -126,8 +116,6 @@ static void cleanup_pci_device(struct edump *edump)
 	if ((err = pci_device_unmap_range(edump->pdev, edump->io_map,
 					  edump->size)) != 0)
 		fprintf(stderr, "%s\n", strerror(err));
-
-	free(edump);
 }
 
 static void hw_read_revisions(struct edump *edump)
@@ -264,7 +252,7 @@ static void usage(char *name)
 
 int main(int argc, char *argv[])
 {
-	struct edump *edump;
+	struct edump *edump = &__edump;
 	char *pci_slot_str = NULL;
 	struct pci_slot_match slot[2];
 	struct pci_device_iterator *iter;
@@ -354,11 +342,9 @@ int main(int argc, char *argv[])
 		goto err;
 	}
 
-	edump = init_pci_device(pdev);
-	if (edump == NULL) {
-		ret = -EIO;
+	ret = init_pci_device(edump, pdev);
+	if (ret)
 		goto err;
-	}
 
 	dump_device(edump);
 	cleanup_pci_device(edump);
