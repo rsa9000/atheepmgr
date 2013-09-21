@@ -18,11 +18,6 @@
 
 int dump;
 
-static struct pci_id_match pci_id[] = {
-	{ATHEROS_VENDOR_ID, PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY},
-	{ 0 }
-};
-
 static struct {
 	uint32_t version;
 	const char * name;
@@ -241,7 +236,7 @@ void dump_device(struct edump *edump)
 	}
 }
 
-static const char *optstr = "ambph";
+static const char *optstr = "P:ambph";
 
 static void usage(char *name)
 {
@@ -249,11 +244,14 @@ static void usage(char *name)
 		"Atheros NIC EEPROM dump utility.\n"
 		"\n"
 		"Usage:\n"
-		"  %s [-bmpa]\n"
+		"  %s -P <slot> [-bmpa]\n"
 		"or\n"
 		"  %s -h\n"
 		"\n"
 		"Options:\n"
+		"  -P <slot>       Use libpciaccess to interact with card installed\n"
+		"                  in <slot>. Slot consist of 3 parts devided by colon:\n"
+		"                  <slot> = <domain>:<bus>:<dev> as displayed by lspci.\n"
 		"  -b              Dump base EEPROM header.\n"
 		"  -m              Dump modal EEPROM header(s).\n"
 		"  -p              Dump power calibration EEPROM info.\n"
@@ -267,10 +265,12 @@ static void usage(char *name)
 int main(int argc, char *argv[])
 {
 	struct edump *edump;
+	char *pci_slot_str = NULL;
+	struct pci_slot_match slot[2];
 	struct pci_device_iterator *iter;
 	struct pci_device *pdev;
 	int opt;
-	int ret = 0, cnt = 0;;
+	int ret;
 
 	if (argc == 1) {
 		usage(argv[0]);
@@ -282,6 +282,9 @@ int main(int argc, char *argv[])
 	ret = -EINVAL;
 	while ((opt = getopt(argc, argv, optstr)) != -1) {
 		switch (opt) {
+		case 'P':
+			pci_slot_str = optarg;
+			break;
 		case 'b':
 			dump = DUMP_BASE_HEADER;
 			break;
@@ -303,44 +306,64 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if (!pci_slot_str) {
+		fprintf(stderr, "PCI device slot is not specified\n");
+		return -EINVAL;
+	}
+
+	memset(slot, 0x00, sizeof(slot));
+
+	ret = sscanf(pci_slot_str, "%x:%x:%x", &slot[0].domain, &slot[0].bus, &slot[0].dev);
+	if (ret != 3) {
+		fprintf(stderr, "Invalid PCI slot specification: %s\n", pci_slot_str);
+		ret = -EINVAL;
+		goto exit;
+	}
+	slot[0].func = PCI_MATCH_ANY;
+
 	if ((ret = pci_system_init()) != 0) {
 		fprintf(stderr, "%s\n", strerror(ret));
-		return ret;
+		goto exit;
 	} else {
 		printf("Initializing PCI\n");
 	}
 
-	iter = pci_id_match_iterator_create(pci_id);
+	iter = pci_slot_match_iterator_create(slot);
 	if (iter == NULL) {
 		ret = -EINVAL;
 		fprintf(stderr, "Iter creation failed\n");
-		goto iter_fail;
+		goto err;
 	}
 
-	while((pdev = pci_device_next(iter)) != NULL) {
-		if ((ret = pci_device_probe(pdev)) != 0) {
-			fprintf(stderr, "%s\n", strerror(ret));
-			continue;
-		}
-
-		if (!is_supported_chipset(pdev))
-			continue;
-
-		edump = init_pci_device(pdev);
-		if (edump == NULL)
-			continue;
-
-		cnt++;
-		dump_device(edump);
-		cleanup_pci_device(edump);
-	}
-
-	if (!cnt)
-		printf("No supported card found\n");
-
+	pdev = pci_device_next(iter);
 	pci_iterator_destroy(iter);
 
-iter_fail:
+	if (NULL == pdev) {
+		ret = -ENODEV;
+		fprintf(stderr, "No suitable card found\n");
+		goto err;
+	}
+
+	if ((ret = pci_device_probe(pdev)) != 0) {
+		fprintf(stderr, "%s\n", strerror(ret));
+		goto err;
+	}
+
+	if (!is_supported_chipset(pdev)) {
+		ret = -ENOTSUP;
+		goto err;
+	}
+
+	edump = init_pci_device(pdev);
+	if (edump == NULL) {
+		ret = -EIO;
+		goto err;
+	}
+
+	dump_device(edump);
+	cleanup_pci_device(edump);
+
+err:
 	pci_system_cleanup();
 
 exit:
