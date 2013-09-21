@@ -162,4 +162,7 @@ bool pci_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data);
 bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
 	     uint32_t val, uint32_t timeout);
 
+#define EEP_READ(_off, _data)		\
+		pci_eeprom_read(edump, _off, _data)
+
 #endif /* EDUMP_H */

@@ -2812,7 +2812,7 @@ static bool ar9300_eeprom_read_byte(struct edump *edump, int address,
 {
 	uint16_t val;
 
-	if (!pci_eeprom_read(edump, address / 2, &val))
+	if (!EEP_READ(address / 2, &val))
 		return false;
 
 	*buffer = (val >> (8 * (address % 2))) & 0xff;
@@ -2824,7 +2824,7 @@ static bool ar9300_eeprom_read_word(struct edump *edump, int address,
 {
 	uint16_t val;
 
-	if (!pci_eeprom_read(edump, address / 2, &val))
+	if (!EEP_READ(address / 2, &val))
 		return false;
 
 	buffer[0] = val >> 8;

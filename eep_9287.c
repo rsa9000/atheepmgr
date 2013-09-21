@@ -36,7 +36,7 @@ static bool fill_eeprom_9287(struct edump *edump)
 	eep_start_loc = AR9287_EEP_START_LOC;
 
 	for (addr = 0; addr < SIZE_EEPROM_AR9287; addr++) {
-		if (!pci_eeprom_read(edump, addr + eep_start_loc, eep_data)) {
+		if (!EEP_READ(addr + eep_start_loc, eep_data)) {
 			fprintf(stderr, "Unable to read eeprom region\n");
 			return false;
 		}
@@ -54,7 +54,7 @@ static bool check_eeprom_9287(struct edump *edump)
 	bool need_swap = false;
 	int i, addr;
 
-	if (!pci_eeprom_read(edump, AR5416_EEPROM_MAGIC_OFFSET, &magic)) {
+	if (!EEP_READ(AR5416_EEPROM_MAGIC_OFFSET, &magic)) {
 		fprintf(stderr, "Reading Magic # failed\n");
 		return false;
 	}
