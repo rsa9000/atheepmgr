@@ -118,6 +118,74 @@ static void cleanup_pci_device(struct edump *edump)
 		fprintf(stderr, "%s\n", strerror(err));
 }
 
+static int pci_init(struct edump *edump, const char *arg_str)
+{
+	struct pci_slot_match slot[2];
+	struct pci_device_iterator *iter;
+	struct pci_device *pdev;
+	int ret;
+
+	memset(slot, 0x00, sizeof(slot));
+
+	ret = sscanf(arg_str, "%x:%x:%x", &slot[0].domain, &slot[0].bus, &slot[0].dev);
+	if (ret != 3) {
+		fprintf(stderr, "Invalid PCI slot specification: %s\n",
+			arg_str);
+		return -EINVAL;
+	}
+	slot[0].func = PCI_MATCH_ANY;
+
+	ret = pci_system_init();
+	if (ret) {
+		fprintf(stderr, "%s\n", strerror(ret));
+		goto err;
+	}
+
+	iter = pci_slot_match_iterator_create(slot);
+	if (iter == NULL) {
+		fprintf(stderr, "Iter creation failed\n");
+		ret = EINVAL;
+		goto err;
+	}
+
+	pdev = pci_device_next(iter);
+	pci_iterator_destroy(iter);
+
+	if (NULL == pdev) {
+		fprintf(stderr, "No suitable card found\n");
+		ret = ENODEV;
+		goto err;
+	}
+
+	ret = pci_device_probe(pdev);
+	if (ret) {
+		fprintf(stderr, "%s\n", strerror(ret));
+		goto err;
+	}
+
+	if (!is_supported_chipset(pdev)) {
+		ret = ENOTSUP;
+		goto err;
+	}
+
+	ret = init_pci_device(edump, pdev);
+	if (ret)
+		goto err;
+
+	return 0;
+
+err:
+	pci_system_cleanup();
+
+	return -ret;
+}
+
+static void pci_clean(struct edump *edump)
+{
+	cleanup_pci_device(edump);
+	pci_system_cleanup();
+}
+
 static void hw_read_revisions(struct edump *edump)
 {
 	uint32_t val;
@@ -254,9 +322,6 @@ int main(int argc, char *argv[])
 {
 	struct edump *edump = &__edump;
 	char *pci_slot_str = NULL;
-	struct pci_slot_match slot[2];
-	struct pci_device_iterator *iter;
-	struct pci_device *pdev;
 	int opt;
 	int ret;
 
@@ -299,58 +364,13 @@ int main(int argc, char *argv[])
 		return -EINVAL;
 	}
 
-	memset(slot, 0x00, sizeof(slot));
-
-	ret = sscanf(pci_slot_str, "%x:%x:%x", &slot[0].domain, &slot[0].bus, &slot[0].dev);
-	if (ret != 3) {
-		fprintf(stderr, "Invalid PCI slot specification: %s\n", pci_slot_str);
-		ret = -EINVAL;
-		goto exit;
-	}
-	slot[0].func = PCI_MATCH_ANY;
-
-	if ((ret = pci_system_init()) != 0) {
-		fprintf(stderr, "%s\n", strerror(ret));
-		goto exit;
-	} else {
-		printf("Initializing PCI\n");
-	}
-
-	iter = pci_slot_match_iterator_create(slot);
-	if (iter == NULL) {
-		ret = -EINVAL;
-		fprintf(stderr, "Iter creation failed\n");
-		goto err;
-	}
-
-	pdev = pci_device_next(iter);
-	pci_iterator_destroy(iter);
-
-	if (NULL == pdev) {
-		ret = -ENODEV;
-		fprintf(stderr, "No suitable card found\n");
-		goto err;
-	}
-
-	if ((ret = pci_device_probe(pdev)) != 0) {
-		fprintf(stderr, "%s\n", strerror(ret));
-		goto err;
-	}
-
-	if (!is_supported_chipset(pdev)) {
-		ret = -ENOTSUP;
-		goto err;
-	}
-
-	ret = init_pci_device(edump, pdev);
+	ret = pci_init(edump, pci_slot_str);
 	if (ret)
-		goto err;
+		goto exit;
 
 	dump_device(edump);
-	cleanup_pci_device(edump);
 
-err:
-	pci_system_cleanup();
+	pci_clean(edump);
 
 exit:
 	return ret;
