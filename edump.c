@@ -18,38 +18,6 @@
 
 int dump;
 
-static struct argp_option argp_cmd_options[] = {
-	{"base", 'b', 0, 0, "Dump base header", 0},
-	{"modal", 'm', 0, 0, "Dump modal header", 0},
-	{"power", 'p', 0, 0, "Dump power calibration info", 0},
-	{"all", 'a', 0, 0, "Dump everything", 0},
-	{ 0 }
-};
-
-static error_t argp_parser(int key, char *arg, struct argp_state *state)
-{
-	switch(key) {
-	case 'b':
-		dump = DUMP_BASE_HEADER;
-		break;
-	case 'm':
-		dump = DUMP_MODAL_HEADER;
-		break;
-	case 'p':
-		dump = DUMP_POWER_INFO;
-		break;
-	case 'a':
-		dump = DUMP_ALL;
-		break;
-	default:
-		return ARGP_ERR_UNKNOWN;
-	}
-
-	return 0;
-}
-
-static struct argp argp = {argp_cmd_options, argp_parser};
-
 static struct pci_id_match pci_id[] = {
 	{ATHEROS_VENDOR_ID, PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY},
 	{ 0 }
@@ -273,17 +241,67 @@ void dump_device(struct edump *edump)
 	}
 }
 
+static const char *optstr = "ambph";
+
+static void usage(char *name)
+{
+	printf(
+		"Atheros NIC EEPROM dump utility.\n"
+		"\n"
+		"Usage:\n"
+		"  %s [-bmpa]\n"
+		"or\n"
+		"  %s -h\n"
+		"\n"
+		"Options:\n"
+		"  -b              Dump base EEPROM header.\n"
+		"  -m              Dump modal EEPROM header(s).\n"
+		"  -p              Dump power calibration EEPROM info.\n"
+		"  -a              Dump everything from EEPROM (default).\n"
+		"  -h              Print this cruft.\n"
+		"\n",
+		name, name
+	);
+}
+
 int main(int argc, char *argv[])
 {
 	struct edump *edump;
 	struct pci_device_iterator *iter;
 	struct pci_device *pdev;
+	int opt;
 	int ret = 0, cnt = 0;;
+
+	if (argc == 1) {
+		usage(argv[0]);
+		return 0;
+	}
 
 	dump = DUMP_ALL;
 
-	if (argp_parse(&argp, argc, argv, 0, 0, NULL) != 0)
-		return -EINVAL;
+	ret = -EINVAL;
+	while ((opt = getopt(argc, argv, optstr)) != -1) {
+		switch (opt) {
+		case 'b':
+			dump = DUMP_BASE_HEADER;
+			break;
+		case 'm':
+			dump = DUMP_MODAL_HEADER;
+			break;
+		case 'p':
+			dump = DUMP_POWER_INFO;
+			break;
+		case 'a':
+			dump = DUMP_ALL;
+			break;
+		case 'h':
+			usage(argv[0]);
+			ret = 0;
+			goto exit;
+		default:
+			goto exit;
+		}
+	}
 
 	if ((ret = pci_system_init()) != 0) {
 		fprintf(stderr, "%s\n", strerror(ret));
@@ -324,5 +342,7 @@ int main(int argc, char *argv[])
 
 iter_fail:
 	pci_system_cleanup();
+
+exit:
 	return ret;
 }
