@@ -32,14 +32,6 @@
 #include "eep_9287.h"
 #include "eep_9003.h"
 
-#if __BYTE_ORDER == __BIG_ENDIAN
-#define REG_READ(_reg) \
-	bswap_32(*((volatile uint32_t *)(edump->io_map + (_reg))))
-#else
-#define REG_READ(_reg) \
-	(*((volatile uint32_t *)(edump->io_map + (_reg))))
-#endif
-
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define MS(_v, _f)  (((_v) & _f) >> _f##_S)
 
@@ -123,11 +115,19 @@ enum dump_data {
 	DUMP_ALL = 4
 };
 
+struct edump;
+
+struct connector {
+	const char *name;
+	size_t priv_data_sz;
+	int (*init)(struct edump *edump, const char *arg_str);
+	void (*clean)(struct edump *edump);
+	uint32_t (*reg_read)(struct edump *edump, uint32_t reg);
+};
+
 struct edump {
-	struct pci_device *pdev;
-	pciaddr_t base_addr;
-	pciaddr_t size;
-	void *io_map;
+	const struct connector *con;
+	void *con_priv;
 
 	uint32_t macVersion;
 	uint16_t macRev;
@@ -164,5 +164,7 @@ bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
 
 #define EEP_READ(_off, _data)		\
 		pci_eeprom_read(edump, _off, _data)
+#define REG_READ(_reg)			\
+		edump->con->reg_read(edump, _reg)
 
 #endif /* EDUMP_H */

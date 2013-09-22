@@ -55,6 +55,13 @@ mac_bb_name(uint32_t mac_bb_version)
 	return "????";
 }
 
+struct pci_priv {
+	struct pci_device *pdev;
+	pciaddr_t base_addr;
+	pciaddr_t size;
+	void *io_map;
+};
+
 static int is_supported_chipset(struct pci_device *pdev)
 {
 	if (pdev->vendor_id != ATHEROS_VENDOR_ID)
@@ -84,6 +91,7 @@ static int is_supported_chipset(struct pci_device *pdev)
 
 static int init_pci_device(struct edump *edump, struct pci_device *pdev)
 {
+	struct pci_priv *ppd = edump->con_priv;
 	int err;
 
 	if (!pdev->regions[0].base_addr) {
@@ -91,31 +99,44 @@ static int init_pci_device(struct edump *edump, struct pci_device *pdev)
 		return EINVAL;
 	}
 
-	edump->pdev = pdev;
-	edump->base_addr = pdev->regions[0].base_addr;
-	edump->size = pdev->regions[0].size;
+	ppd->pdev = pdev;
+	ppd->base_addr = pdev->regions[0].base_addr;
+	ppd->size = pdev->regions[0].size;
 	pdev->user_data = (intptr_t)edump;
 
-	if ((err = pci_device_map_range(pdev, edump->base_addr, edump->size,
-					0, &edump->io_map)) != 0) {
+	err = pci_device_map_range(pdev, ppd->base_addr, ppd->size, 0,
+				   &ppd->io_map);
+	if (err) {
 		fprintf(stderr, "%s\n", strerror(err));
 		return err;
 	}
 
-	printf("Mapped IO region at: %p\n", edump->io_map);
+	printf("Mapped IO region at: %p\n", ppd->io_map);
 
 	return 0;
 }
 
 static void cleanup_pci_device(struct edump *edump)
 {
+	struct pci_priv *ppd = edump->con_priv;
 	int err;
 
-	printf("\nFreeing Mapped IO region at: %p\n", edump->io_map);
+	printf("Freeing Mapped IO region at: %p\n", ppd->io_map);
 
-	if ((err = pci_device_unmap_range(edump->pdev, edump->io_map,
-					  edump->size)) != 0)
+	err = pci_device_unmap_range(ppd->pdev, ppd->io_map, ppd->size);
+	if (err)
 		fprintf(stderr, "%s\n", strerror(err));
+}
+
+static uint32_t pci_reg_read(struct edump *edump, uint32_t reg)
+{
+	struct pci_priv *ppd = edump->con_priv;
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+	return bswap_32(*((volatile uint32_t *)(ppd->io_map + reg)));
+#else
+	return (*((volatile uint32_t *)(ppd->io_map + reg)));
+#endif
 }
 
 static int pci_init(struct edump *edump, const char *arg_str)
@@ -185,6 +206,14 @@ static void pci_clean(struct edump *edump)
 	cleanup_pci_device(edump);
 	pci_system_cleanup();
 }
+
+static const struct connector con_pci = {
+	.name = "PCI",
+	.priv_data_sz = sizeof(struct pci_priv),
+	.init = pci_init,
+	.clean = pci_clean,
+	.reg_read = pci_reg_read,
+};
 
 static void hw_read_revisions(struct edump *edump)
 {
@@ -364,14 +393,24 @@ int main(int argc, char *argv[])
 		return -EINVAL;
 	}
 
-	ret = pci_init(edump, pci_slot_str);
+	edump->con = &con_pci;
+	edump->con_priv = malloc(edump->con->priv_data_sz);
+	if (!edump->con_priv) {
+		fprintf(stderr, "Unable to allocate memory for the connector private data\n");
+		ret = -ENOMEM;
+		goto exit;
+	}
+
+	ret = edump->con->init(edump, pci_slot_str);
 	if (ret)
 		goto exit;
 
 	dump_device(edump);
 
-	pci_clean(edump);
+	edump->con->clean(edump);
 
 exit:
+	free(edump->con_priv);
+
 	return ret;
 }
