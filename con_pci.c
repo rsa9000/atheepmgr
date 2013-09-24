@@ -96,11 +96,7 @@ static uint32_t pci_reg_read(struct edump *edump, uint32_t reg)
 {
 	struct pci_priv *ppd = edump->con_priv;
 
-#if __BYTE_ORDER == __BIG_ENDIAN
-	return bswap_32(*((volatile uint32_t *)(ppd->io_map + reg)));
-#else
 	return *((volatile uint32_t *)(ppd->io_map + reg));
-#endif
 }
 
 static int pci_init(struct edump *edump, const char *arg_str)
