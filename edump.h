@@ -22,9 +22,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdint.h>
 #include <endian.h>
 #include <byteswap.h>
-#include <pciaccess.h>
 
 #include "eep_common.h"
 #include "eep_def.h"
@@ -41,22 +41,6 @@ enum {
 };
 
 typedef int bool;
-
-#define ATHEROS_VENDOR_ID       0x168c
-#define AR5416_DEVID_PCI        0x0023
-#define AR5416_DEVID_PCIE       0x0024
-#define AR9160_DEVID_PCI        0x0027
-#define AR9280_DEVID_PCI        0x0029
-#define AR9280_DEVID_PCIE       0x002a
-#define AR9285_DEVID_PCIE       0x002b
-#define AR9287_DEVID_PCI        0x002d
-#define AR9287_DEVID_PCIE       0x002e
-#define AR9300_DEVID_PCIE       0x0030
-#define AR9485_DEVID_PCIE       0x0032
-#define AR9580_DEVID_PCIE       0x0033
-#define AR9462_DEVID_PCIE       0x0034
-#define AR9565_DEVID_PCIE       0x0036
-#define AR1111_DEVID_PCIE       0x0037
 
 #define AR_SREV                 0x4020
 #define AR_SREV_ID              0x000000FF
@@ -142,6 +126,8 @@ struct edump {
 		struct ar9300_eeprom eep_93k;
 	} eeprom;
 };
+
+extern const struct connector con_pci;
 
 struct eeprom_ops {
 	bool (*fill_eeprom)(struct edump *edump);
