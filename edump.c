@@ -23,16 +23,12 @@ static struct edump __edump;
 int register_eep_ops(struct edump *edump)
 {
 	if (AR_SREV_9300_20_OR_LATER(edump)) {
-		edump->eep_map = EEP_MAP_9003;
 		edump->eep_ops = &eep_9003_ops;
 	} else if (AR_SREV_9287(edump)) {
-		edump->eep_map = EEP_MAP_9287;
 		edump->eep_ops = &eep_9287_ops;
 	} else if (AR_SREV_9285(edump)) {
-		edump->eep_map = EEP_MAP_4K;
 		edump->eep_ops = &eep_4k_ops;
 	} else {
-		edump->eep_map = EEP_MAP_DEFAULT;
 		edump->eep_ops = &eep_def_ops;
 	}
 

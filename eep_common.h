@@ -64,14 +64,6 @@ static char *sDeviceType[] = {
 	"UNKNOWN [7] ",
 };
 
-enum eep_map {
-	EEP_MAP_DEFAULT = 0x0,
-	EEP_MAP_4K,
-	EEP_MAP_9287,
-	EEP_MAP_9003,
-	EEP_MAP_MAX
-};
-
 struct cal_ctl_edges {
 	uint8_t bChannel;
 	uint8_t ctl;

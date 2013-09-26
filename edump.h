@@ -121,7 +121,6 @@ struct edump {
 	uint16_t macRev;
 
 	struct eeprom_ops *eep_ops;
-	enum eep_map eep_map;
 
 	union {
 		struct ar5416_eeprom_def def;
