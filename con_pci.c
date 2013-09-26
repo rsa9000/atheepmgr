@@ -173,4 +173,5 @@ const struct connector con_pci = {
 	.init = pci_init,
 	.clean = pci_clean,
 	.reg_read = pci_reg_read,
+	.eep_read = hw_eeprom_read_9xxx,
 };
