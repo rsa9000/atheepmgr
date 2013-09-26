@@ -51,8 +51,6 @@ int register_eep_ops(struct edump *edump)
 
 void dump_device(struct edump *edump)
 {
-	hw_read_revisions(edump);
-
 	if (register_eep_ops(edump) < 0)
 		return;
 
@@ -157,6 +155,9 @@ int main(int argc, char *argv[])
 	ret = edump->con->init(edump, pci_slot_str);
 	if (ret)
 		goto exit;
+
+	if (edump->con->caps & CON_CAP_HW)
+		hw_read_revisions(edump);
 
 	dump_device(edump);
 

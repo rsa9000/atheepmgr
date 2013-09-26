@@ -3151,6 +3151,10 @@ static int ar9300_eeprom_restore_internal(struct edump *edump,
 	if (ar9300_check_eeprom_header(edump, read, cptr))
 		goto found;
 
+	/* Avoid OTP touching if no real access to the hardware. */
+	if (!(edump->con->caps & CON_CAP_HW))
+		goto fail;
+
 	read = ar9300_read_otp;
 	cptr = AR9300_BASE_ADDR;
 	printf("Trying OTP access at Address 0x%04x\n", cptr);

@@ -99,11 +99,14 @@ enum dump_data {
 	DUMP_ALL = 4
 };
 
+#define CON_CAP_HW		1	/* Con. is able to interact with HW */
+
 struct edump;
 
 struct connector {
 	const char *name;
 	size_t priv_data_sz;
+	unsigned int caps;
 	int (*init)(struct edump *edump, const char *arg_str);
 	void (*clean)(struct edump *edump);
 	uint32_t (*reg_read)(struct edump *edump, uint32_t reg);

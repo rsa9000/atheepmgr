@@ -170,6 +170,7 @@ static void pci_clean(struct edump *edump)
 const struct connector con_pci = {
 	.name = "PCI",
 	.priv_data_sz = sizeof(struct pci_priv),
+	.caps = CON_CAP_HW,
 	.init = pci_init,
 	.clean = pci_clean,
 	.reg_read = pci_reg_read,
