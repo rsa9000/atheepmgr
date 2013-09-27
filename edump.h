@@ -135,8 +135,6 @@ extern const struct connector con_pci;
 struct eeprom_ops {
 	bool (*fill_eeprom)(struct edump *edump);
 	int (*check_eeprom)(struct edump *edump);
-	int (*get_eeprom_ver)(struct edump *edump);
-	int (*get_eeprom_rev)(struct edump *edump);
 	void (*dump_base_header)(struct edump *edump);
 	void (*dump_modal_header)(struct edump *edump);
 	void (*dump_power_info)(struct edump *edump);

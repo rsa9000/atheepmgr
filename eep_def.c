@@ -142,10 +142,10 @@ static bool check_eeprom_def(struct edump *edump)
 		}
 	}
 
-	if (sum != 0xffff || edump->eep_ops->get_eeprom_ver(edump) != AR5416_EEP_VER ||
-	    edump->eep_ops->get_eeprom_rev(edump) < AR5416_EEP_NO_BACK_VER) {
+	if (sum != 0xffff || get_eeprom_ver_def(edump) != AR5416_EEP_VER ||
+	    get_eeprom_rev_def(edump) < AR5416_EEP_NO_BACK_VER) {
 		fprintf(stderr, "Bad EEPROM checksum 0x%x or revision 0x%04x\n",
-			sum, edump->eep_ops->get_eeprom_ver(edump));
+			sum, get_eeprom_ver_def(edump));
 		return false;
 	}
 
@@ -215,7 +215,7 @@ static void base_eeprom_def(struct edump *edump)
 	       "Cal Bin Build",
 	       (pBase->binBuildNumber >> 8) & 0xFF);
 
-	if (edump->eep_ops->get_eeprom_rev(edump) >= AR5416_EEP_MINOR_VER_3) {
+	if (get_eeprom_ver_def(edump) >= AR5416_EEP_MINOR_VER_3) {
 		printf("%-30s : %s\n",
 		       "Device Type",
 		       sDeviceType[(pBase->deviceType & 0x7)]);
@@ -356,7 +356,7 @@ static void modal_eeprom_def(struct edump *edump)
 		PR("db_ch1", "", "d", pModal->db_ch1);
 	}
 
-	if (edump->eep_ops->get_eeprom_rev(edump) >= AR5416_EEP_MINOR_VER_3) {
+	if (get_eeprom_rev_def(edump) >= AR5416_EEP_MINOR_VER_3) {
 		PR("txFrameToDataStart", "", "d", pModal->txFrameToDataStart);
 		PR("txFrameToPaOn", "", "d", pModal->txFrameToPaOn);
 		PR("HT40PowerIncForPDADC", "", "d", pModal->ht40PowerIncForPdadc);
@@ -373,8 +373,6 @@ static void power_info_eeprom_def(struct edump *edump)
 struct eeprom_ops eep_def_ops = {
 	.fill_eeprom  = fill_eeprom_def,
 	.check_eeprom = check_eeprom_def,
-	.get_eeprom_ver = get_eeprom_ver_def,
-	.get_eeprom_rev = get_eeprom_rev_def,
 	.dump_base_header = base_eeprom_def,
 	.dump_modal_header = modal_eeprom_def,
 	.dump_power_info = power_info_eeprom_def,

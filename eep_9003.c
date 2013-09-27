@@ -3234,18 +3234,6 @@ static int check_eeprom_9003(struct edump *edump)
 	return 1;
 }
 
-/* XXX: review hardware docs */
-static int get_eeprom_ver_9003(struct edump *edump)
-{
-	return edump->eeprom.eep_93k.eepromVersion;
-}
-
-/* XXX: could be read from the eepromVersion, not sure yet */
-static int get_eeprom_rev_9003(struct edump *edump)
-{
-	return 0;
-}
-
 static void base_eeprom_9003(struct edump *edump)
 {
 	struct ar9300_eeprom *eep = &edump->eeprom.eep_93k;
@@ -3436,8 +3424,6 @@ static void power_info_eeprom_9003(struct edump *edump)
 struct eeprom_ops eep_9003_ops = {
 	.fill_eeprom = fill_eeprom_9003,
 	.check_eeprom = check_eeprom_9003,
-	.get_eeprom_ver = get_eeprom_ver_9003,
-	.get_eeprom_rev = get_eeprom_rev_9003,
 	.dump_base_header = base_eeprom_9003,
 	.dump_modal_header = modal_eeprom_9003,
 	.dump_power_info = power_info_eeprom_9003,
