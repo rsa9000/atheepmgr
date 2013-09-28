@@ -20,8 +20,30 @@ int dump;
 
 static struct edump __edump;
 
+static const struct eepmap * const eepmaps[] = {
+	&eepmap_def,
+	&eepmap_4k,
+	&eepmap_9287,
+	&eepmap_9003,
+};
+
+static const struct eepmap *eepmap_find_by_name(const char *name)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(eepmaps); ++i) {
+		if (strcasecmp(eepmaps[i]->name, name) == 0)
+			return eepmaps[i];
+	}
+
+	return NULL;
+}
+
 int register_eepmap(struct edump *edump)
 {
+	if (edump->eepmap)
+		return 0;
+
 	if (AR_SREV_9300_20_OR_LATER(edump)) {
 		edump->eepmap = &eepmap_9003;
 	} else if (AR_SREV_9287(edump)) {
@@ -70,15 +92,17 @@ void dump_device(struct edump *edump)
 	}
 }
 
-static const char *optstr = "P:ambph";
+static const char *optstr = "P:ambpht:";
 
 static void usage(char *name)
 {
+	int i;
+
 	printf(
 		"Atheros NIC EEPROM dump utility.\n"
 		"\n"
 		"Usage:\n"
-		"  %s -P <slot> [-bmpa]\n"
+		"  %s -P <slot> [-t <eepmap>] [-bmpa]\n"
 		"or\n"
 		"  %s -h\n"
 		"\n"
@@ -90,10 +114,17 @@ static void usage(char *name)
 		"  -m              Dump modal EEPROM header(s).\n"
 		"  -p              Dump power calibration EEPROM info.\n"
 		"  -a              Dump everything from EEPROM (default).\n"
+		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
+		"                  for connectors, without direct HW access.\n"
 		"  -h              Print this cruft.\n"
 		"\n",
 		name, name
 	);
+
+	printf("Supported EEPROM map(s):\n");
+	for (i = 0; i < ARRAY_SIZE(eepmaps); ++i)
+		printf("  %-15s %s\n", eepmaps[i]->name, eepmaps[i]->desc);
+	printf("\n");
 }
 
 int main(int argc, char *argv[])
@@ -129,6 +160,14 @@ int main(int argc, char *argv[])
 		case 'a':
 			dump = DUMP_ALL;
 			break;
+		case 't':
+			edump->eepmap = eepmap_find_by_name(optarg);
+			if (!edump->eepmap) {
+				fprintf(stderr, "Unknown EEPROM map type name: %s\n",
+					optarg);
+				goto exit;
+			}
+			break;
 		case 'h':
 			usage(argv[0]);
 			ret = 0;
@@ -140,6 +179,10 @@ int main(int argc, char *argv[])
 
 	if (!edump->con) {
 		fprintf(stderr, "Connector is not specified\n");
+		goto exit;
+	}
+	if (!edump->eepmap && !(edump->con->caps & CON_CAP_HW)) {
+		fprintf(stderr, "EEPROM map type option is mandatory for connectors without direct HW access\n");
 		goto exit;
 	}
 
