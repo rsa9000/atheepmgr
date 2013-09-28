@@ -20,50 +20,52 @@ int dump;
 
 static struct edump __edump;
 
-int register_eep_ops(struct edump *edump)
+int register_eepmap(struct edump *edump)
 {
 	if (AR_SREV_9300_20_OR_LATER(edump)) {
-		edump->eep_ops = &eep_9003_ops;
+		edump->eepmap = &eepmap_9003;
 	} else if (AR_SREV_9287(edump)) {
-		edump->eep_ops = &eep_9287_ops;
+		edump->eepmap = &eepmap_9287;
 	} else if (AR_SREV_9285(edump)) {
-		edump->eep_ops = &eep_4k_ops;
+		edump->eepmap = &eepmap_4k;
 	} else {
-		edump->eep_ops = &eep_def_ops;
+		edump->eepmap = &eepmap_def;
 	}
 
-	if (!edump->eep_ops->fill_eeprom(edump)) {
-		fprintf(stderr, "Unable to fill EEPROM data\n");
-		return -1;
-	}
-
-	if (!edump->eep_ops->check_eeprom(edump)) {
-		fprintf(stderr, "EEPROM check failed\n");
-		return -1;
-	}
+	printf("Detected EEPROM map: %s\n", edump->eepmap->name);
 
 	return 0;
 }
 
 void dump_device(struct edump *edump)
 {
-	if (register_eep_ops(edump) < 0)
+	if (register_eepmap(edump) < 0)
 		return;
+
+	if (!edump->eepmap->fill_eeprom(edump)) {
+		fprintf(stderr, "Unable to fill EEPROM data\n");
+		return;
+	}
+
+	if (!edump->eepmap->check_eeprom(edump)) {
+		fprintf(stderr, "EEPROM check failed\n");
+		return;
+	}
 
 	switch(dump) {
 	case DUMP_BASE_HEADER:
-		edump->eep_ops->dump_base_header(edump);
+		edump->eepmap->dump_base_header(edump);
 		break;
 	case DUMP_MODAL_HEADER:
-		edump->eep_ops->dump_modal_header(edump);
+		edump->eepmap->dump_modal_header(edump);
 		break;
 	case DUMP_POWER_INFO:
-		edump->eep_ops->dump_power_info(edump);
+		edump->eepmap->dump_power_info(edump);
 		break;
 	case DUMP_ALL:
-		edump->eep_ops->dump_base_header(edump);
-		edump->eep_ops->dump_modal_header(edump);
-		edump->eep_ops->dump_power_info(edump);
+		edump->eepmap->dump_base_header(edump);
+		edump->eepmap->dump_modal_header(edump);
+		edump->eepmap->dump_power_info(edump);
 		break;
 	}
 }

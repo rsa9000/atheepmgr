@@ -370,7 +370,9 @@ static void power_info_eeprom_def(struct edump *edump)
 {
 }
 
-struct eeprom_ops eep_def_ops = {
+const struct eepmap eepmap_def = {
+	.name = "Default",
+	.desc = "Default EEPROM map for .11n chips",
 	.fill_eeprom  = fill_eeprom_def,
 	.check_eeprom = check_eeprom_def,
 	.dump_base_header = base_eeprom_def,

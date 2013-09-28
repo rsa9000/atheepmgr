@@ -297,7 +297,9 @@ static void power_info_eeprom_4k(struct edump *edump)
 {
 }
 
-struct eeprom_ops eep_4k_ops = {
+const struct eepmap eepmap_4k = {
+	.name = "4K",
+	.desc = "4 kilobit EEPROM map",
 	.fill_eeprom  = fill_eeprom_4k,
 	.check_eeprom = check_eeprom_4k,
 	.dump_base_header = base_eeprom_4k,

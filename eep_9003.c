@@ -3421,7 +3421,9 @@ static void power_info_eeprom_9003(struct edump *edump)
 {
 }
 
-struct eeprom_ops eep_9003_ops = {
+const struct eepmap eepmap_9003 = {
+	.name = "9003",
+	.desc = "AR9003 and later chips EEPROM map",
 	.fill_eeprom = fill_eeprom_9003,
 	.check_eeprom = check_eeprom_9003,
 	.dump_base_header = base_eeprom_9003,

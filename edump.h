@@ -113,6 +113,16 @@ struct connector {
 	bool (*eep_read)(struct edump *edump, uint32_t off, uint16_t *data);
 };
 
+struct eepmap {
+	const char *name;
+	const char *desc;
+	bool (*fill_eeprom)(struct edump *edump);
+	int (*check_eeprom)(struct edump *edump);
+	void (*dump_base_header)(struct edump *edump);
+	void (*dump_modal_header)(struct edump *edump);
+	void (*dump_power_info)(struct edump *edump);
+};
+
 struct edump {
 	const struct connector *con;
 	void *con_priv;
@@ -120,7 +130,7 @@ struct edump {
 	uint32_t macVersion;
 	uint16_t macRev;
 
-	struct eeprom_ops *eep_ops;
+	const struct eepmap *eepmap;
 
 	union {
 		struct ar5416_eeprom_def def;
@@ -132,18 +142,10 @@ struct edump {
 
 extern const struct connector con_pci;
 
-struct eeprom_ops {
-	bool (*fill_eeprom)(struct edump *edump);
-	int (*check_eeprom)(struct edump *edump);
-	void (*dump_base_header)(struct edump *edump);
-	void (*dump_modal_header)(struct edump *edump);
-	void (*dump_power_info)(struct edump *edump);
-};
-
-extern struct eeprom_ops eep_def_ops;
-extern struct eeprom_ops eep_4k_ops;
-extern struct eeprom_ops eep_9287_ops;
-extern struct eeprom_ops eep_9003_ops;
+extern const struct eepmap eepmap_def;
+extern const struct eepmap eepmap_4k;
+extern const struct eepmap eepmap_9287;
+extern const struct eepmap eepmap_9003;
 
 void hw_read_revisions(struct edump *edump);
 bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,

@@ -292,7 +292,9 @@ static void power_info_eeprom_9287(struct edump *edump)
 {
 }
 
-struct eeprom_ops eep_9287_ops = {
+const struct eepmap eepmap_9287 = {
+	.name = "9287",
+	.desc = "AR9287 chip EEPROM map",
 	.fill_eeprom  = fill_eeprom_9287,
 	.check_eeprom = check_eeprom_9287,
 	.dump_base_header = base_eeprom_9287,
