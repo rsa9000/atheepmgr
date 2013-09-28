@@ -99,7 +99,7 @@ static void usage(char *name)
 int main(int argc, char *argv[])
 {
 	struct edump *edump = &__edump;
-	char *pci_slot_str = NULL;
+	char *con_arg = NULL;
 	int opt;
 	int ret;
 
@@ -114,7 +114,8 @@ int main(int argc, char *argv[])
 	while ((opt = getopt(argc, argv, optstr)) != -1) {
 		switch (opt) {
 		case 'P':
-			pci_slot_str = optarg;
+			edump->con = &con_pci;
+			con_arg = optarg;
 			break;
 		case 'b':
 			dump = DUMP_BASE_HEADER;
@@ -137,12 +138,11 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (!pci_slot_str) {
-		fprintf(stderr, "PCI device slot is not specified\n");
-		return -EINVAL;
+	if (!edump->con) {
+		fprintf(stderr, "Connector is not specified\n");
+		goto exit;
 	}
 
-	edump->con = &con_pci;
 	edump->con_priv = malloc(edump->con->priv_data_sz);
 	if (!edump->con_priv) {
 		fprintf(stderr, "Unable to allocate memory for the connector private data\n");
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 		goto exit;
 	}
 
-	ret = edump->con->init(edump, pci_slot_str);
+	ret = edump->con->init(edump, con_arg);
 	if (ret)
 		goto exit;
 
