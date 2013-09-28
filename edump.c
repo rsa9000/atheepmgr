@@ -92,7 +92,7 @@ void dump_device(struct edump *edump)
 	}
 }
 
-static const char *optstr = "P:ambpht:";
+static const char *optstr = "F:P:ambpht:";
 
 static void usage(char *name)
 {
@@ -102,11 +102,12 @@ static void usage(char *name)
 		"Atheros NIC EEPROM dump utility.\n"
 		"\n"
 		"Usage:\n"
-		"  %s -P <slot> [-t <eepmap>] [-bmpa]\n"
+		"  %s {-F <eepdump> | -P <slot>} [-t <eepmap>] [-bmpa]\n"
 		"or\n"
 		"  %s -h\n"
 		"\n"
 		"Options:\n"
+		"  -F <eepdump>    Read EEPROM dump from <eepdump> file.\n"
 		"  -P <slot>       Use libpciaccess to interact with card installed\n"
 		"                  in <slot>. Slot consist of 3 parts devided by colon:\n"
 		"                  <slot> = <domain>:<bus>:<dev> as displayed by lspci.\n"
@@ -117,6 +118,12 @@ static void usage(char *name)
 		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
 		"                  for connectors, without direct HW access.\n"
 		"  -h              Print this cruft.\n"
+		"\n"
+		"Available connectors (card interactions interface):\n"
+		"  File            Read EEPROM dump from file, activated by -F option with dump\n"
+		"                  file path argument.\n"
+		"  PCI             Interact with card via libpciaccess library, activated by -P\n"
+		"                  option with a device slot arg.\n"
 		"\n",
 		name, name
 	);
@@ -144,6 +151,10 @@ int main(int argc, char *argv[])
 	ret = -EINVAL;
 	while ((opt = getopt(argc, argv, optstr)) != -1) {
 		switch (opt) {
+		case 'F':
+			edump->con = &con_file;
+			con_arg = optarg;
+			break;
 		case 'P':
 			edump->con = &con_pci;
 			con_arg = optarg;

@@ -140,6 +140,7 @@ struct edump {
 	} eeprom;
 };
 
+extern const struct connector con_file;
 extern const struct connector con_pci;
 
 extern const struct eepmap eepmap_def;

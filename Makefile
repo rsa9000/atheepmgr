@@ -2,6 +2,7 @@
 TARGET=edump
 
 OBJ=\
+	con_file.o	\
 	con_pci.o	\
 	edump.o		\
 	eep_4k.o	\
