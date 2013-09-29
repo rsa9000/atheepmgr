@@ -92,7 +92,13 @@ void dump_device(struct edump *edump)
 	}
 }
 
-#if defined(CONFIG_CON_PCI)
+#if defined(CONFIG_CON_PCI) && defined(CONFIG_CON_MEM)
+#define CON_OPTSTR	"F:M:P:"
+#define CON_USAGE	"{-F <eepdump> | -M <ioaddr> | -P <slot>}"
+#elif defined(CONFIG_CON_MEM)
+#define CON_OPTSTR	"F:M:"
+#define CON_USAGE	"{-F <eepdump> | -M <ioaddr>}"
+#elif defined(CONFIG_CON_PCI)
 #define CON_OPTSTR	"F:P:"
 #define CON_USAGE	"{-F <eepdump> | -P <slot>}"
 #else
@@ -116,6 +122,10 @@ static void usage(char *name)
 		"\n"
 		"Options:\n"
 		"  -F <eepdump>    Read EEPROM dump from <eepdump> file.\n"
+#if defined(CONFIG_CON_MEM)
+		"  -M <ioaddr>     Interact with card via /dev/mem by mapping\n"
+		"                  card I/O memory at <ioaddr> to the process.\n"
+#endif
 #if defined(CONFIG_CON_PCI)
 		"  -P <slot>       Use libpciaccess to interact with card installed\n"
 		"                  in <slot>. Slot consist of 3 parts devided by colon:\n"
@@ -132,6 +142,11 @@ static void usage(char *name)
 		"Available connectors (card interactions interface):\n"
 		"  File            Read EEPROM dump from file, activated by -F option with dump\n"
 		"                  file path argument.\n"
+#if defined(CONFIG_CON_MEM)
+		"  Mem             Interact with card via /dev/mem by mapping device I/O memory\n"
+		"                  to the proccess memory, activated by -M option with the device\n"
+		"                  I/O memory region start address as the argument.\n"
+#endif
 #if defined(CONFIG_CON_PCI)
 		"  PCI             Interact with card via libpciaccess library, activated by -P\n"
 		"                  option with a device slot arg.\n"
@@ -167,6 +182,12 @@ int main(int argc, char *argv[])
 			edump->con = &con_file;
 			con_arg = optarg;
 			break;
+#if defined(CONFIG_CON_MEM)
+		case 'M':
+			edump->con = &con_mem;
+			con_arg = optarg;
+			break;
+#endif
 #if defined(CONFIG_CON_PCI)
 		case 'P':
 			edump->con = &con_pci;
