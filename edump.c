@@ -92,7 +92,15 @@ void dump_device(struct edump *edump)
 	}
 }
 
-static const char *optstr = "F:P:ambpht:";
+#if defined(CONFIG_CON_PCI)
+#define CON_OPTSTR	"F:P:"
+#define CON_USAGE	"{-F <eepdump> | -P <slot>}"
+#else
+#define CON_OPTSTR	"F:"
+#define CON_USAGE	"-F <eepdump>"
+#endif
+
+static const char *optstr = CON_OPTSTR "ambpht:";
 
 static void usage(char *name)
 {
@@ -102,15 +110,17 @@ static void usage(char *name)
 		"Atheros NIC EEPROM dump utility.\n"
 		"\n"
 		"Usage:\n"
-		"  %s {-F <eepdump> | -P <slot>} [-t <eepmap>] [-bmpa]\n"
+		"  %s " CON_USAGE " [-t <eepmap>] [-bmpa]\n"
 		"or\n"
 		"  %s -h\n"
 		"\n"
 		"Options:\n"
 		"  -F <eepdump>    Read EEPROM dump from <eepdump> file.\n"
+#if defined(CONFIG_CON_PCI)
 		"  -P <slot>       Use libpciaccess to interact with card installed\n"
 		"                  in <slot>. Slot consist of 3 parts devided by colon:\n"
 		"                  <slot> = <domain>:<bus>:<dev> as displayed by lspci.\n"
+#endif
 		"  -b              Dump base EEPROM header.\n"
 		"  -m              Dump modal EEPROM header(s).\n"
 		"  -p              Dump power calibration EEPROM info.\n"
@@ -122,8 +132,10 @@ static void usage(char *name)
 		"Available connectors (card interactions interface):\n"
 		"  File            Read EEPROM dump from file, activated by -F option with dump\n"
 		"                  file path argument.\n"
+#if defined(CONFIG_CON_PCI)
 		"  PCI             Interact with card via libpciaccess library, activated by -P\n"
 		"                  option with a device slot arg.\n"
+#endif
 		"\n",
 		name, name
 	);
@@ -155,10 +167,12 @@ int main(int argc, char *argv[])
 			edump->con = &con_file;
 			con_arg = optarg;
 			break;
+#if defined(CONFIG_CON_PCI)
 		case 'P':
 			edump->con = &con_pci;
 			con_arg = optarg;
 			break;
+#endif
 		case 'b':
 			dump = DUMP_BASE_HEADER;
 			break;

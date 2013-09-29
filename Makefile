@@ -3,7 +3,6 @@ TARGET=edump
 
 OBJ=\
 	con_file.o	\
-	con_pci.o	\
 	edump.o		\
 	eep_4k.o	\
 	eep_9003.o	\
@@ -11,8 +10,18 @@ OBJ=\
 	eep_def.o	\
 	hw.o		\
 
-CFLAGS+=$(shell pkg-config --cflags pciaccess)
+DEFS=
+
+HAVE_LIBPCIACCESS=$(shell pkg-config pciaccess && echo y || echo n)
+
+CONFIG_CON_PCI?=$(HAVE_LIBPCIACCESS)
+
+ifeq ($(CONFIG_CON_PCI),y)
+DEFS+=-DCONFIG_CON_PCI
+OBJ+=con_pci.o
+con_pci.o: CFLAGS+=$(shell pkg-config --cflags pciaccess)
 LDFLAGS+=$(shell pkg-config --libs pciaccess)
+endif
 
 CC?=gcc
 
@@ -26,7 +35,7 @@ $(TARGET): $(OBJ)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
 
 clean:
 	rm -rf $(TARGET)
