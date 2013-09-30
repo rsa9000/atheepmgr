@@ -27,7 +27,7 @@
 #include <byteswap.h>
 
 #include "eep_common.h"
-#include "eep_def.h"
+#include "eep_5416.h"
 #include "eep_4k.h"
 #include "eep_9287.h"
 #include "eep_9003.h"
@@ -133,7 +133,7 @@ struct edump {
 	const struct eepmap *eepmap;
 
 	union {
-		struct ar5416_eeprom_def def;
+		struct ar5416_eeprom eep5416;
 		struct ar5416_eeprom_4k map4k;
 		struct ar9287_eeprom map9287;
 		struct ar9300_eeprom eep_93k;
@@ -144,7 +144,7 @@ extern const struct connector con_file;
 extern const struct connector con_mem;
 extern const struct connector con_pci;
 
-extern const struct eepmap eepmap_def;
+extern const struct eepmap eepmap_5416;
 extern const struct eepmap eepmap_4k;
 extern const struct eepmap eepmap_9287;
 extern const struct eepmap eepmap_9003;

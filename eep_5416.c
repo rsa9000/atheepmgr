@@ -16,24 +16,24 @@
 
 #include "edump.h"
 
-static int get_eeprom_ver_def(struct edump *edump)
+static int eep_5416_get_ver(struct edump *edump)
 {
-	return ((edump->eeprom.def.baseEepHeader.version >> 12) & 0xF);
+	return ((edump->eeprom.eep5416.baseEepHeader.version >> 12) & 0xF);
 }
 
-static int get_eeprom_rev_def(struct edump *edump)
+static int eep_5416_get_rev(struct edump *edump)
 {
-	return ((edump->eeprom.def.baseEepHeader.version) & 0xFFF);
+	return ((edump->eeprom.eep5416.baseEepHeader.version) & 0xFFF);
 }
 
-static bool fill_eeprom_def(struct edump *edump)
+static bool eep_5416_fill(struct edump *edump)
 {
-#define SIZE_EEPROM_DEF (sizeof(struct ar5416_eeprom_def) / sizeof(uint16_t))
+#define AR5416_SIZE (sizeof(struct ar5416_eeprom) / sizeof(uint16_t))
 
-	uint16_t *eep_data = (uint16_t *)&edump->eeprom.def;
+	uint16_t *eep_data = (uint16_t *)&edump->eeprom.eep5416;
 	int addr, ar5416_eep_start_loc = 0x100;
 
-	for (addr = 0; addr < SIZE_EEPROM_DEF; addr++) {
+	for (addr = 0; addr < AR5416_SIZE; addr++) {
 		if (!EEP_READ(addr + ar5416_eep_start_loc, eep_data)) {
 			fprintf(stderr, "Unable to read eeprom region\n");
 			return false;
@@ -42,12 +42,12 @@ static bool fill_eeprom_def(struct edump *edump)
 	}
 	return true;
 
-#undef SIZE_EEPROM_DEF
+#undef AR5416_SIZE
 }
 
-static bool check_eeprom_def(struct edump *edump)
+static bool eep_5416_check(struct edump *edump)
 {
-	struct ar5416_eeprom_def *eep = (struct ar5416_eeprom_def *)&edump->eeprom.def;
+	struct ar5416_eeprom *eep = &edump->eeprom.eep5416;
 	uint16_t *eepdata, temp, magic, magic2;
 	uint32_t sum = 0, el;
 	bool need_swap = false;
@@ -64,7 +64,7 @@ static bool check_eeprom_def(struct edump *edump)
 		magic2 = bswap_16(magic);
 
 		if (magic2 == AR5416_EEPROM_MAGIC) {
-			size = sizeof(struct ar5416_eeprom_def);
+			size = sizeof(struct ar5416_eeprom);
 			need_swap = true;
 			eepdata = (uint16_t *) (&edump->eeprom);
 
@@ -80,12 +80,12 @@ static bool check_eeprom_def(struct edump *edump)
 	}
 
 	if (need_swap)
-		el = bswap_16(edump->eeprom.def.baseEepHeader.length);
+		el = bswap_16(eep->baseEepHeader.length);
 	else
-		el = edump->eeprom.def.baseEepHeader.length;
+		el = eep->baseEepHeader.length;
 
-	if (el > sizeof(struct ar5416_eeprom_def))
-		el = sizeof(struct ar5416_eeprom_def) / sizeof(uint16_t);
+	if (el > sizeof(struct ar5416_eeprom))
+		el = sizeof(struct ar5416_eeprom) / sizeof(uint16_t);
 	else
 		el = el / sizeof(uint16_t);
 
@@ -125,7 +125,7 @@ static bool check_eeprom_def(struct edump *edump)
 		eep->baseEepHeader.deviceCap = word;
 
 		for (j = 0; j < ARRAY_SIZE(eep->modalHeader); j++) {
-			struct modal_eep_header *pModal = &eep->modalHeader[j];
+			struct ar5416_modal_eep_hdr *pModal = &eep->modalHeader[j];
 
 			integer = bswap_32(pModal->antCtrlCommon);
 			pModal->antCtrlCommon = integer;
@@ -142,23 +142,21 @@ static bool check_eeprom_def(struct edump *edump)
 		}
 	}
 
-	if (sum != 0xffff || get_eeprom_ver_def(edump) != AR5416_EEP_VER ||
-	    get_eeprom_rev_def(edump) < AR5416_EEP_NO_BACK_VER) {
+	if (sum != 0xffff || eep_5416_get_ver(edump) != AR5416_EEP_VER ||
+	    eep_5416_get_rev(edump) < AR5416_EEP_NO_BACK_VER) {
 		fprintf(stderr, "Bad EEPROM checksum 0x%x or revision 0x%04x\n",
-			sum, get_eeprom_ver_def(edump));
+			sum, eep_5416_get_ver(edump));
 		return false;
 	}
 
 	return true;
 }
 
-static void base_eeprom_def(struct edump *edump)
+static void eep_5416_dump_base_header(struct edump *edump)
 {
-	struct ar5416_eeprom_def *ar5416Eep = &edump->eeprom.def;
-	struct base_eep_header *pBase = &ar5416Eep->baseEepHeader;
+	struct ar5416_eeprom *ar5416Eep = &edump->eeprom.eep5416;
+	struct ar5416_base_eep_hdr *pBase = &ar5416Eep->baseEepHeader;
 	uint16_t i;
-
-	pBase = &(ar5416Eep->baseEepHeader);
 
 	printf("\n----------------------\n");
 	printf("| EEPROM Base Header |\n");
@@ -215,7 +213,7 @@ static void base_eeprom_def(struct edump *edump)
 	       "Cal Bin Build",
 	       (pBase->binBuildNumber >> 8) & 0xFF);
 
-	if (get_eeprom_ver_def(edump) >= AR5416_EEP_MINOR_VER_3) {
+	if (eep_5416_get_ver(edump) >= AR5416_EEP_MINOR_VER_3) {
 		printf("%-30s : %s\n",
 		       "Device Type",
 		       sDeviceType[(pBase->deviceType & 0x7)]);
@@ -229,7 +227,7 @@ static void base_eeprom_def(struct edump *edump)
 	}
 }
 
-static void modal_eeprom_def(struct edump *edump)
+static void eep_5416_dump_modal_header(struct edump *edump)
 {
 #define PR(_token, _p, _val_fmt, _val)				\
 	do {							\
@@ -246,11 +244,9 @@ static void modal_eeprom_def(struct edump *edump)
 		}						\
 	} while(0)
 
-	struct ar5416_eeprom_def *ar5416Eep = &edump->eeprom.def;
-	struct base_eep_header *pBase = &ar5416Eep->baseEepHeader;
-	struct modal_eep_header *pModal = NULL;
-
-	pBase = &(ar5416Eep->baseEepHeader);
+	struct ar5416_eeprom *ar5416Eep = &edump->eeprom.eep5416;
+	struct ar5416_base_eep_hdr *pBase = &ar5416Eep->baseEepHeader;
+	struct ar5416_modal_eep_hdr *pModal = NULL;
 
 	printf("\n\n-----------------------\n");
 	printf("| EEPROM Modal Header |\n");
@@ -356,7 +352,7 @@ static void modal_eeprom_def(struct edump *edump)
 		PR("db_ch1", "", "d", pModal->db_ch1);
 	}
 
-	if (get_eeprom_rev_def(edump) >= AR5416_EEP_MINOR_VER_3) {
+	if (eep_5416_get_rev(edump) >= AR5416_EEP_MINOR_VER_3) {
 		PR("txFrameToDataStart", "", "d", pModal->txFrameToDataStart);
 		PR("txFrameToPaOn", "", "d", pModal->txFrameToPaOn);
 		PR("HT40PowerIncForPDADC", "", "d", pModal->ht40PowerIncForPdadc);
@@ -366,16 +362,16 @@ static void modal_eeprom_def(struct edump *edump)
 #undef PR
 }
 
-static void power_info_eeprom_def(struct edump *edump)
+static void eep_5416_dump_power_info(struct edump *edump)
 {
 }
 
-const struct eepmap eepmap_def = {
-	.name = "Default",
-	.desc = "Default EEPROM map for .11n chips",
-	.fill_eeprom  = fill_eeprom_def,
-	.check_eeprom = check_eeprom_def,
-	.dump_base_header = base_eeprom_def,
-	.dump_modal_header = modal_eeprom_def,
-	.dump_power_info = power_info_eeprom_def,
+const struct eepmap eepmap_5416 = {
+	.name = "5416",
+	.desc = "Default EEPROM map for earlier .11n chips (AR5416/AR9160/AR92xx/etc.)",
+	.fill_eeprom  = eep_5416_fill,
+	.check_eeprom = eep_5416_check,
+	.dump_base_header = eep_5416_dump_base_header,
+	.dump_modal_header = eep_5416_dump_modal_header,
+	.dump_power_info = eep_5416_dump_power_info,
 };

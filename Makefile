@@ -5,9 +5,9 @@ OBJ=\
 	con_file.o	\
 	edump.o		\
 	eep_4k.o	\
+	eep_5416.o	\
 	eep_9003.o	\
 	eep_9287.o	\
-	eep_def.o	\
 	hw.o		\
 
 DEFS=

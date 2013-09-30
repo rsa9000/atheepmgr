@@ -14,8 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef EEP_DEF_H
-#define EEP_DEF_H
+#ifndef EEP_5416_H
+#define EEP_5416_H
 
 #define AR5416_MAX_CHAINS       3
 #define AR5416_NUM_PD_GAINS     4
@@ -29,7 +29,7 @@
 #define AR5416_NUM_2G_20_TARGET_POWERS  4
 #define AR5416_NUM_2G_40_TARGET_POWERS  4
 
-struct base_eep_header {
+struct ar5416_base_eep_hdr {
 	uint16_t length;
 	uint16_t checksum;
 	uint16_t version;
@@ -64,7 +64,7 @@ struct spur_chan {
 	uint8_t spurRangeHigh;
 } __attribute__ ((packed));
 
-struct modal_eep_header {
+struct ar5416_modal_eep_hdr {
 	uint32_t antCtrlChain[AR5416_MAX_CHAINS];
 	uint32_t antCtrlCommon;
 	uint8_t antennaGainCh[AR5416_MAX_CHAINS];
@@ -106,25 +106,25 @@ struct modal_eep_header {
 	struct spur_chan spurChans[AR_EEPROM_MODAL_SPURS];
 } __attribute__ ((packed));
 
-struct cal_data_per_freq {
+struct ar5416_cal_data_per_freq {
 	uint8_t pwrPdg[AR5416_NUM_PD_GAINS][AR5416_PD_GAIN_ICEPTS];
 	uint8_t vpdPdg[AR5416_NUM_PD_GAINS][AR5416_PD_GAIN_ICEPTS];
 } __attribute__ ((packed));
 
-struct cal_ctl_data {
+struct ar5416_cal_ctl_data {
 	struct cal_ctl_edges
 	ctlEdges[AR5416_MAX_CHAINS][AR5416_NUM_BAND_EDGES];
 } __attribute__ ((packed));
 
-struct ar5416_eeprom_def {
-	struct base_eep_header baseEepHeader;
+struct ar5416_eeprom {
+	struct ar5416_base_eep_hdr baseEepHeader;
 	uint8_t custData[64];
-	struct modal_eep_header modalHeader[2];
+	struct ar5416_modal_eep_hdr modalHeader[2];
 	uint8_t calFreqPier5G[AR5416_NUM_5G_CAL_PIERS];
 	uint8_t calFreqPier2G[AR5416_NUM_2G_CAL_PIERS];
-	struct cal_data_per_freq
+	struct ar5416_cal_data_per_freq
 	 calPierData5G[AR5416_MAX_CHAINS][AR5416_NUM_5G_CAL_PIERS];
-	struct cal_data_per_freq
+	struct ar5416_cal_data_per_freq
 	 calPierData2G[AR5416_MAX_CHAINS][AR5416_NUM_2G_CAL_PIERS];
 	struct cal_target_power_leg
 	 calTargetPower5G[AR5416_NUM_5G_20_TARGET_POWERS];
@@ -141,8 +141,8 @@ struct ar5416_eeprom_def {
 	struct cal_target_power_ht
 	 calTargetPower2GHT40[AR5416_NUM_2G_40_TARGET_POWERS];
 	uint8_t ctlIndex[AR5416_NUM_CTLS];
-	struct cal_ctl_data ctlData[AR5416_NUM_CTLS];
+	struct ar5416_cal_ctl_data ctlData[AR5416_NUM_CTLS];
 	uint8_t padding;
 } __attribute__ ((packed));
 
-#endif /* EEP_DEF_H */
+#endif /* EEP_5416_H */
