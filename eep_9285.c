@@ -16,26 +16,26 @@
 
 #include "edump.h"
 
-static int get_eeprom_ver_4k(struct edump *edump)
+static int eep_9285_get_ver(struct edump *edump)
 {
-	return ((edump->eeprom.map4k.baseEepHeader.version >> 12) & 0xF);
+	return ((edump->eeprom.eep9285.baseEepHeader.version >> 12) & 0xF);
 }
 
-static int get_eeprom_rev_4k(struct edump *edump)
+static int eep_9285_get_rev(struct edump *edump)
 {
-	return ((edump->eeprom.map4k.baseEepHeader.version) & 0xFFF);
+	return ((edump->eeprom.eep9285.baseEepHeader.version) & 0xFFF);
 }
 
-static bool fill_eeprom_4k(struct edump *edump)
+static bool eep_9285_fill(struct edump *edump)
 {
-#define SIZE_EEPROM_4K (sizeof(struct ar5416_eeprom_4k) / sizeof(uint16_t))
+#define EEP_9285_SIZE (sizeof(struct ar9285_eeprom) / sizeof(uint16_t))
 
-	uint16_t *eep_data = (uint16_t *)&edump->eeprom.map4k;
+	uint16_t *eep_data = (uint16_t *)&edump->eeprom.eep9285;
 	int addr, eep_start_loc = 0;
 
 	eep_start_loc = 64;
 
-	for (addr = 0; addr < SIZE_EEPROM_4K; addr++) {
+	for (addr = 0; addr < EEP_9285_SIZE; addr++) {
 		if (!EEP_READ(addr + eep_start_loc, eep_data)) {
 			fprintf(stderr, "Unable to read eeprom region\n");
 			return false;
@@ -45,14 +45,14 @@ static bool fill_eeprom_4k(struct edump *edump)
 
 	return true;
 
-#undef SIZE_EEPROM_4K
+#undef EEP_9285_SIZE
 }
 
-static bool check_eeprom_4k(struct edump *edump)
+static bool eep_9285_check(struct edump *edump)
 {
-#define EEPROM_4K_SIZE (sizeof(struct ar5416_eeprom_4k) / sizeof(uint16_t))
+#define EEP_9285_SIZE (sizeof(struct ar9285_eeprom) / sizeof(uint16_t))
 
-	struct ar5416_eeprom_4k *eep = &edump->eeprom.map4k;
+	struct ar9285_eeprom *eep = &edump->eeprom.eep9285;
 	uint16_t *eepdata, temp, magic, magic2;
 	uint32_t sum = 0, el;
 	bool need_swap = false;
@@ -70,7 +70,7 @@ static bool check_eeprom_4k(struct edump *edump)
 			need_swap = true;
 			eepdata = (uint16_t *) (&edump->eeprom);
 
-			for (addr = 0; addr < EEPROM_4K_SIZE; addr++) {
+			for (addr = 0; addr < EEP_9285_SIZE; addr++) {
 				temp = bswap_16(*eepdata);
 				*eepdata = temp;
 				eepdata++;
@@ -82,12 +82,12 @@ static bool check_eeprom_4k(struct edump *edump)
 	}
 
 	if (need_swap)
-		el = bswap_16(edump->eeprom.map4k.baseEepHeader.length);
+		el = bswap_16(edump->eeprom.eep9285.baseEepHeader.length);
 	else
-		el = edump->eeprom.map4k.baseEepHeader.length;
+		el = edump->eeprom.eep9285.baseEepHeader.length;
 
-	if (el > sizeof(struct ar5416_eeprom_4k))
-		el = sizeof(struct ar5416_eeprom_4k) / sizeof(uint16_t);
+	if (el > sizeof(struct ar9285_eeprom))
+		el = sizeof(struct ar9285_eeprom) / sizeof(uint16_t);
 	else
 		el = el / sizeof(uint16_t);
 
@@ -129,7 +129,7 @@ static bool check_eeprom_4k(struct edump *edump)
 		integer = bswap_32(eep->modalHeader.antCtrlCommon);
 		eep->modalHeader.antCtrlCommon = integer;
 
-		for (i = 0; i < AR5416_EEP4K_MAX_CHAINS; i++) {
+		for (i = 0; i < AR9285_MAX_CHAINS; i++) {
 			integer = bswap_32(eep->modalHeader.antCtrlChain[i]);
 			eep->modalHeader.antCtrlChain[i] = integer;
 		}
@@ -140,25 +140,23 @@ static bool check_eeprom_4k(struct edump *edump)
 		}
 	}
 
-	if (sum != 0xffff || get_eeprom_ver_4k(edump) != AR5416_EEP_VER ||
-	    get_eeprom_rev_4k(edump) < AR5416_EEP_NO_BACK_VER) {
+	if (sum != 0xffff || eep_9285_get_ver(edump) != AR5416_EEP_VER ||
+	    eep_9285_get_rev(edump) < AR5416_EEP_NO_BACK_VER) {
 		fprintf(stderr, "Bad EEPROM checksum 0x%x or revision 0x%04x\n",
-			sum, get_eeprom_ver_4k(edump));
+			sum, eep_9285_get_ver(edump));
 		return false;
 	}
 
 	return true;
 
-#undef EEPROM_4K_SIZE
+#undef EEP_9285_SIZE
 }
 
-static void base_eeprom_4k(struct edump *edump)
+static void eep_9285_dump_base_header(struct edump *edump)
 {
-	struct ar5416_eeprom_4k *ar5416Eep = &edump->eeprom.map4k;
-	struct base_eep_header_4k *pBase = &ar5416Eep->baseEepHeader;
+	struct ar9285_eeprom *eep = &edump->eeprom.eep9285;
+	struct ar9285_base_eep_hdr *pBase = &eep->baseEepHeader;
 	uint16_t i;
-
-	pBase = &(ar5416Eep->baseEepHeader);
 
 	printf("\n----------------------\n");
 	printf("| EEPROM Base Header |\n");
@@ -215,7 +213,7 @@ static void base_eeprom_4k(struct edump *edump)
 	       "Cal Bin Build",
 	       (pBase->binBuildNumber >> 8) & 0xFF);
 
-	if (get_eeprom_rev_4k(edump) >= AR5416_EEP_MINOR_VER_3) {
+	if (eep_9285_get_rev(edump) >= AR5416_EEP_MINOR_VER_3) {
 		printf("%-30s : %s\n",
 		       "Device Type",
 		       sDeviceType[(pBase->deviceType & 0x7)]);
@@ -223,13 +221,13 @@ static void base_eeprom_4k(struct edump *edump)
 
 	printf("\nCustomer Data in hex:\n");
 	for (i = 0; i < 64; i++) {
-		printf("%02X ", ar5416Eep->custData[i]);
+		printf("%02X ", eep->custData[i]);
 		if ((i % 16) == 15)
 			printf("\n");
 	}
 }
 
-static void modal_eeprom_4k(struct edump *edump)
+static void eep_9285_dump_modal_header(struct edump *edump)
 {
 #define PR(_token, _p, _val_fmt, _val)			\
 	do {						\
@@ -238,8 +236,8 @@ static void modal_eeprom_4k(struct edump *edump)
 		printf("\n");				\
 	} while(0)
 
-	struct ar5416_eeprom_4k *ar5416Eep = &edump->eeprom.map4k;
-	struct modal_eep_4k_header *pModal = &ar5416Eep->modalHeader;
+	struct ar9285_eeprom *eep = &edump->eeprom.eep9285;
+	struct ar9285_modal_eep_hdr *pModal = &eep->modalHeader;
 
 	printf("\n\n-----------------------\n");
 	printf("| EEPROM Modal Header |\n");
@@ -293,16 +291,16 @@ static void modal_eeprom_4k(struct edump *edump)
 	PR("Driver 2 Bias 64QAM", "", "d", pModal->db2_4);
 }
 
-static void power_info_eeprom_4k(struct edump *edump)
+static void eep_9285_dump_power_info(struct edump *edump)
 {
 }
 
-const struct eepmap eepmap_4k = {
-	.name = "4K",
-	.desc = "4 kilobit EEPROM map",
-	.fill_eeprom  = fill_eeprom_4k,
-	.check_eeprom = check_eeprom_4k,
-	.dump_base_header = base_eeprom_4k,
-	.dump_modal_header = modal_eeprom_4k,
-	.dump_power_info = power_info_eeprom_4k,
+const struct eepmap eepmap_9285 = {
+	.name = "9285",
+	.desc = "AR9285 chip EEPROM map",
+	.fill_eeprom  = eep_9285_fill,
+	.check_eeprom = eep_9285_check,
+	.dump_base_header = eep_9285_dump_base_header,
+	.dump_modal_header = eep_9285_dump_modal_header,
+	.dump_power_info = eep_9285_dump_power_info,
 };

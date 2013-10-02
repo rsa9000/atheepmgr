@@ -14,20 +14,20 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef EEP_4K_H
-#define EEP_4K_H
+#ifndef EEP_9285_H
+#define EEP_9285_H
 
-#define AR5416_EEP4K_START_LOC                64
-#define AR5416_EEP4K_NUM_2G_CAL_PIERS         3
-#define AR5416_EEP4K_NUM_2G_CCK_TARGET_POWERS 3
-#define AR5416_EEP4K_NUM_2G_20_TARGET_POWERS  3
-#define AR5416_EEP4K_NUM_2G_40_TARGET_POWERS  3
-#define AR5416_EEP4K_NUM_CTLS                 12
-#define AR5416_EEP4K_NUM_BAND_EDGES           4
-#define AR5416_EEP4K_NUM_PD_GAINS             2
-#define AR5416_EEP4K_MAX_CHAINS               1
+#define AR9285_START_LOC		64
+#define AR9285_NUM_2G_CAL_PIERS		3
+#define AR9285_NUM_2G_CCK_TARGET_POWERS	3
+#define AR9285_NUM_2G_20_TARGET_POWERS	3
+#define AR9285_NUM_2G_40_TARGET_POWERS	3
+#define AR9285_NUM_CTLS			12
+#define AR9285_NUM_BAND_EDGES		4
+#define AR9285_NUM_PD_GAINS		2
+#define AR9285_MAX_CHAINS		1
 
-struct base_eep_header_4k {
+struct ar9285_base_eep_hdr {
 	uint16_t length;
 	uint16_t checksum;
 	uint16_t version;
@@ -45,25 +45,25 @@ struct base_eep_header_4k {
 	uint8_t txGainType;
 } __attribute__ ((packed));
 
-struct modal_eep_4k_header {
-	uint32_t antCtrlChain[AR5416_EEP4K_MAX_CHAINS];
+struct ar9285_modal_eep_hdr {
+	uint32_t antCtrlChain[AR9285_MAX_CHAINS];
 	uint32_t antCtrlCommon;
-	uint8_t antennaGainCh[AR5416_EEP4K_MAX_CHAINS];
+	uint8_t antennaGainCh[AR9285_MAX_CHAINS];
 	uint8_t switchSettling;
-	uint8_t txRxAttenCh[AR5416_EEP4K_MAX_CHAINS];
-	uint8_t rxTxMarginCh[AR5416_EEP4K_MAX_CHAINS];
+	uint8_t txRxAttenCh[AR9285_MAX_CHAINS];
+	uint8_t rxTxMarginCh[AR9285_MAX_CHAINS];
 	uint8_t adcDesiredSize;
 	uint8_t pgaDesiredSize;
-	uint8_t xlnaGainCh[AR5416_EEP4K_MAX_CHAINS];
+	uint8_t xlnaGainCh[AR9285_MAX_CHAINS];
 	uint8_t txEndToXpaOff;
 	uint8_t txEndToRxOn;
 	uint8_t txFrameToXpaOn;
 	uint8_t thresh62;
-	uint8_t noiseFloorThreshCh[AR5416_EEP4K_MAX_CHAINS];
+	uint8_t noiseFloorThreshCh[AR9285_MAX_CHAINS];
 	uint8_t xpdGain;
 	uint8_t xpd;
-	uint8_t iqCalICh[AR5416_EEP4K_MAX_CHAINS];
-	uint8_t iqCalQCh[AR5416_EEP4K_MAX_CHAINS];
+	uint8_t iqCalICh[AR9285_MAX_CHAINS];
+	uint8_t iqCalQCh[AR9285_MAX_CHAINS];
 	uint8_t pdGainOverlap;
 #if __BYTE_ORDER == __BIG_ENDIAN
 	uint8_t ob_1:4, ob_0:4;
@@ -76,11 +76,11 @@ struct modal_eep_4k_header {
 	uint8_t txFrameToDataStart;
 	uint8_t txFrameToPaOn;
 	uint8_t ht40PowerIncForPdadc;
-	uint8_t bswAtten[AR5416_EEP4K_MAX_CHAINS];
-	uint8_t bswMargin[AR5416_EEP4K_MAX_CHAINS];
+	uint8_t bswAtten[AR9285_MAX_CHAINS];
+	uint8_t bswMargin[AR9285_MAX_CHAINS];
 	uint8_t swSettleHt40;
-	uint8_t xatten2Db[AR5416_EEP4K_MAX_CHAINS];
-	uint8_t xatten2Margin[AR5416_EEP4K_MAX_CHAINS];
+	uint8_t xatten2Db[AR9285_MAX_CHAINS];
+	uint8_t xatten2Margin[AR9285_MAX_CHAINS];
 #if __BYTE_ORDER == __BIG_ENDIAN
 	uint8_t db2_1:4, db2_0:4;
 #else
@@ -109,34 +109,34 @@ struct modal_eep_4k_header {
 	struct spur_chan spurChans[AR_EEPROM_MODAL_SPURS];
 } __attribute__ ((packed));
 
-struct cal_data_per_freq_4k {
-	uint8_t pwrPdg[AR5416_EEP4K_NUM_PD_GAINS][AR5416_PD_GAIN_ICEPTS];
-	uint8_t vpdPdg[AR5416_EEP4K_NUM_PD_GAINS][AR5416_PD_GAIN_ICEPTS];
+struct ar9285_cal_data_per_freq {
+	uint8_t pwrPdg[AR9285_NUM_PD_GAINS][AR5416_PD_GAIN_ICEPTS];
+	uint8_t vpdPdg[AR9285_NUM_PD_GAINS][AR5416_PD_GAIN_ICEPTS];
 } __attribute__ ((packed));
 
-struct cal_ctl_data_4k {
+struct ar9285_cal_ctl_data {
 	struct cal_ctl_edges
-	ctlEdges[AR5416_EEP4K_MAX_CHAINS][AR5416_EEP4K_NUM_BAND_EDGES];
+	ctlEdges[AR9285_MAX_CHAINS][AR9285_NUM_BAND_EDGES];
 } __attribute__ ((packed));
 
-struct ar5416_eeprom_4k {
-	struct base_eep_header_4k baseEepHeader;
+struct ar9285_eeprom {
+	struct ar9285_base_eep_hdr baseEepHeader;
 	uint8_t custData[20];
-	struct modal_eep_4k_header modalHeader;
-	uint8_t calFreqPier2G[AR5416_EEP4K_NUM_2G_CAL_PIERS];
-	struct cal_data_per_freq_4k
-	calPierData2G[AR5416_EEP4K_MAX_CHAINS][AR5416_EEP4K_NUM_2G_CAL_PIERS];
+	struct ar9285_modal_eep_hdr modalHeader;
+	uint8_t calFreqPier2G[AR9285_NUM_2G_CAL_PIERS];
+	struct ar9285_cal_data_per_freq
+	calPierData2G[AR9285_MAX_CHAINS][AR9285_NUM_2G_CAL_PIERS];
 	struct cal_target_power_leg
-	calTargetPowerCck[AR5416_EEP4K_NUM_2G_CCK_TARGET_POWERS];
+	calTargetPowerCck[AR9285_NUM_2G_CCK_TARGET_POWERS];
 	struct cal_target_power_leg
-	calTargetPower2G[AR5416_EEP4K_NUM_2G_20_TARGET_POWERS];
+	calTargetPower2G[AR9285_NUM_2G_20_TARGET_POWERS];
 	struct cal_target_power_ht
-	calTargetPower2GHT20[AR5416_EEP4K_NUM_2G_20_TARGET_POWERS];
+	calTargetPower2GHT20[AR9285_NUM_2G_20_TARGET_POWERS];
 	struct cal_target_power_ht
-	calTargetPower2GHT40[AR5416_EEP4K_NUM_2G_40_TARGET_POWERS];
-	uint8_t ctlIndex[AR5416_EEP4K_NUM_CTLS];
-	struct cal_ctl_data_4k ctlData[AR5416_EEP4K_NUM_CTLS];
+	calTargetPower2GHT40[AR9285_NUM_2G_40_TARGET_POWERS];
+	uint8_t ctlIndex[AR9285_NUM_CTLS];
+	struct ar9285_cal_ctl_data ctlData[AR9285_NUM_CTLS];
 	uint8_t padding;
 } __attribute__ ((packed));
 
-#endif /* EEP_4K_H */
+#endif /* EEP_9285_H */

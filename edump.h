@@ -28,7 +28,7 @@
 
 #include "eep_common.h"
 #include "eep_5416.h"
-#include "eep_4k.h"
+#include "eep_9285.h"
 #include "eep_9287.h"
 #include "eep_9003.h"
 
@@ -134,7 +134,7 @@ struct edump {
 
 	union {
 		struct ar5416_eeprom eep5416;
-		struct ar5416_eeprom_4k map4k;
+		struct ar9285_eeprom eep9285;
 		struct ar9287_eeprom map9287;
 		struct ar9300_eeprom eep_93k;
 	} eeprom;
@@ -145,7 +145,7 @@ extern const struct connector con_mem;
 extern const struct connector con_pci;
 
 extern const struct eepmap eepmap_5416;
-extern const struct eepmap eepmap_4k;
+extern const struct eepmap eepmap_9285;
 extern const struct eepmap eepmap_9287;
 extern const struct eepmap eepmap_9003;
 

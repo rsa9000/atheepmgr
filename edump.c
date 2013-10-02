@@ -22,7 +22,7 @@ static struct edump __edump;
 
 static const struct eepmap * const eepmaps[] = {
 	&eepmap_5416,
-	&eepmap_4k,
+	&eepmap_9285,
 	&eepmap_9287,
 	&eepmap_9003,
 };
@@ -49,7 +49,7 @@ int register_eepmap(struct edump *edump)
 	} else if (AR_SREV_9287(edump)) {
 		edump->eepmap = &eepmap_9287;
 	} else if (AR_SREV_9285(edump)) {
-		edump->eepmap = &eepmap_4k;
+		edump->eepmap = &eepmap_9285;
 	} else {
 		edump->eepmap = &eepmap_5416;
 	}
