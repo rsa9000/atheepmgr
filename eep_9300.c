@@ -2795,7 +2795,7 @@ static struct ar9300_eeprom *ar9300_eep_templates[] = {
 	&ar9300_x113,
 };
 
-static struct ar9300_eeprom *ar9003_eeprom_struct_find_by_id(int id)
+static struct ar9300_eeprom *ar9300_eeprom_struct_find_by_id(int id)
 {
 #define N_LOOP (sizeof(ar9300_eep_templates) / sizeof(ar9300_eep_templates[0]))
 	int it;
@@ -2988,7 +2988,7 @@ static int ar9300_compress_decision(int it,
 		break;
 	case _CompressBlock:
 		if (reference != 0) {
-			eep = ar9003_eeprom_struct_find_by_id(reference);
+			eep = ar9300_eeprom_struct_find_by_id(reference);
 			if (eep == NULL) {
 				fprintf(stderr,
 					"can't find reference eeprom struct %d\n",
@@ -3029,7 +3029,7 @@ static bool ar9300_check_eeprom_header(struct edump *edump, eeprom_read_op read,
 	return ar9300_check_header(header);
 }
 
-void ar9003_fill_regdmn(void)
+void ar9300_fill_regdmn(void)
 {
 	struct ar9300_eeprom *eep;
 	int it;
@@ -3046,7 +3046,7 @@ void ar9003_fill_regdmn(void)
 void ar9300_fill_antctrl_template(bool is_2g)
 {
 	struct ar9300_eeprom *eep;
-	struct ar9300_modal_eep_header *pModal;
+	struct ar9300_modal_eep_hdr *pModal;
 	int it;
 
 #define N_LOOP (sizeof(ar9300_eep_templates) / sizeof(ar9300_eep_templates[0]))
@@ -3073,7 +3073,7 @@ void ar9300_fill_antctrl_template(bool is_2g)
 void ar9300_fill_antctlcmn_template(bool is_2g)
 {
 	struct ar9300_eeprom *eep;
-	struct ar9300_modal_eep_header *pModal;
+	struct ar9300_modal_eep_hdr *pModal;
 	int it;
 
 #define N_LOOP (sizeof(ar9300_eep_templates) / sizeof(ar9300_eep_templates[0]))
@@ -3128,7 +3128,7 @@ static int ar9300_eeprom_restore_internal(struct edump *edump,
 	if (!word)
 		return -ENOMEM;
 
-	ar9003_fill_regdmn();
+	ar9300_fill_regdmn();
 	for (it = 1; it >= 0; it--) {
 		ar9300_fill_antctlcmn_template(it);
 		ar9300_fill_antctrl_template(it);
@@ -3218,9 +3218,9 @@ fail:
  * This function destroys any existing in-memory structure
  * content.
  */
-static bool fill_eeprom_9003(struct edump *edump)
+static bool eep_9300_fill(struct edump *edump)
 {
-	uint8_t *mptr = (uint8_t *) &edump->eeprom.eep_93k;
+	uint8_t *mptr = (uint8_t *) &edump->eeprom.eep9300;
 
 	if (ar9300_eeprom_restore_internal(edump, mptr,
 			sizeof(struct ar9300_eeprom)) < 0)
@@ -3229,14 +3229,14 @@ static bool fill_eeprom_9003(struct edump *edump)
 	return true;
 }
 
-static int check_eeprom_9003(struct edump *edump)
+static int eep_9300_check(struct edump *edump)
 {
 	return 1;
 }
 
-static void base_eeprom_9003(struct edump *edump)
+static void eep_9300_dump_base_header(struct edump *edump)
 {
-	struct ar9300_eeprom *eep = &edump->eeprom.eep_93k;
+	struct ar9300_eeprom *eep = &edump->eeprom.eep9300;
 	struct ar9300_base_eep_hdr *pBase;
 
 	pBase = &eep->baseEepHeader;
@@ -3305,7 +3305,7 @@ static void base_eeprom_9003(struct edump *edump)
 	printf("%-30s : %d\n", "SW Reg", pBase->swreg);
 }
 
-static void modal_eeprom_9003(struct edump *edump)
+static void eep_9300_dump_modal_header(struct edump *edump)
 {
 #define PR(_token, _p, _val_fmt, _val)				\
 	do {							\
@@ -3322,9 +3322,9 @@ static void modal_eeprom_9003(struct edump *edump)
 		}						\
 	} while (0)
 
-	struct ar9300_eeprom *eep = &edump->eeprom.eep_93k;
+	struct ar9300_eeprom *eep = &edump->eeprom.eep9300;
 	struct ar9300_base_eep_hdr *pBase = &eep->baseEepHeader;
-	struct ar9300_modal_eep_header *pModal = NULL;
+	struct ar9300_modal_eep_hdr *pModal = NULL;
 
 	printf("\n\n-----------------------\n");
 	printf("| EEPROM Modal Header |\n");
@@ -3417,16 +3417,16 @@ static void modal_eeprom_9003(struct edump *edump)
 #undef PR
 }
 
-static void power_info_eeprom_9003(struct edump *edump)
+static void eep_9300_dump_power_info(struct edump *edump)
 {
 }
 
-const struct eepmap eepmap_9003 = {
-	.name = "9003",
-	.desc = "AR9003 and later chips EEPROM map",
-	.fill_eeprom = fill_eeprom_9003,
-	.check_eeprom = check_eeprom_9003,
-	.dump_base_header = base_eeprom_9003,
-	.dump_modal_header = modal_eeprom_9003,
-	.dump_power_info = power_info_eeprom_9003,
+const struct eepmap eepmap_9300 = {
+	.name = "9300",
+	.desc = "EEPROM map for modern .11n chips (AR93xx/AR64xx/AR95xx/etc.)",
+	.fill_eeprom = eep_9300_fill,
+	.check_eeprom = eep_9300_check,
+	.dump_base_header = eep_9300_dump_base_header,
+	.dump_modal_header = eep_9300_dump_modal_header,
+	.dump_power_info = eep_9300_dump_power_info,
 };

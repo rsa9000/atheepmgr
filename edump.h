@@ -30,7 +30,7 @@
 #include "eep_5416.h"
 #include "eep_9285.h"
 #include "eep_9287.h"
-#include "eep_9003.h"
+#include "eep_9300.h"
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define MS(_v, _f)  (((_v) & _f) >> _f##_S)
@@ -136,7 +136,7 @@ struct edump {
 		struct ar5416_eeprom eep5416;
 		struct ar9285_eeprom eep9285;
 		struct ar9287_eeprom map9287;
-		struct ar9300_eeprom eep_93k;
+		struct ar9300_eeprom eep9300;
 	} eeprom;
 };
 
@@ -147,7 +147,7 @@ extern const struct connector con_pci;
 extern const struct eepmap eepmap_5416;
 extern const struct eepmap eepmap_9285;
 extern const struct eepmap eepmap_9287;
-extern const struct eepmap eepmap_9003;
+extern const struct eepmap eepmap_9300;
 
 void hw_read_revisions(struct edump *edump);
 bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,

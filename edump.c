@@ -24,7 +24,7 @@ static const struct eepmap * const eepmaps[] = {
 	&eepmap_5416,
 	&eepmap_9285,
 	&eepmap_9287,
-	&eepmap_9003,
+	&eepmap_9300,
 };
 
 static const struct eepmap *eepmap_find_by_name(const char *name)
@@ -45,7 +45,7 @@ int register_eepmap(struct edump *edump)
 		return 0;
 
 	if (AR_SREV_9300_20_OR_LATER(edump)) {
-		edump->eepmap = &eepmap_9003;
+		edump->eepmap = &eepmap_9300;
 	} else if (AR_SREV_9287(edump)) {
 		edump->eepmap = &eepmap_9287;
 	} else if (AR_SREV_9285(edump)) {

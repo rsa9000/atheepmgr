@@ -14,11 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef AR9003_EEPROM_H
-#define AR9003_EEPROM_H
-
-#include <linux/types.h>
-#include <endian.h>
+#ifndef EEP_9300_H
+#define EEP_9300_H
 
 /* 16-bit offset location start of calibration struct */
 #define AR9300_NUM_5G_CAL_PIERS      8
@@ -113,7 +110,7 @@ struct ar9300_base_eep_hdr {
 	int32_t swreg;
 } __attribute__ ((packed));
 
-struct ar9300_modal_eep_header {
+struct ar9300_modal_eep_hdr {
 	/* 4 idle, t1, t2, b (4 bits per setting) */
 	int32_t antCtrlCommon;
 	/* 4 ra1l1, ra2l1, ra1l2, ra2l2, ra12 */
@@ -205,7 +202,7 @@ struct ar9300_eeprom {
 
 	struct ar9300_base_eep_hdr baseEepHeader;
 
-	struct ar9300_modal_eep_header modalHeader2G;
+	struct ar9300_modal_eep_hdr modalHeader2G;
 	struct ar9300_BaseExtension_1 base_ext1;
 	uint8_t calFreqPier2G[AR9300_NUM_2G_CAL_PIERS];
 	struct ar9300_cal_data_per_freq_op_loop
@@ -225,7 +222,7 @@ struct ar9300_eeprom {
 	uint8_t ctlIndex_2G[AR9300_NUM_CTLS_2G];
 	uint8_t ctl_freqbin_2G[AR9300_NUM_CTLS_2G][AR9300_NUM_BAND_EDGES_2G];
 	struct cal_ctl_data_2g ctlPowerData_2G[AR9300_NUM_CTLS_2G];
-	struct ar9300_modal_eep_header modalHeader5G;
+	struct ar9300_modal_eep_hdr modalHeader5G;
 	struct ar9300_BaseExtension_2 base_ext2;
 	uint8_t calFreqPier5G[AR9300_NUM_5G_CAL_PIERS];
 	struct ar9300_cal_data_per_freq_op_loop
