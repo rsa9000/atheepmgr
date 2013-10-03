@@ -61,19 +61,6 @@ int register_eepmap(struct edump *edump)
 
 void dump_device(struct edump *edump)
 {
-	if (register_eepmap(edump) < 0)
-		return;
-
-	if (!edump->eepmap->fill_eeprom(edump)) {
-		fprintf(stderr, "Unable to fill EEPROM data\n");
-		return;
-	}
-
-	if (!edump->eepmap->check_eeprom(edump)) {
-		fprintf(stderr, "EEPROM check failed\n");
-		return;
-	}
-
 	switch(dump) {
 	case DUMP_BASE_HEADER:
 		edump->eepmap->dump_base_header(edump);
@@ -246,8 +233,25 @@ int main(int argc, char *argv[])
 	if (edump->con->caps & CON_CAP_HW)
 		hw_read_revisions(edump);
 
+	ret = register_eepmap(edump);
+	if (ret != 0)
+		goto con_clean;
+
+	if (!edump->eepmap->fill_eeprom(edump)) {
+		fprintf(stderr, "Unable to fill EEPROM data\n");
+		ret = -EIO;
+		goto con_clean;
+	}
+
+	if (!edump->eepmap->check_eeprom(edump)) {
+		fprintf(stderr, "EEPROM check failed\n");
+		ret = -EINVAL;
+		goto con_clean;
+	}
+
 	dump_device(edump);
 
+con_clean:
 	edump->con->clean(edump);
 
 exit:
