@@ -51,6 +51,7 @@
 #define AR5416_EEP_MINOR_VER_3       0x3
 
 #define AR_EEPROM_MODAL_SPURS   5
+#define AR5416_NUM_PD_GAINS     4
 #define AR5416_PD_GAIN_ICEPTS   5
 
 static char *sDeviceType[] = {
@@ -63,6 +64,12 @@ static char *sDeviceType[] = {
 	"UNKNOWN [6] ",
 	"UNKNOWN [7] ",
 };
+
+struct spur_chan {
+	uint16_t spurChan;
+	uint8_t spurRangeLow;
+	uint8_t spurRangeHigh;
+} __attribute__ ((packed));
 
 struct cal_ctl_edges {
 	uint8_t bChannel;

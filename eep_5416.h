@@ -18,7 +18,6 @@
 #define EEP_5416_H
 
 #define AR5416_MAX_CHAINS       3
-#define AR5416_NUM_PD_GAINS     4
 #define AR5416_NUM_BAND_EDGES   8
 #define AR5416_NUM_5G_CAL_PIERS 8
 #define AR5416_NUM_2G_CAL_PIERS 4
@@ -56,12 +55,6 @@ struct ar5416_base_eep_hdr {
 	uint8_t power_table_offset;
 	uint8_t frac_n_5g;
 	uint8_t futureBase_3[21];
-} __attribute__ ((packed));
-
-struct spur_chan {
-	uint16_t spurChan;
-	uint8_t spurRangeLow;
-	uint8_t spurRangeHigh;
 } __attribute__ ((packed));
 
 struct ar5416_modal_eep_hdr {
