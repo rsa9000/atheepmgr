@@ -15,22 +15,28 @@
  */
 
 #include "edump.h"
+#include "eep_9285.h"
 
-static int eep_9285_get_ver(struct edump *edump)
+struct eep_9285_priv {
+	struct ar9285_eeprom eep;
+};
+
+static int eep_9285_get_ver(struct eep_9285_priv *emp)
 {
-	return ((edump->eeprom.eep9285.baseEepHeader.version >> 12) & 0xF);
+	return ((emp->eep.baseEepHeader.version >> 12) & 0xF);
 }
 
-static int eep_9285_get_rev(struct edump *edump)
+static int eep_9285_get_rev(struct eep_9285_priv *emp)
 {
-	return ((edump->eeprom.eep9285.baseEepHeader.version) & 0xFFF);
+	return ((emp->eep.baseEepHeader.version) & 0xFFF);
 }
 
 static bool eep_9285_fill(struct edump *edump)
 {
 #define EEP_9285_SIZE (sizeof(struct ar9285_eeprom) / sizeof(uint16_t))
 
-	uint16_t *eep_data = (uint16_t *)&edump->eeprom.eep9285;
+	struct eep_9285_priv *emp = edump->eepmap_priv;
+	uint16_t *eep_data = (uint16_t *)&emp->eep;
 	int addr, eep_start_loc = 0;
 
 	eep_start_loc = 64;
@@ -52,7 +58,8 @@ static bool eep_9285_check(struct edump *edump)
 {
 #define EEP_9285_SIZE (sizeof(struct ar9285_eeprom) / sizeof(uint16_t))
 
-	struct ar9285_eeprom *eep = &edump->eeprom.eep9285;
+	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct ar9285_eeprom *eep = &emp->eep;
 	uint16_t *eepdata, temp, magic, magic2;
 	uint32_t sum = 0, el;
 	bool need_swap = false;
@@ -68,7 +75,7 @@ static bool eep_9285_check(struct edump *edump)
 
 		if (magic2 == AR5416_EEPROM_MAGIC) {
 			need_swap = true;
-			eepdata = (uint16_t *) (&edump->eeprom);
+			eepdata = (uint16_t *)eep;
 
 			for (addr = 0; addr < EEP_9285_SIZE; addr++) {
 				temp = bswap_16(*eepdata);
@@ -82,16 +89,16 @@ static bool eep_9285_check(struct edump *edump)
 	}
 
 	if (need_swap)
-		el = bswap_16(edump->eeprom.eep9285.baseEepHeader.length);
+		el = bswap_16(eep->baseEepHeader.length);
 	else
-		el = edump->eeprom.eep9285.baseEepHeader.length;
+		el = eep->baseEepHeader.length;
 
 	if (el > sizeof(struct ar9285_eeprom))
 		el = sizeof(struct ar9285_eeprom) / sizeof(uint16_t);
 	else
 		el = el / sizeof(uint16_t);
 
-	eepdata = (uint16_t *)(&edump->eeprom);
+	eepdata = (uint16_t *)eep;
 
 	for (i = 0; i < el; i++)
 		sum ^= *eepdata++;
@@ -140,10 +147,10 @@ static bool eep_9285_check(struct edump *edump)
 		}
 	}
 
-	if (sum != 0xffff || eep_9285_get_ver(edump) != AR5416_EEP_VER ||
-	    eep_9285_get_rev(edump) < AR5416_EEP_NO_BACK_VER) {
+	if (sum != 0xffff || eep_9285_get_ver(emp) != AR5416_EEP_VER ||
+	    eep_9285_get_rev(emp) < AR5416_EEP_NO_BACK_VER) {
 		fprintf(stderr, "Bad EEPROM checksum 0x%x or revision 0x%04x\n",
-			sum, eep_9285_get_ver(edump));
+			sum, eep_9285_get_ver(emp));
 		return false;
 	}
 
@@ -154,7 +161,8 @@ static bool eep_9285_check(struct edump *edump)
 
 static void eep_9285_dump_base_header(struct edump *edump)
 {
-	struct ar9285_eeprom *eep = &edump->eeprom.eep9285;
+	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct ar9285_eeprom *eep = &emp->eep;
 	struct ar9285_base_eep_hdr *pBase = &eep->baseEepHeader;
 	uint16_t i;
 
@@ -213,7 +221,7 @@ static void eep_9285_dump_base_header(struct edump *edump)
 	       "Cal Bin Build",
 	       (pBase->binBuildNumber >> 8) & 0xFF);
 
-	if (eep_9285_get_rev(edump) >= AR5416_EEP_MINOR_VER_3) {
+	if (eep_9285_get_rev(emp) >= AR5416_EEP_MINOR_VER_3) {
 		printf("%-30s : %s\n",
 		       "Device Type",
 		       sDeviceType[(pBase->deviceType & 0x7)]);
@@ -236,7 +244,8 @@ static void eep_9285_dump_modal_header(struct edump *edump)
 		printf("\n");				\
 	} while(0)
 
-	struct ar9285_eeprom *eep = &edump->eeprom.eep9285;
+	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct ar9285_eeprom *eep = &emp->eep;
 	struct ar9285_modal_eep_hdr *pModal = &eep->modalHeader;
 
 	printf("\n\n-----------------------\n");
@@ -298,6 +307,7 @@ static void eep_9285_dump_power_info(struct edump *edump)
 const struct eepmap eepmap_9285 = {
 	.name = "9285",
 	.desc = "AR9285 chip EEPROM map",
+	.priv_data_sz = sizeof(struct eep_9285_priv),
 	.fill_eeprom  = eep_9285_fill,
 	.check_eeprom = eep_9285_check,
 	.dump_base_header = eep_9285_dump_base_header,

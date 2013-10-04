@@ -15,6 +15,11 @@
  */
 
 #include "edump.h"
+#include "eep_9300.h"
+
+struct eep_9300_priv {
+	struct ar9300_eeprom eep;
+};
 
 #define COMP_HDR_LEN 4
 #define COMP_CKSUM_LEN 2
@@ -3220,7 +3225,8 @@ fail:
  */
 static bool eep_9300_fill(struct edump *edump)
 {
-	uint8_t *mptr = (uint8_t *) &edump->eeprom.eep9300;
+	struct eep_9300_priv *emp = edump->eepmap_priv;
+	uint8_t *mptr = (uint8_t *)&emp->eep;
 
 	if (ar9300_eeprom_restore_internal(edump, mptr,
 			sizeof(struct ar9300_eeprom)) < 0)
@@ -3236,10 +3242,9 @@ static int eep_9300_check(struct edump *edump)
 
 static void eep_9300_dump_base_header(struct edump *edump)
 {
-	struct ar9300_eeprom *eep = &edump->eeprom.eep9300;
-	struct ar9300_base_eep_hdr *pBase;
-
-	pBase = &eep->baseEepHeader;
+	struct eep_9300_priv *emp = edump->eepmap_priv;
+	struct ar9300_eeprom *eep = &emp->eep;
+	struct ar9300_base_eep_hdr *pBase = &eep->baseEepHeader;
 
 	printf("\n----------------------\n");
 	printf("| EEPROM Base Header |\n");
@@ -3322,7 +3327,8 @@ static void eep_9300_dump_modal_header(struct edump *edump)
 		}						\
 	} while (0)
 
-	struct ar9300_eeprom *eep = &edump->eeprom.eep9300;
+	struct eep_9300_priv *emp = edump->eepmap_priv;
+	struct ar9300_eeprom *eep = &emp->eep;
 	struct ar9300_base_eep_hdr *pBase = &eep->baseEepHeader;
 	struct ar9300_modal_eep_hdr *pModal = NULL;
 
@@ -3424,6 +3430,7 @@ static void eep_9300_dump_power_info(struct edump *edump)
 const struct eepmap eepmap_9300 = {
 	.name = "9300",
 	.desc = "EEPROM map for modern .11n chips (AR93xx/AR64xx/AR95xx/etc.)",
+	.priv_data_sz = sizeof(struct eep_9300_priv),
 	.fill_eeprom = eep_9300_fill,
 	.check_eeprom = eep_9300_check,
 	.dump_base_header = eep_9300_dump_base_header,

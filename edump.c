@@ -237,6 +237,13 @@ int main(int argc, char *argv[])
 	if (ret != 0)
 		goto con_clean;
 
+	edump->eepmap_priv = malloc(edump->eepmap->priv_data_sz);
+	if (!edump->eepmap_priv) {
+		fprintf(stderr, "Unable to allocate memory for the EEPROM parser private data\n");
+		ret = -ENOMEM;
+		goto con_clean;
+	}
+
 	if (!edump->eepmap->fill_eeprom(edump)) {
 		fprintf(stderr, "Unable to fill EEPROM data\n");
 		ret = -EIO;
@@ -255,6 +262,7 @@ con_clean:
 	edump->con->clean(edump);
 
 exit:
+	free(edump->eepmap_priv);
 	free(edump->con_priv);
 
 	return ret;

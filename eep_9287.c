@@ -15,22 +15,28 @@
  */
 
 #include "edump.h"
+#include "eep_9287.h"
 
 #define SIZE_EEPROM_AR9287 (sizeof(struct ar9287_eeprom) / sizeof(uint16_t))
 
-static int get_eeprom_ver_9287(struct edump *edump)
+struct eep_9287_priv {
+	struct ar9287_eeprom eep;
+};
+
+static int get_eeprom_ver_9287(struct eep_9287_priv *emp)
 {
-	return (edump->eeprom.map9287.baseEepHeader.version >> 12) & 0xF;
+	return (emp->eep.baseEepHeader.version >> 12) & 0xF;
 }
 
-static int get_eeprom_rev_9287(struct edump *edump)
+static int get_eeprom_rev_9287(struct eep_9287_priv *emp)
 {
-	return (edump->eeprom.map9287.baseEepHeader.version) & 0xFFF;
+	return (emp->eep.baseEepHeader.version) & 0xFFF;
 }
 
 static bool fill_eeprom_9287(struct edump *edump)
 {
-	uint16_t *eep_data = (uint16_t *)&edump->eeprom.map9287;
+	struct eep_9287_priv *emp = edump->eepmap_priv;
+	uint16_t *eep_data = (uint16_t *)&emp->eep;
 	int addr, eep_start_loc = 0;
 
 	eep_start_loc = AR9287_EEP_START_LOC;
@@ -48,7 +54,8 @@ static bool fill_eeprom_9287(struct edump *edump)
 
 static bool check_eeprom_9287(struct edump *edump)
 {
-	struct ar9287_eeprom *eep = &edump->eeprom.map9287;
+	struct eep_9287_priv *emp = edump->eepmap_priv;
+	struct ar9287_eeprom *eep = &emp->eep;
 	uint16_t *eepdata, temp, magic, magic2;
 	uint32_t sum = 0, el;
 	bool need_swap = false;
@@ -64,7 +71,7 @@ static bool check_eeprom_9287(struct edump *edump)
 
 		if (magic2 == AR5416_EEPROM_MAGIC) {
 			need_swap = true;
-			eepdata = (uint16_t *) (&edump->eeprom);
+			eepdata = (uint16_t *)eep;
 
 			for (addr = 0; addr < SIZE_EEPROM_AR9287; addr++) {
 				temp = bswap_16(*eepdata);
@@ -78,16 +85,16 @@ static bool check_eeprom_9287(struct edump *edump)
 	}
 
 	if (need_swap)
-		el = bswap_16(edump->eeprom.map9287.baseEepHeader.length);
+		el = bswap_16(eep->baseEepHeader.length);
 	else
-		el = edump->eeprom.map9287.baseEepHeader.length;
+		el = eep->baseEepHeader.length;
 
 	if (el > sizeof(struct ar9287_eeprom))
 		el = sizeof(struct ar9287_eeprom) / sizeof(uint16_t);
 	else
 		el = el / sizeof(uint16_t);
 
-	eepdata = (uint16_t *)(&edump->eeprom);
+	eepdata = (uint16_t *)eep;
 
 	for (i = 0; i < el; i++)
 		sum ^= *eepdata++;
@@ -136,10 +143,10 @@ static bool check_eeprom_9287(struct edump *edump)
 		}
 	}
 
-	if (sum != 0xffff || get_eeprom_ver_9287(edump) != AR9287_EEP_VER ||
-	    get_eeprom_rev_9287(edump) < AR5416_EEP_NO_BACK_VER) {
+	if (sum != 0xffff || get_eeprom_ver_9287(emp) != AR9287_EEP_VER ||
+	    get_eeprom_rev_9287(emp) < AR5416_EEP_NO_BACK_VER) {
 		fprintf(stderr, "Bad EEPROM checksum 0x%x or revision 0x%04x\n",
-			sum, get_eeprom_ver_9287(edump));
+			sum, get_eeprom_ver_9287(emp));
 		return false;
 	}
 
@@ -148,11 +155,10 @@ static bool check_eeprom_9287(struct edump *edump)
 
 static void base_eeprom_9287(struct edump *edump)
 {
-	struct ar9287_eeprom *eep = &edump->eeprom.map9287;
+	struct eep_9287_priv *emp = edump->eepmap_priv;
+	struct ar9287_eeprom *eep = &emp->eep;
 	struct base_eep_ar9287_header *pBase = &eep->baseEepHeader;
 	uint16_t i;
-
-	pBase = &(eep->baseEepHeader);
 
 	printf("\n----------------------\n");
 	printf("| EEPROM Base Header |\n");
@@ -215,7 +221,7 @@ static void base_eeprom_9287(struct edump *edump)
 	       "OpenLoop PowerControl",
 	       (pBase->openLoopPwrCntl & 0x1));
 
-	if (get_eeprom_rev_9287(edump) >= AR5416_EEP_MINOR_VER_3) {
+	if (get_eeprom_rev_9287(emp) >= AR5416_EEP_MINOR_VER_3) {
 		printf("%-30s : %s\n",
 		       "Device Type",
 		       sDeviceType[(pBase->deviceType & 0x7)]);
@@ -238,7 +244,8 @@ static void modal_eeprom_9287(struct edump *edump)
 		printf("\n");				\
 	} while(0)
 
-	struct ar9287_eeprom *eep = &edump->eeprom.map9287;
+	struct eep_9287_priv *emp = edump->eepmap_priv;
+	struct ar9287_eeprom *eep = &emp->eep;
 	struct modal_eep_ar9287_header *pModal = &eep->modalHeader;
 
 	printf("\n\n-----------------------\n");
@@ -295,6 +302,7 @@ static void power_info_eeprom_9287(struct edump *edump)
 const struct eepmap eepmap_9287 = {
 	.name = "9287",
 	.desc = "AR9287 chip EEPROM map",
+	.priv_data_sz = sizeof(struct eep_9287_priv),
 	.fill_eeprom  = fill_eeprom_9287,
 	.check_eeprom = check_eeprom_9287,
 	.dump_base_header = base_eeprom_9287,

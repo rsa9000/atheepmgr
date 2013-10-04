@@ -27,10 +27,6 @@
 #include <byteswap.h>
 
 #include "eep_common.h"
-#include "eep_5416.h"
-#include "eep_9285.h"
-#include "eep_9287.h"
-#include "eep_9300.h"
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define MS(_v, _f)  (((_v) & _f) >> _f##_S)
@@ -116,6 +112,7 @@ struct connector {
 struct eepmap {
 	const char *name;
 	const char *desc;
+	size_t priv_data_sz;
 	bool (*fill_eeprom)(struct edump *edump);
 	int (*check_eeprom)(struct edump *edump);
 	void (*dump_base_header)(struct edump *edump);
@@ -131,13 +128,7 @@ struct edump {
 	uint16_t macRev;
 
 	const struct eepmap *eepmap;
-
-	union {
-		struct ar5416_eeprom eep5416;
-		struct ar9285_eeprom eep9285;
-		struct ar9287_eeprom map9287;
-		struct ar9300_eeprom eep9300;
-	} eeprom;
+	void *eepmap_priv;
 };
 
 extern const struct connector con_file;
