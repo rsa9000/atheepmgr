@@ -251,6 +251,8 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	edump->host_is_be = __BYTE_ORDER == __BIG_ENDIAN;
+
 	ret = -EINVAL;
 	while ((opt = getopt(argc, argv, optstr)) != -1) {
 		switch (opt) {

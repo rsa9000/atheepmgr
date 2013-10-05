@@ -70,7 +70,6 @@ static bool check_eeprom_9287(struct edump *edump)
 		magic2 = bswap_16(magic);
 
 		if (magic2 == AR5416_EEPROM_MAGIC) {
-			need_swap = true;
 			eepdata = (uint16_t *)eep;
 
 			for (addr = 0; addr < SIZE_EEPROM_AR9287; addr++) {
@@ -83,6 +82,10 @@ static bool check_eeprom_9287(struct edump *edump)
 			return false;
 		}
 	}
+
+	if (!!(eep->baseEepHeader.eepMisc & AR5416_EEPMISC_BIG_ENDIAN) !=
+	    edump->host_is_be)
+		need_swap = true;
 
 	if (need_swap)
 		el = bswap_16(eep->baseEepHeader.length);

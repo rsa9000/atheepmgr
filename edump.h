@@ -114,6 +114,8 @@ struct eepmap {
 };
 
 struct edump {
+	int host_is_be;				/* Is host big-endian? */
+
 	const struct connector *con;
 	void *con_priv;
 
