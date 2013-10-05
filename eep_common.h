@@ -54,16 +54,7 @@
 #define AR5416_NUM_PD_GAINS     4
 #define AR5416_PD_GAIN_ICEPTS   5
 
-static char *sDeviceType[] = {
-	"UNKNOWN [0] ",
-	"Cardbus     ",
-	"PCI         ",
-	"MiniPCI     ",
-	"Access Point",
-	"PCIExpress  ",
-	"UNKNOWN [6] ",
-	"UNKNOWN [7] ",
-};
+extern const char * const sDeviceType[];
 
 struct spur_chan {
 	uint16_t spurChan;

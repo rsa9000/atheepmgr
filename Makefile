@@ -8,6 +8,7 @@ OBJ=\
 	eep_9285.o	\
 	eep_9287.o	\
 	eep_9300.o	\
+	eep_common.o	\
 	hw.o		\
 
 DEFS=
