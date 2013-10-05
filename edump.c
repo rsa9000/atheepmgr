@@ -59,7 +59,7 @@ int register_eepmap(struct edump *edump)
 	return 0;
 }
 
-void dump_device(struct edump *edump)
+static int act_eep_dump(struct edump *edump, int argc, char *argv[])
 {
 	switch(dump) {
 	case DUMP_BASE_HEADER:
@@ -77,7 +77,24 @@ void dump_device(struct edump *edump)
 		edump->eepmap->dump_power_info(edump);
 		break;
 	}
+
+	return 0;
 }
+
+#define ACT_F_EEPROM	(1 << 0)	/* Action will interact with EEPROM */
+#define ACT_F_HW	(1 << 1)	/* Action require direct HW access */
+
+static const struct action {
+	const char *name;
+	int (*func)(struct edump *edump, int argc, char *argv[]);
+	int flags;
+} actions[] = {
+	{
+		.name = "dump",
+		.func = act_eep_dump,
+		.flags = ACT_F_EEPROM,
+	}
+};
 
 #if defined(CONFIG_CON_PCI) && defined(CONFIG_CON_MEM)
 #define CON_OPTSTR	"F:M:P:"
@@ -103,7 +120,7 @@ static void usage(char *name)
 		"Atheros NIC EEPROM dump utility.\n"
 		"\n"
 		"Usage:\n"
-		"  %s " CON_USAGE " [-t <eepmap>] [-bmpa]\n"
+		"  %s " CON_USAGE " [-t <eepmap>] [-bmpa] [<action> [<actarg>]]\n"
 		"or\n"
 		"  %s -h\n"
 		"\n"
@@ -125,6 +142,15 @@ static void usage(char *name)
 		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
 		"                  for connectors, without direct HW access.\n"
 		"  -h              Print this cruft.\n"
+		"  <action>        Optional argument, which specifies the <action> that should be\n"
+		"                  performed (see actions list below). If no action is specified,\n"
+		"                  the 'dump' action is performed by default.\n"
+		"  <actarg>        Action argument if the action accepts any (see details below\n"
+		"                  in the detailed actions list).\n"
+		"\n"
+		"Available actions:\n"
+		"  dump            Read & parse the EEPROM content and then dump it to the\n"
+		"                  terminal (default action).\n"
 		"\n"
 		"Available connectors (card interactions interface):\n"
 		"  File            Read EEPROM dump from file, activated by -F option with dump\n"
@@ -151,8 +177,9 @@ static void usage(char *name)
 int main(int argc, char *argv[])
 {
 	struct edump *edump = &__edump;
+	const struct action *act = NULL;
 	char *con_arg = NULL;
-	int opt;
+	int i, opt;
 	int ret;
 
 	if (argc == 1) {
@@ -214,7 +241,31 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Connector is not specified\n");
 		goto exit;
 	}
-	if (!edump->eepmap && !(edump->con->caps & CON_CAP_HW)) {
+
+	if (optind >= argc) {
+		act = &actions[0];
+	} else {
+		for (i = 0; i < ARRAY_SIZE(actions); ++i) {
+			if (strcasecmp(argv[optind], actions[i].name) != 0)
+				continue;
+			act = &actions[i];
+			break;
+		}
+		if (!act) {
+			fprintf(stderr, "Unknown action -- %s\n", argv[optind]);
+			goto exit;
+		}
+		optind++;
+	}
+
+	if ((act->flags & ACT_F_HW) && !(edump->con->caps & CON_CAP_HW)) {
+		fprintf(stderr, "%s action require direct HW access, which is not proved by %s connector\n",
+			act->name, edump->con->name);
+		goto exit;
+	}
+
+	if ((act->flags & ACT_F_EEPROM) && !edump->eepmap &&
+	    !(edump->con->caps & CON_CAP_HW)) {
 		fprintf(stderr, "EEPROM map type option is mandatory for connectors without direct HW access\n");
 		goto exit;
 	}
@@ -233,30 +284,32 @@ int main(int argc, char *argv[])
 	if (edump->con->caps & CON_CAP_HW)
 		hw_read_revisions(edump);
 
-	ret = register_eepmap(edump);
-	if (ret != 0)
-		goto con_clean;
+	if (act->flags & ACT_F_EEPROM) {
+		ret = register_eepmap(edump);
+		if (ret)
+			goto con_clean;
 
-	edump->eepmap_priv = malloc(edump->eepmap->priv_data_sz);
-	if (!edump->eepmap_priv) {
-		fprintf(stderr, "Unable to allocate memory for the EEPROM parser private data\n");
-		ret = -ENOMEM;
-		goto con_clean;
+		edump->eepmap_priv = malloc(edump->eepmap->priv_data_sz);
+		if (!edump->eepmap_priv) {
+			fprintf(stderr, "Unable to allocate memory for the EEPROM parser private data\n");
+			ret = -ENOMEM;
+			goto con_clean;
+		}
+
+		if (!edump->eepmap->fill_eeprom(edump)) {
+			fprintf(stderr, "Unable to fill EEPROM data\n");
+			ret = -EIO;
+			goto con_clean;
+		}
+
+		if (!edump->eepmap->check_eeprom(edump)) {
+			fprintf(stderr, "EEPROM check failed\n");
+			ret = -EINVAL;
+			goto con_clean;
+		}
 	}
 
-	if (!edump->eepmap->fill_eeprom(edump)) {
-		fprintf(stderr, "Unable to fill EEPROM data\n");
-		ret = -EIO;
-		goto con_clean;
-	}
-
-	if (!edump->eepmap->check_eeprom(edump)) {
-		fprintf(stderr, "EEPROM check failed\n");
-		ret = -EINVAL;
-		goto con_clean;
-	}
-
-	dump_device(edump);
+	ret = act->func(edump, argc - optind, argv + optind);
 
 con_clean:
 	edump->con->clean(edump);
