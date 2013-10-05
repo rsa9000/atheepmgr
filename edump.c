@@ -16,8 +16,6 @@
 
 #include "edump.h"
 
-int dump;
-
 static struct edump __edump;
 
 static const struct eepmap * const eepmaps[] = {
@@ -61,21 +59,52 @@ int register_eepmap(struct edump *edump)
 
 static int act_eep_dump(struct edump *edump, int argc, char *argv[])
 {
-	switch(dump) {
-	case DUMP_BASE_HEADER:
-		edump->eepmap->dump_base_header(edump);
-		break;
-	case DUMP_MODAL_HEADER:
-		edump->eepmap->dump_modal_header(edump);
-		break;
-	case DUMP_POWER_INFO:
-		edump->eepmap->dump_power_info(edump);
-		break;
-	case DUMP_ALL:
-		edump->eepmap->dump_base_header(edump);
-		edump->eepmap->dump_modal_header(edump);
-		edump->eepmap->dump_power_info(edump);
-		break;
+	struct {
+		const char *name;
+		void (*func)(struct edump *edump);
+	} known_sections[] = {
+		{"base", edump->eepmap->dump_base_header},
+		{"modal", edump->eepmap->dump_modal_header},
+		{"power", edump->eepmap->dump_power_info},
+	};
+	static char def[4] = {'a', 'l', 'l', '\0'};
+	char *list = argc > 0 ? argv[0] : def;
+	int dump_mask = 0;
+	char *tok, *p;
+	int i;
+
+	for (tok = strtok(list, ","); tok; tok = strtok(NULL, ",")) {
+		for (; *tok == ' '; tok++);	/* Trim left */
+		p = tok + strlen(tok) - 1;
+		for (; *p == ' '; *(p--) = '\0');/* Trim right */
+
+		if (tok[0] == '\0')
+			continue;
+
+		if (strcasecmp(tok, "all") == 0) {
+			dump_mask = ~0;
+			break;
+		}
+		if (strcasecmp(tok, "none") == 0)
+			return 0;
+
+		for (i = 0; i < ARRAY_SIZE(known_sections); ++i)
+			if (strcasecmp(tok, known_sections[i].name) == 0)
+				break;
+		if (i == ARRAY_SIZE(known_sections)) {
+			fprintf(stderr, "Unknown EEPROM section to dump -- %s\n",
+				tok);
+			return -EINVAL;
+		}
+
+		dump_mask |= 1 << i;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(known_sections); ++i) {
+		if (!(dump_mask & (1 << i)))
+			continue;
+
+		known_sections[i].func(edump);
 	}
 
 	return 0;
@@ -139,7 +168,7 @@ static const struct action {
 #define CON_USAGE	"-F <eepdump>"
 #endif
 
-static const char *optstr = CON_OPTSTR "ambpht:";
+static const char *optstr = CON_OPTSTR "ht:";
 
 static void usage(char *name)
 {
@@ -149,7 +178,7 @@ static void usage(char *name)
 		"Atheros NIC EEPROM dump utility.\n"
 		"\n"
 		"Usage:\n"
-		"  %s " CON_USAGE " [-t <eepmap>] [-bmpa] [<action> [<actarg>]]\n"
+		"  %s " CON_USAGE " [-t <eepmap>] [<action> [<actarg>]]\n"
 		"or\n"
 		"  %s -h\n"
 		"\n"
@@ -164,10 +193,6 @@ static void usage(char *name)
 		"                  in <slot>. Slot consist of 3 parts devided by colon:\n"
 		"                  <slot> = <domain>:<bus>:<dev> as displayed by lspci.\n"
 #endif
-		"  -b              Dump base EEPROM header.\n"
-		"  -m              Dump modal EEPROM header(s).\n"
-		"  -p              Dump power calibration EEPROM info.\n"
-		"  -a              Dump everything from EEPROM (default).\n"
 		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
 		"                  for connectors, without direct HW access.\n"
 		"  -h              Print this cruft.\n"
@@ -178,8 +203,17 @@ static void usage(char *name)
 		"                  in the detailed actions list).\n"
 		"\n"
 		"Available actions:\n"
-		"  dump            Read & parse the EEPROM content and then dump it to the\n"
-		"                  terminal (default action).\n"
+		"  dump [<sects>]  Read & parse the EEPROM content and then dump it to the\n"
+		"                  terminal (default action). An optional list of the\n"
+		"                  comma-separated EEPROM sections <sect> can be specified as the\n"
+		"                  action argument. This argument tells the utility what sections\n"
+		"                  should be dumped. The following sections are supported:\n"
+		"                  'base', 'modal' and 'power'. These are for: dump of the base\n"
+		"                  EEPROM header, dump of the modal EEPROM header(s) and dump of\n"
+		"                  the power information respectively. Also there are two special\n"
+		"                  keywords: 'all' and 'none'. The first causes the dump of all\n"
+		"                  sections and the second disables any dump to the terminal. The\n"
+		"                  default behaviour is to dump all EEPROM sections.\n"
 		"  regread <addr>  Read register at address <addr> and print it value.\n"
 		"\n"
 		"Available connectors (card interactions interface):\n"
@@ -217,8 +251,6 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	dump = DUMP_ALL;
-
 	ret = -EINVAL;
 	while ((opt = getopt(argc, argv, optstr)) != -1) {
 		switch (opt) {
@@ -238,18 +270,6 @@ int main(int argc, char *argv[])
 			con_arg = optarg;
 			break;
 #endif
-		case 'b':
-			dump = DUMP_BASE_HEADER;
-			break;
-		case 'm':
-			dump = DUMP_MODAL_HEADER;
-			break;
-		case 'p':
-			dump = DUMP_POWER_INFO;
-			break;
-		case 'a':
-			dump = DUMP_ALL;
-			break;
 		case 't':
 			edump->eepmap = eepmap_find_by_name(optarg);
 			if (!edump->eepmap) {

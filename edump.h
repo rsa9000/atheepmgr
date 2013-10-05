@@ -88,13 +88,6 @@ typedef int bool;
 #define AH_WAIT_TIMEOUT 100000 /* (us) */
 #define AH_TIME_QUANTUM 10
 
-enum dump_data {
-	DUMP_BASE_HEADER = 1,
-	DUMP_MODAL_HEADER = 2,
-	DUMP_POWER_INFO = 3,
-	DUMP_ALL = 4
-};
-
 #define CON_CAP_HW		1	/* Con. is able to interact with HW */
 
 struct edump;
