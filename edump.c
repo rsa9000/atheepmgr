@@ -81,6 +81,31 @@ static int act_eep_dump(struct edump *edump, int argc, char *argv[])
 	return 0;
 }
 
+static int act_reg_read(struct edump *edump, int argc, char *argv[])
+{
+	unsigned long addr;
+	char *endp;
+	uint32_t val;
+
+	if (argc < 1) {
+		fprintf(stderr, "Register address is not specified, aborting\n");
+		return -EINVAL;
+	}
+
+	errno = 0;
+	addr = strtoul(argv[0], &endp, 16);
+	if (errno != 0 || *endp != '\0' || addr % 4 != 0) {
+		fprintf(stderr, "Invalid register address -- %s\n", argv[0]);
+		return -EINVAL;
+	}
+
+	val = REG_READ(addr);
+
+	printf("0x%08lx: 0x%08lx\n", addr, (unsigned long)val);
+
+	return 0;
+}
+
 #define ACT_F_EEPROM	(1 << 0)	/* Action will interact with EEPROM */
 #define ACT_F_HW	(1 << 1)	/* Action require direct HW access */
 
@@ -93,6 +118,10 @@ static const struct action {
 		.name = "dump",
 		.func = act_eep_dump,
 		.flags = ACT_F_EEPROM,
+	}, {
+		.name = "regread",
+		.func = act_reg_read,
+		.flags = ACT_F_HW,
 	}
 };
 
@@ -151,6 +180,7 @@ static void usage(char *name)
 		"Available actions:\n"
 		"  dump            Read & parse the EEPROM content and then dump it to the\n"
 		"                  terminal (default action).\n"
+		"  regread <addr>  Read register at address <addr> and print it value.\n"
 		"\n"
 		"Available connectors (card interactions interface):\n"
 		"  File            Read EEPROM dump from file, activated by -F option with dump\n"
