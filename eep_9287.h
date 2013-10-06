@@ -85,7 +85,7 @@ struct ar9287_modal_eep_hdr {
 	uint8_t ob_qam;
 	uint8_t ob_pal_off;
 	uint8_t futureModal[30];
-	struct spur_chan spurChans[AR_EEPROM_MODAL_SPURS];
+	struct ar5416_spur_chan spurChans[AR_EEPROM_MODAL_SPURS];
 } __attribute__ ((packed));
 
 struct ar9287_cal_data_op_loop {
@@ -106,7 +106,7 @@ union ar9287_cal_data_per_freq_u {
 } __attribute__ ((packed));
 
 struct ar9287_cal_ctl_data {
-	struct cal_ctl_edges
+	struct ar5416_cal_ctl_edges
 	ctlEdges[AR9287_MAX_CHAINS][AR9287_NUM_BAND_EDGES];
 } __attribute__ ((packed));
 
@@ -117,13 +117,13 @@ struct ar9287_eeprom {
 	uint8_t calFreqPier2G[AR9287_NUM_2G_CAL_PIERS];
 	union ar9287_cal_data_per_freq_u
 	calPierData2G[AR9287_MAX_CHAINS][AR9287_NUM_2G_CAL_PIERS];
-	struct cal_target_power_leg
+	struct ar5416_cal_target_power_leg
 	calTargetPowerCck[AR9287_NUM_2G_CCK_TARGET_POWERS];
-	struct cal_target_power_leg
+	struct ar5416_cal_target_power_leg
 	calTargetPower2G[AR9287_NUM_2G_20_TARGET_POWERS];
-	struct cal_target_power_ht
+	struct ar5416_cal_target_power_ht
 	calTargetPower2GHT20[AR9287_NUM_2G_20_TARGET_POWERS];
-	struct cal_target_power_ht
+	struct ar5416_cal_target_power_ht
 	calTargetPower2GHT40[AR9287_NUM_2G_40_TARGET_POWERS];
 	uint8_t ctlIndex[AR9287_NUM_CTLS];
 	struct ar9287_cal_ctl_data ctlData[AR9287_NUM_CTLS];

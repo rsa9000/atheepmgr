@@ -59,23 +59,23 @@
 
 extern const char * const sDeviceType[];
 
-struct spur_chan {
+struct ar5416_spur_chan {
 	uint16_t spurChan;
 	uint8_t spurRangeLow;
 	uint8_t spurRangeHigh;
 } __attribute__ ((packed));
 
-struct cal_ctl_edges {
+struct ar5416_cal_ctl_edges {
 	uint8_t bChannel;
 	uint8_t ctl;
 } __attribute__ ((packed));
 
-struct cal_target_power_leg {
+struct ar5416_cal_target_power_leg {
 	uint8_t bChannel;
 	uint8_t tPow2x[4];
 } __attribute__ ((packed));
 
-struct cal_target_power_ht {
+struct ar5416_cal_target_power_ht {
 	uint8_t bChannel;
 	uint8_t tPow2x[8];
 } __attribute__ ((packed));
