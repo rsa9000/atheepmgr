@@ -23,17 +23,17 @@ struct eep_9287_priv {
 	struct ar9287_eeprom eep;
 };
 
-static int get_eeprom_ver_9287(struct eep_9287_priv *emp)
+static int eep_9287_get_ver(struct eep_9287_priv *emp)
 {
 	return (emp->eep.baseEepHeader.version >> 12) & 0xF;
 }
 
-static int get_eeprom_rev_9287(struct eep_9287_priv *emp)
+static int eep_9287_get_rev(struct eep_9287_priv *emp)
 {
 	return (emp->eep.baseEepHeader.version) & 0xFFF;
 }
 
-static bool fill_eeprom_9287(struct edump *edump)
+static bool eep_9287_fill_eeprom(struct edump *edump)
 {
 	struct eep_9287_priv *emp = edump->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
@@ -52,7 +52,7 @@ static bool fill_eeprom_9287(struct edump *edump)
 	return true;
 }
 
-static bool check_eeprom_9287(struct edump *edump)
+static bool eep_9287_check_eeprom(struct edump *edump)
 {
 	struct eep_9287_priv *emp = edump->eepmap_priv;
 	struct ar9287_eeprom *eep = &emp->eep;
@@ -146,21 +146,21 @@ static bool check_eeprom_9287(struct edump *edump)
 		}
 	}
 
-	if (sum != 0xffff || get_eeprom_ver_9287(emp) != AR9287_EEP_VER ||
-	    get_eeprom_rev_9287(emp) < AR5416_EEP_NO_BACK_VER) {
+	if (sum != 0xffff || eep_9287_get_ver(emp) != AR9287_EEP_VER ||
+	    eep_9287_get_rev(emp) < AR5416_EEP_NO_BACK_VER) {
 		fprintf(stderr, "Bad EEPROM checksum 0x%x or revision 0x%04x\n",
-			sum, get_eeprom_ver_9287(emp));
+			sum, eep_9287_get_ver(emp));
 		return false;
 	}
 
 	return true;
 }
 
-static void base_eeprom_9287(struct edump *edump)
+static void eep_9287_dump_base_header(struct edump *edump)
 {
 	struct eep_9287_priv *emp = edump->eepmap_priv;
 	struct ar9287_eeprom *eep = &emp->eep;
-	struct base_eep_ar9287_header *pBase = &eep->baseEepHeader;
+	struct ar9287_base_eep_hdr *pBase = &eep->baseEepHeader;
 	uint16_t i;
 
 	printf("\n----------------------\n");
@@ -224,7 +224,7 @@ static void base_eeprom_9287(struct edump *edump)
 	       "OpenLoop PowerControl",
 	       (pBase->openLoopPwrCntl & 0x1));
 
-	if (get_eeprom_rev_9287(emp) >= AR5416_EEP_MINOR_VER_3) {
+	if (eep_9287_get_rev(emp) >= AR5416_EEP_MINOR_VER_3) {
 		printf("%-30s : %s\n",
 		       "Device Type",
 		       sDeviceType[(pBase->deviceType & 0x7)]);
@@ -238,7 +238,7 @@ static void base_eeprom_9287(struct edump *edump)
 	}
 }
 
-static void modal_eeprom_9287(struct edump *edump)
+static void eep_9287_dump_modal_header(struct edump *edump)
 {
 #define PR(_token, _p, _val_fmt, _val)			\
 	do {						\
@@ -249,7 +249,7 @@ static void modal_eeprom_9287(struct edump *edump)
 
 	struct eep_9287_priv *emp = edump->eepmap_priv;
 	struct ar9287_eeprom *eep = &emp->eep;
-	struct modal_eep_ar9287_header *pModal = &eep->modalHeader;
+	struct ar9287_modal_eep_hdr *pModal = &eep->modalHeader;
 
 	printf("\n\n-----------------------\n");
 	printf("| EEPROM Modal Header |\n");
@@ -298,7 +298,7 @@ static void modal_eeprom_9287(struct edump *edump)
 
 }
 
-static void power_info_eeprom_9287(struct edump *edump)
+static void eep_9287_dump_power_info(struct edump *edump)
 {
 }
 
@@ -306,9 +306,9 @@ const struct eepmap eepmap_9287 = {
 	.name = "9287",
 	.desc = "AR9287 chip EEPROM map",
 	.priv_data_sz = sizeof(struct eep_9287_priv),
-	.fill_eeprom  = fill_eeprom_9287,
-	.check_eeprom = check_eeprom_9287,
-	.dump_base_header = base_eeprom_9287,
-	.dump_modal_header = modal_eeprom_9287,
-	.dump_power_info = power_info_eeprom_9287,
+	.fill_eeprom  = eep_9287_fill_eeprom,
+	.check_eeprom = eep_9287_check_eeprom,
+	.dump_base_header = eep_9287_dump_base_header,
+	.dump_modal_header = eep_9287_dump_modal_header,
+	.dump_power_info = eep_9287_dump_power_info,
 };

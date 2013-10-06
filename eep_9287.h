@@ -30,7 +30,7 @@
 #define AR9287_PD_GAIN_ICEPTS           1
 #define AR9287_EEPMISC_WOW              0x02
 
-struct base_eep_ar9287_header {
+struct ar9287_base_eep_hdr {
 	uint16_t length;
 	uint16_t checksum;
 	uint16_t version;
@@ -52,7 +52,7 @@ struct base_eep_ar9287_header {
 	uint8_t futureBase[29];
 } __attribute__ ((packed));
 
-struct modal_eep_ar9287_header {
+struct ar9287_modal_eep_hdr {
 	uint32_t antCtrlChain[AR9287_MAX_CHAINS];
 	uint32_t antCtrlCommon;
 	int8_t antennaGainCh[AR9287_MAX_CHAINS];
@@ -88,34 +88,34 @@ struct modal_eep_ar9287_header {
 	struct spur_chan spurChans[AR_EEPROM_MODAL_SPURS];
 } __attribute__ ((packed));
 
-struct cal_data_op_loop_ar9287 {
+struct ar9287_cal_data_op_loop {
 	uint8_t pwrPdg[2][5];
 	uint8_t vpdPdg[2][5];
 	uint8_t pcdac[2][5];
 	uint8_t empty[2][5];
 } __attribute__ ((packed));
 
-struct cal_data_per_freq_ar9287 {
+struct ar9287_cal_data_per_freq {
 	uint8_t pwrPdg[AR5416_NUM_PD_GAINS][AR9287_PD_GAIN_ICEPTS];
 	uint8_t vpdPdg[AR5416_NUM_PD_GAINS][AR9287_PD_GAIN_ICEPTS];
 } __attribute__ ((packed));
 
-union cal_data_per_freq_ar9287_u {
-	struct cal_data_op_loop_ar9287 calDataOpen;
-	struct cal_data_per_freq_ar9287 calDataClose;
+union ar9287_cal_data_per_freq_u {
+	struct ar9287_cal_data_op_loop calDataOpen;
+	struct ar9287_cal_data_per_freq calDataClose;
 } __attribute__ ((packed));
 
-struct cal_ctl_data_ar9287 {
+struct ar9287_cal_ctl_data {
 	struct cal_ctl_edges
 	ctlEdges[AR9287_MAX_CHAINS][AR9287_NUM_BAND_EDGES];
 } __attribute__ ((packed));
 
 struct ar9287_eeprom {
-	struct base_eep_ar9287_header baseEepHeader;
+	struct ar9287_base_eep_hdr baseEepHeader;
 	uint8_t custData[AR9287_DATA_SZ];
-	struct modal_eep_ar9287_header modalHeader;
+	struct ar9287_modal_eep_hdr modalHeader;
 	uint8_t calFreqPier2G[AR9287_NUM_2G_CAL_PIERS];
-	union cal_data_per_freq_ar9287_u
+	union ar9287_cal_data_per_freq_u
 	calPierData2G[AR9287_MAX_CHAINS][AR9287_NUM_2G_CAL_PIERS];
 	struct cal_target_power_leg
 	calTargetPowerCck[AR9287_NUM_2G_CCK_TARGET_POWERS];
@@ -126,7 +126,7 @@ struct ar9287_eeprom {
 	struct cal_target_power_ht
 	calTargetPower2GHT40[AR9287_NUM_2G_40_TARGET_POWERS];
 	uint8_t ctlIndex[AR9287_NUM_CTLS];
-	struct cal_ctl_data_ar9287 ctlData[AR9287_NUM_CTLS];
+	struct ar9287_cal_ctl_data ctlData[AR9287_NUM_CTLS];
 	uint8_t padding;
 } __attribute__ ((packed));
 
