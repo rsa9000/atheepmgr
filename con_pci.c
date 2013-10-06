@@ -28,29 +28,47 @@ struct pci_priv {
 
 static int is_supported_chipset(struct pci_device *pdev)
 {
+	static const struct {
+		uint16_t dev_id;
+		const char *name;
+	} devs[] = {
+		{AR5416_DEVID_PCI,  "AR5416 PCI"},
+		{AR5416_DEVID_PCIE, "AR5416 PCIe"},
+		{AR9160_DEVID_PCI,  "AR9160 PCI"},
+		{AR9280_DEVID_PCI,  "AR9280 PCI"},
+		{AR9280_DEVID_PCIE, "AR9280 PCIe"},
+		{AR9285_DEVID_PCIE, "AR9285 PCIe"},
+		{AR9287_DEVID_PCI,  "AR9287 PCI"},
+		{AR9287_DEVID_PCIE, "AR9287 PCIe"},
+		{AR9300_DEVID_PCIE, "AR9300 PCIe"},
+		{AR9485_DEVID_PCIE, "AR9485 PCIe"},
+		{AR9580_DEVID_PCIE, "AR9580 PCIe"},
+		{AR9462_DEVID_PCIE, "AR9462 PCIe"},
+		{AR9565_DEVID_PCIE, "AR9565 PCIe"},
+		{AR1111_DEVID_PCIE, "AR1111 PCIe"},
+	};
+	int i;
+
 	if (pdev->vendor_id != ATHEROS_VENDOR_ID)
-		return 0;
+		goto not_supported;
 
-	if ((pdev->device_id != AR5416_DEVID_PCI) &&
-	    (pdev->device_id != AR5416_DEVID_PCIE) &&
-	    (pdev->device_id != AR9160_DEVID_PCI) &&
-	    (pdev->device_id != AR9280_DEVID_PCI) &&
-	    (pdev->device_id != AR9280_DEVID_PCIE) &&
-	    (pdev->device_id != AR9285_DEVID_PCIE) &&
-	    (pdev->device_id != AR9287_DEVID_PCI) &&
-	    (pdev->device_id != AR9287_DEVID_PCIE) &&
-	    (pdev->device_id != AR9300_DEVID_PCIE) &&
-	    (pdev->device_id != AR9485_DEVID_PCIE) &&
-	    (pdev->device_id != AR9580_DEVID_PCIE) &&
-	    (pdev->device_id != AR9462_DEVID_PCIE) &&
-	    (pdev->device_id != AR9565_DEVID_PCIE) &&
-	    (pdev->device_id != AR1111_DEVID_PCIE)) {
-		fprintf(stderr, "Device ID: 0x%x not supported\n", pdev->device_id);
-		return 0;
-	}
+	for (i = 0; i < ARRAY_SIZE(devs); ++i)
+		if (devs[i].dev_id == pdev->device_id)
+			break;
 
-	printf("Found Device ID: 0x%04x\n", pdev->device_id);
+	if (i == ARRAY_SIZE(devs))
+		goto not_supported;
+
+	printf("Found Device: %04x:%04x (%s)\n", pdev->vendor_id,
+		pdev->device_id, devs[i].name);
+
 	return 1;
+
+not_supported:
+	fprintf(stderr, "Device: %04x:%04x not supported\n",
+		pdev->vendor_id, pdev->device_id);
+
+	return 0;
 }
 
 static int pci_device_init(struct edump *edump, struct pci_device *pdev)
