@@ -58,7 +58,7 @@
 #define AR9300_OTP_STATUS_SM_BUSY	0x1
 #define AR9300_OTP_READ_DATA		0x15f1c
 
-struct eepFlags {
+struct ar9300_eepFlags {
 	uint8_t opFlags;
 	uint8_t eepMisc;
 } __attribute__ ((packed));
@@ -78,7 +78,7 @@ struct ar9300_base_eep_hdr {
 	int16_t regDmn[2];
 	/* 4 bits tx and 4 bits rx */
 	uint8_t txrxMask;
-	struct eepFlags opCapFlags;
+	struct ar9300_eepFlags opCapFlags;
 	uint8_t rfSilent;
 	uint8_t blueToothOptions;
 	uint8_t deviceCap;
@@ -159,19 +159,19 @@ struct ar9300_cal_data_per_freq_op_loop {
 	uint8_t rxTempMeas;
 } __attribute__ ((packed));
 
-struct cal_tgt_pow_legacy {
+struct ar9300_cal_tgt_pow_legacy {
 	uint8_t tPow2x[4];
 } __attribute__ ((packed));
 
-struct cal_tgt_pow_ht {
+struct ar9300_cal_tgt_pow_ht {
 	uint8_t tPow2x[14];
 } __attribute__ ((packed));
 
-struct cal_ctl_data_2g {
+struct ar9300_cal_ctl_data_2g {
 	uint8_t ctlEdges[AR9300_NUM_BAND_EDGES_2G];
 } __attribute__ ((packed));
 
-struct cal_ctl_data_5g {
+struct ar9300_cal_ctl_data_5g {
 	uint8_t ctlEdges[AR9300_NUM_BAND_EDGES_5G];
 } __attribute__ ((packed));
 
@@ -209,17 +209,17 @@ struct ar9300_eeprom {
 	uint8_t calTarget_freqbin_2G[AR9300_NUM_2G_20_TARGET_POWERS];
 	uint8_t calTarget_freqbin_2GHT20[AR9300_NUM_2G_20_TARGET_POWERS];
 	uint8_t calTarget_freqbin_2GHT40[AR9300_NUM_2G_40_TARGET_POWERS];
-	struct cal_tgt_pow_legacy
+	struct ar9300_cal_tgt_pow_legacy
 	 calTargetPowerCck[AR9300_NUM_2G_CCK_TARGET_POWERS];
-	struct cal_tgt_pow_legacy
+	struct ar9300_cal_tgt_pow_legacy
 	 calTargetPower2G[AR9300_NUM_2G_20_TARGET_POWERS];
-	struct cal_tgt_pow_ht
+	struct ar9300_cal_tgt_pow_ht
 	 calTargetPower2GHT20[AR9300_NUM_2G_20_TARGET_POWERS];
-	struct cal_tgt_pow_ht
+	struct ar9300_cal_tgt_pow_ht
 	 calTargetPower2GHT40[AR9300_NUM_2G_40_TARGET_POWERS];
 	uint8_t ctlIndex_2G[AR9300_NUM_CTLS_2G];
 	uint8_t ctl_freqbin_2G[AR9300_NUM_CTLS_2G][AR9300_NUM_BAND_EDGES_2G];
-	struct cal_ctl_data_2g ctlPowerData_2G[AR9300_NUM_CTLS_2G];
+	struct ar9300_cal_ctl_data_2g ctlPowerData_2G[AR9300_NUM_CTLS_2G];
 	struct ar9300_modal_eep_hdr modalHeader5G;
 	struct ar9300_BaseExtension_2 base_ext2;
 	uint8_t calFreqPier5G[AR9300_NUM_5G_CAL_PIERS];
@@ -228,15 +228,15 @@ struct ar9300_eeprom {
 	uint8_t calTarget_freqbin_5G[AR9300_NUM_5G_20_TARGET_POWERS];
 	uint8_t calTarget_freqbin_5GHT20[AR9300_NUM_5G_20_TARGET_POWERS];
 	uint8_t calTarget_freqbin_5GHT40[AR9300_NUM_5G_40_TARGET_POWERS];
-	struct cal_tgt_pow_legacy
+	struct ar9300_cal_tgt_pow_legacy
 	 calTargetPower5G[AR9300_NUM_5G_20_TARGET_POWERS];
-	struct cal_tgt_pow_ht
+	struct ar9300_cal_tgt_pow_ht
 	 calTargetPower5GHT20[AR9300_NUM_5G_20_TARGET_POWERS];
-	struct cal_tgt_pow_ht
+	struct ar9300_cal_tgt_pow_ht
 	 calTargetPower5GHT40[AR9300_NUM_5G_40_TARGET_POWERS];
 	uint8_t ctlIndex_5G[AR9300_NUM_CTLS_5G];
 	uint8_t ctl_freqbin_5G[AR9300_NUM_CTLS_5G][AR9300_NUM_BAND_EDGES_5G];
-	struct cal_ctl_data_5g ctlPowerData_5G[AR9300_NUM_CTLS_5G];
+	struct ar9300_cal_ctl_data_5g ctlPowerData_5G[AR9300_NUM_CTLS_5G];
 } __attribute__ ((packed));
 
 #endif
