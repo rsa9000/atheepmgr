@@ -86,6 +86,10 @@ static int pci_device_init(struct edump *edump, struct pci_device *pdev)
 	ppd->size = pdev->regions[0].size;
 	pdev->user_data = (intptr_t)edump;
 
+	printf("Try to map %08lx-%08lx I/O region to the process memory\n",
+	       (unsigned long)ppd->base_addr,
+	       (unsigned long)(ppd->base_addr + ppd->size - 1));
+
 	err = pci_device_map_range(pdev, ppd->base_addr, ppd->size, 0,
 				   &ppd->io_map);
 	if (err) {
