@@ -105,7 +105,7 @@ static bool eep_5416_check(struct edump *edump)
 		sum ^= *eepdata++;
 
 	if (need_swap) {
-		uint32_t integer, j;
+		uint32_t integer;
 		uint16_t word;
 
 		printf("EEPROM Endianness is not native.. Changing.\n");
@@ -134,21 +134,30 @@ static bool eep_5416_check(struct edump *edump)
 		word = bswap_16(eep->baseEepHeader.deviceCap);
 		eep->baseEepHeader.deviceCap = word;
 
-		for (j = 0; j < ARRAY_SIZE(eep->modalHeader); j++) {
-			struct ar5416_modal_eep_hdr *pModal = &eep->modalHeader[j];
+		integer = bswap_32(eep->modalHeader5G.antCtrlCommon);
+		eep->modalHeader5G.antCtrlCommon = integer;
 
-			integer = bswap_32(pModal->antCtrlCommon);
-			pModal->antCtrlCommon = integer;
+		for (i = 0; i < AR5416_MAX_CHAINS; i++) {
+			integer = bswap_32(eep->modalHeader5G.antCtrlChain[i]);
+			eep->modalHeader5G.antCtrlChain[i] = integer;
+		}
 
-			for (i = 0; i < AR5416_MAX_CHAINS; i++) {
-				integer = bswap_32(pModal->antCtrlChain[i]);
-				pModal->antCtrlChain[i] = integer;
-			}
+		for (i = 0; i < AR_EEPROM_MODAL_SPURS; i++) {
+			word = bswap_16(eep->modalHeader5G.spurChans[i].spurChan);
+			eep->modalHeader5G.spurChans[i].spurChan = word;
+		}
 
-			for (i = 0; i < AR_EEPROM_MODAL_SPURS; i++) {
-				word = bswap_16(pModal->spurChans[i].spurChan);
-				pModal->spurChans[i].spurChan = word;
-			}
+		integer = bswap_32(eep->modalHeader2G.antCtrlCommon);
+		eep->modalHeader2G.antCtrlCommon = integer;
+
+		for (i = 0; i < AR5416_MAX_CHAINS; i++) {
+			integer = bswap_32(eep->modalHeader2G.antCtrlChain[i]);
+			eep->modalHeader2G.antCtrlChain[i] = integer;
+		}
+
+		for (i = 0; i < AR_EEPROM_MODAL_SPURS; i++) {
+			word = bswap_16(eep->modalHeader2G.spurChans[i].spurChan);
+			eep->modalHeader2G.spurChans[i].spurChan = word;
 		}
 	}
 
@@ -244,11 +253,11 @@ static void eep_5416_dump_modal_header(struct edump *edump)
 	do {							\
 		printf("%-23s %-8s", (_token), ":");		\
 		if (pBase->opCapFlags & AR5416_OPFLAGS_11G) {	\
-			pModal = &(ar5416Eep->modalHeader[1]);	\
+			pModal = &ar5416Eep->modalHeader2G;	\
 			printf("%s%-6"_val_fmt, _p, (_val));	\
 		}						\
 		if (pBase->opCapFlags & AR5416_OPFLAGS_11A) {	\
-			pModal = &(ar5416Eep->modalHeader[0]);	\
+			pModal = &ar5416Eep->modalHeader5G;	\
 			printf("%8s%"_val_fmt"\n", _p, (_val)); \
 		} else {					\
 			printf("\n");				\
@@ -315,12 +324,12 @@ static void eep_5416_dump_modal_header(struct edump *edump)
 
 	printf("%-23s %-7s", "pdGain Overlap (dB)", ":");
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11G) {
-		pModal = &(ar5416Eep->modalHeader[1]);
+		pModal = &ar5416Eep->modalHeader2G;
 		printf("%2d.%-6d", pModal->pdGainOverlap / 2,
 		       (pModal->pdGainOverlap % 2) * 5);
 	}
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11A) {
-		pModal = &(ar5416Eep->modalHeader[0]);
+		pModal = &ar5416Eep->modalHeader5G;
 		printf("%7d.%d\n", pModal->pdGainOverlap / 2,
 		       (pModal->pdGainOverlap % 2) * 5);
 	} else {
@@ -329,12 +338,12 @@ static void eep_5416_dump_modal_header(struct edump *edump)
 
 	printf("%-23s %-7s", "PWR dec 2 chain", ":");
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11G) {
-		pModal = &(ar5416Eep->modalHeader[1]);
+		pModal = &ar5416Eep->modalHeader2G;
 		printf("%2d.%-6d", pModal->pwrDecreaseFor2Chain / 2,
 		       (pModal->pwrDecreaseFor2Chain % 2) * 5);
 	}
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11A) {
-		pModal = &(ar5416Eep->modalHeader[0]);
+		pModal = &ar5416Eep->modalHeader5G;
 		printf("%7d.%d\n", pModal->pwrDecreaseFor2Chain / 2,
 		       (pModal->pwrDecreaseFor2Chain % 2) * 5);
 	} else {
@@ -343,12 +352,12 @@ static void eep_5416_dump_modal_header(struct edump *edump)
 
 	printf("%-23s %-7s", "PWR dec 3 chain", ":");
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11G) {
-		pModal = &(ar5416Eep->modalHeader[1]);
+		pModal = &ar5416Eep->modalHeader2G;
 		printf("%2d.%-6d", pModal->pwrDecreaseFor3Chain / 2,
 		       (pModal->pwrDecreaseFor3Chain % 2) * 5);
 	}
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11A) {
-		pModal = &(ar5416Eep->modalHeader[0]);
+		pModal = &ar5416Eep->modalHeader5G;
 		printf("%7d.%d\n", pModal->pwrDecreaseFor3Chain / 2,
 		       (pModal->pwrDecreaseFor3Chain % 2) * 5);
 	} else {

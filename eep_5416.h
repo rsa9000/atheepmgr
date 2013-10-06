@@ -112,7 +112,8 @@ struct ar5416_cal_ctl_data {
 struct ar5416_eeprom {
 	struct ar5416_base_eep_hdr baseEepHeader;
 	uint8_t custData[64];
-	struct ar5416_modal_eep_hdr modalHeader[2];
+	struct ar5416_modal_eep_hdr modalHeader5G;
+	struct ar5416_modal_eep_hdr modalHeader2G;
 	uint8_t calFreqPier5G[AR5416_NUM_5G_CAL_PIERS];
 	uint8_t calFreqPier2G[AR5416_NUM_2G_CAL_PIERS];
 	struct ar5416_cal_data_per_freq
