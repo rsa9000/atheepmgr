@@ -54,6 +54,9 @@
 #define AR5416_NUM_PD_GAINS     4
 #define AR5416_PD_GAIN_ICEPTS   5
 
+#define FREQ2FBIN(f, is_2g)	((is_2g) ? (f) - 2300 : ((f) - 4800) / 5)
+#define FBIN2FREQ(b, is_2g)	((is_2g) ? (b) + 2300 : (b) * 5 + 4800)
+
 extern const char * const sDeviceType[];
 
 struct spur_chan {

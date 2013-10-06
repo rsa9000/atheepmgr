@@ -34,8 +34,6 @@
 
 #define AR9300_MAX_CHAINS            3
 
-#define FREQ2FBIN(x, y)         ((y) ? ((x) - 2300) : (((x) - 4800) / 5))
-
 /* Delta from which to start power to pdadc table */
 /* This offset is used in both open loop and closed loop power control
  * schemes. In open loop power control, it is not really needed, but for
