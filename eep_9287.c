@@ -163,9 +163,7 @@ static void eep_9287_dump_base_header(struct edump *edump)
 	struct ar9287_base_eep_hdr *pBase = &eep->baseEepHeader;
 	uint16_t i;
 
-	printf("\n----------------------\n");
-	printf("| EEPROM Base Header |\n");
-	printf("----------------------\n\n");
+	EEP_PRINT_SECT_NAME("EEPROM Base Header");
 
 	printf("%-30s : %2d\n", "Major Version",
 	       pBase->version >> 12);
@@ -236,6 +234,8 @@ static void eep_9287_dump_base_header(struct edump *edump)
 		if ((i % 16) == 15)
 			printf("\n");
 	}
+
+	printf("\n");
 }
 
 static void eep_9287_dump_modal_header(struct edump *edump)
@@ -251,9 +251,7 @@ static void eep_9287_dump_modal_header(struct edump *edump)
 	struct ar9287_eeprom *eep = &emp->eep;
 	struct ar9287_modal_eep_hdr *pModal = &eep->modalHeader;
 
-	printf("\n\n-----------------------\n");
-	printf("| EEPROM Modal Header |\n");
-	printf("-----------------------\n\n");
+	EEP_PRINT_SECT_NAME("EEPROM Modal Header");
 
 	PR("Chain0 Ant. Control", "0x", "X", pModal->antCtrlChain[0]);
 	PR("Chain1 Ant. Control", "0x", "X", pModal->antCtrlChain[1]);
@@ -296,6 +294,7 @@ static void eep_9287_dump_modal_header(struct edump *edump)
 	PR("QAM OutputBias", "", "d", pModal->ob_qam);
 	PR("PAL_OFF OutputBias", "", "d", pModal->ob_pal_off);
 
+	printf("\n");
 }
 
 static void eep_9287_dump_power_info(struct edump *edump)

@@ -169,9 +169,7 @@ static void eep_9285_dump_base_header(struct edump *edump)
 	struct ar9285_base_eep_hdr *pBase = &eep->baseEepHeader;
 	uint16_t i;
 
-	printf("\n----------------------\n");
-	printf("| EEPROM Base Header |\n");
-	printf("----------------------\n\n");
+	EEP_PRINT_SECT_NAME("EEPROM Base Header");
 
 	printf("%-30s : %2d\n", "Major Version",
 	       pBase->version >> 12);
@@ -236,6 +234,8 @@ static void eep_9285_dump_base_header(struct edump *edump)
 		if ((i % 16) == 15)
 			printf("\n");
 	}
+
+	printf("\n");
 }
 
 static void eep_9285_dump_modal_header(struct edump *edump)
@@ -251,9 +251,7 @@ static void eep_9285_dump_modal_header(struct edump *edump)
 	struct ar9285_eeprom *eep = &emp->eep;
 	struct ar9285_modal_eep_hdr *pModal = &eep->modalHeader;
 
-	printf("\n\n-----------------------\n");
-	printf("| EEPROM Modal Header |\n");
-	printf("-----------------------\n\n");
+	EEP_PRINT_SECT_NAME("EEPROM Modal Header");
 
 	PR("Ant Chain 0", "0x", "X", pModal->antCtrlChain[0]);
 	PR("Antenna Common", "0x", "X", pModal->antCtrlCommon);
@@ -301,6 +299,8 @@ static void eep_9285_dump_modal_header(struct edump *edump)
 	PR("Driver 2 Bias QPSK", "", "d", pModal->db2_2);
 	PR("Driver 2 Bias 16QAM", "", "d", pModal->db2_3);
 	PR("Driver 2 Bias 64QAM", "", "d", pModal->db2_4);
+
+	printf("\n");
 }
 
 static void eep_9285_dump_power_info(struct edump *edump)

@@ -80,4 +80,9 @@ struct ar5416_cal_target_power_ht {
 	uint8_t tPow2x[8];
 } __attribute__ ((packed));
 
+#define EEP_PRINT_SECT_NAME(__name)			\
+		printf("\n.----------------------.\n");	\
+		printf("| %-20s |\n", __name);		\
+		printf("'----------------------'\n\n");
+
 #endif /* EEP_COMMON_H */

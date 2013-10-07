@@ -3246,9 +3246,7 @@ static void eep_9300_dump_base_header(struct edump *edump)
 	struct ar9300_eeprom *eep = &emp->eep;
 	struct ar9300_base_eep_hdr *pBase = &eep->baseEepHeader;
 
-	printf("\n----------------------\n");
-	printf("| EEPROM Base Header |\n");
-	printf("----------------------\n\n");
+	EEP_PRINT_SECT_NAME("EEPROM Base Header");
 
 	printf("%-30s : %2d\n", "Version", eep->eepromVersion);
 	printf("%-30s : 0x%04X\n", "RegDomain1", pBase->regDmn[0]);
@@ -3308,6 +3306,8 @@ static void eep_9300_dump_base_header(struct edump *edump)
 	printf("%-30s : %d\n", "Tx Gain", pBase->txrxgain >> 4);
 	printf("%-30s : %d\n", "Rx Gain", pBase->txrxgain & 0xf);
 	printf("%-30s : %d\n", "SW Reg", pBase->swreg);
+
+	printf("\n");
 }
 
 static void eep_9300_dump_modal_header(struct edump *edump)
@@ -3332,9 +3332,7 @@ static void eep_9300_dump_modal_header(struct edump *edump)
 	struct ar9300_base_eep_hdr *pBase = &eep->baseEepHeader;
 	struct ar9300_modal_eep_hdr *pModal = NULL;
 
-	printf("\n\n-----------------------\n");
-	printf("| EEPROM Modal Header |\n");
-	printf("-----------------------\n\n");
+	EEP_PRINT_SECT_NAME("EEPROM Modal Header");
 
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11G)
 		printf("%34s", "2G");
@@ -3419,6 +3417,8 @@ static void eep_9300_dump_modal_header(struct edump *edump)
 	PR("TX frame to xpa on", "", "d", pModal->txFrameToXpaOn);
 	PR("TxClip", "", "d", pModal->txClip);
 	PR("ADC Desired Size", "", "d", pModal->adcDesiredSize);
+
+	printf("\n");
 
 #undef PR
 }

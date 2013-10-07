@@ -178,9 +178,7 @@ static void eep_5416_dump_base_header(struct edump *edump)
 	struct ar5416_base_eep_hdr *pBase = &ar5416Eep->baseEepHeader;
 	uint16_t i;
 
-	printf("\n----------------------\n");
-	printf("| EEPROM Base Header |\n");
-	printf("----------------------\n\n");
+	EEP_PRINT_SECT_NAME("EEPROM Base Header");
 
 	printf("%-30s : %2d\n", "Major Version",
 	       pBase->version >> 12);
@@ -245,6 +243,8 @@ static void eep_5416_dump_base_header(struct edump *edump)
 		if ((i % 16) == 15)
 			printf("\n");
 	}
+
+	printf("\n");
 }
 
 static void eep_5416_dump_modal_header(struct edump *edump)
@@ -269,9 +269,7 @@ static void eep_5416_dump_modal_header(struct edump *edump)
 	struct ar5416_base_eep_hdr *pBase = &ar5416Eep->baseEepHeader;
 	struct ar5416_modal_eep_hdr *pModal = NULL;
 
-	printf("\n\n-----------------------\n");
-	printf("| EEPROM Modal Header |\n");
-	printf("-----------------------\n\n");
+	EEP_PRINT_SECT_NAME("EEPROM Modal Header");
 
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11G)
 		printf("%34s", "2G");
@@ -379,6 +377,8 @@ static void eep_5416_dump_modal_header(struct edump *edump)
 		PR("HT40PowerIncForPDADC", "", "d", pModal->ht40PowerIncForPdadc);
 		PR("bswAtten Chain 0", "", "d", pModal->bswAtten[0]);
 	}
+
+	printf("\n");
 
 #undef PR
 }
