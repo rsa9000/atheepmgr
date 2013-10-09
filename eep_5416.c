@@ -218,6 +218,11 @@ static void eep_5416_dump_base_header(struct edump *edump)
 	printf("%-30s : %d\n",
 	       "OpFlags(Disable 5Ghz HT40)",
 	       !!(pBase->opCapFlags & AR5416_OPFLAGS_N_5G_HT40));
+	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_19) {
+		printf("%-30s : %s\n",
+		       "OpenLoopPwrCntl",
+		       pBase->openLoopPwrCntl ? "true" : "false");
+	}
 	printf("%-30s : %d\n",
 	       "Big Endian",
 	       !!(pBase->eepMisc & AR5416_EEPMISC_BIG_ENDIAN));
