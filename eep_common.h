@@ -53,11 +53,18 @@
 #define AR_EEPROM_MODAL_SPURS   5
 #define AR5416_NUM_PD_GAINS     4
 #define AR5416_PD_GAIN_ICEPTS   5
+#define AR5416_BCHAN_UNUSED			0xff
+
+#define AR5416_NUM_TARGET_POWER_RATES_LEG	4
+#define AR5416_NUM_TARGET_POWER_RATES_HT	8
 
 #define FREQ2FBIN(f, is_2g)	((is_2g) ? (f) - 2300 : ((f) - 4800) / 5)
 #define FBIN2FREQ(b, is_2g)	((is_2g) ? (b) + 2300 : (b) * 5 + 4800)
 
 extern const char * const sDeviceType[];
+extern const char * const eep_rates_cck[AR5416_NUM_TARGET_POWER_RATES_LEG];
+extern const char * const eep_rates_ofdm[AR5416_NUM_TARGET_POWER_RATES_LEG];
+extern const char * const eep_rates_ht[AR5416_NUM_TARGET_POWER_RATES_HT];
 
 struct ar5416_spur_chan {
 	uint16_t spurChan;
@@ -72,17 +79,28 @@ struct ar5416_cal_ctl_edges {
 
 struct ar5416_cal_target_power_leg {
 	uint8_t bChannel;
-	uint8_t tPow2x[4];
+	uint8_t tPow2x[AR5416_NUM_TARGET_POWER_RATES_LEG];
 } __attribute__ ((packed));
 
 struct ar5416_cal_target_power_ht {
 	uint8_t bChannel;
-	uint8_t tPow2x[8];
+	uint8_t tPow2x[AR5416_NUM_TARGET_POWER_RATES_HT];
+} __attribute__ ((packed));
+
+struct ar5416_cal_target_power {
+	uint8_t bChannel;
+	uint8_t tPow2x[];
 } __attribute__ ((packed));
 
 #define EEP_PRINT_SECT_NAME(__name)			\
 		printf("\n.----------------------.\n");	\
 		printf("| %-20s |\n", __name);		\
 		printf("'----------------------'\n\n");
+#define EEP_PRINT_SUBSECT_NAME(__name)			\
+		printf("[%s]\n\n", __name);
+
+void ar5416_dump_target_power(const struct ar5416_cal_target_power *pow,
+			      int maxchans, const char * const rates[],
+			      int nrates, int is_2g);
 
 #endif /* EEP_COMMON_H */

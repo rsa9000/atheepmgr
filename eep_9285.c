@@ -305,6 +305,24 @@ static void eep_9285_dump_modal_header(struct edump *edump)
 
 static void eep_9285_dump_power_info(struct edump *edump)
 {
+#define PR_TARGET_POWER(__pref, __field, __rates)			\
+		EEP_PRINT_SUBSECT_NAME(__pref " per-rate target power");\
+		ar5416_dump_target_power((void *)eep->__field,		\
+				 ARRAY_SIZE(eep->__field),		\
+				 __rates, ARRAY_SIZE(__rates), 1);	\
+		printf("\n");
+
+	struct eep_9285_priv *emp = edump->eepmap_priv;
+	const struct ar9285_eeprom *eep = &emp->eep;
+
+	EEP_PRINT_SECT_NAME("EEPROM Power Info");
+
+	PR_TARGET_POWER("2 GHz CCK", calTargetPowerCck, eep_rates_cck);
+	PR_TARGET_POWER("2 GHz OFDM", calTargetPower2G, eep_rates_ofdm);
+	PR_TARGET_POWER("2 GHz HT20", calTargetPower2GHT20, eep_rates_ht);
+	PR_TARGET_POWER("2 GHz HT40", calTargetPower2GHT40, eep_rates_ht);
+
+#undef PR_TARGET_POWER
 }
 
 const struct eepmap eepmap_9285 = {
