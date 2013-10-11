@@ -388,8 +388,116 @@ static void eep_5416_dump_modal_header(struct edump *edump)
 #undef PR
 }
 
+static void
+eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
+			     int gainmask)
+{
+	const char * const gains[AR5416_NUM_PD_GAINS] = {"0.5", "1", "2", "4"};
+	struct {
+		uint8_t pwr;
+		uint8_t vpd[AR5416_NUM_PD_GAINS];
+	} merged[AR5416_PD_GAIN_ICEPTS * AR5416_NUM_PD_GAINS];
+	int gii[AR5416_NUM_PD_GAINS];	/* Array of indexes for merge */
+	int gain, pwr, npwr;		/* Indexes */
+	uint8_t pwrmin;
+
+	/* Merge calibration per-gain power lists to filter duplicates */
+	memset(merged, 0xff, sizeof(merged));
+	memset(gii, 0x00, sizeof(gii));
+	for (pwr = 0; pwr < ARRAY_SIZE(merged); ++pwr) {
+		pwrmin = 0xff;
+		for (gain = 0; gain < ARRAY_SIZE(gii); ++gain) {
+			if (!(gainmask & (1 << gain)) ||
+			    gii[gain] >= AR5416_PD_GAIN_ICEPTS)
+				continue;
+			if (item->pwrPdg[gain][gii[gain]] < pwrmin)
+				pwrmin = item->pwrPdg[gain][gii[gain]];
+		}
+		if (pwrmin == 0xff)
+			break;
+		merged[pwr].pwr = pwrmin;
+		for (gain = 0; gain < ARRAY_SIZE(gii); ++gain) {
+			if (!(gainmask & (1 << gain)) ||
+			    gii[gain] >= AR5416_PD_GAIN_ICEPTS ||
+			    item->pwrPdg[gain][gii[gain]] != pwrmin)
+				continue;
+			merged[pwr].vpd[gain] = item->vpdPdg[gain][gii[gain]];
+			gii[gain]++;
+		}
+	}
+	npwr = pwr;
+
+	/* Print merged data */
+	printf("      Tx Power, dBm:");
+	for (pwr = 0; pwr < npwr; ++pwr)
+		printf(" %5.2f", (double)merged[pwr].pwr / 4);
+	printf("\n");
+	printf("      --------------");
+	for (pwr = 0; pwr < npwr; ++pwr)
+		printf(" -----");
+	printf("\n");
+	for (gain = 0; gain < AR5416_NUM_PD_GAINS; ++gain) {
+		if (!(gainmask & (1 << gain)))
+			continue;
+		printf("      Gain x%-3s VPD:", gains[gain]);
+		for (pwr = 0; pwr < npwr; ++pwr) {
+			if (merged[pwr].vpd[gain] == 0xff)
+				printf("      ");
+			else
+				printf("   %3u", merged[pwr].vpd[gain]);
+		}
+		printf("\n");
+	}
+}
+
+static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
+				    const struct ar5416_cal_data_per_freq *cal,
+				    int is_2g, int chainmask, int gainmask)
+{
+	const struct ar5416_cal_data_per_freq *item;
+	int chain, freq;	/* Indexes */
+
+	for (chain = 0; chain < AR5416_MAX_CHAINS; ++chain) {
+		if (!(chainmask & (1 << chain)))
+			continue;
+		printf("  Chain %d:\n", chain);
+		printf("\n");
+		for (freq = 0; freq < maxfreq; ++freq) {
+			if (freqs[freq] == AR5416_BCHAN_UNUSED)
+				break;
+
+			printf("    %4u MHz:\n", FBIN2FREQ(freqs[freq], is_2g));
+			item = cal + (chain * maxfreq + freq);
+
+			eep_5416_dump_closeloop_item(item, gainmask);
+
+			printf("\n");
+		}
+	}
+}
+
+static void eep_5416_dump_pd_cal(const uint8_t *freq, int maxfreq,
+				 const void *caldata, int is_openloop,
+				 int is_2g, int chainmask, int gainmask)
+{
+	if (is_openloop) {
+		printf("  Open-loop PD calibration dumping is not supported\n");
+	} else {
+		eep_5416_dump_closeloop(freq, maxfreq, caldata, is_2g,
+					chainmask, gainmask);
+	}
+}
+
 static void eep_5416_dump_power_info(struct edump *edump)
 {
+#define PR_PD_CAL(__pref, __band, __is_2g)				\
+		EEP_PRINT_SUBSECT_NAME(__pref " per-freq PD cal. data");\
+		eep_5416_dump_pd_cal(eep->calFreqPier ## __band,	\
+				     ARRAY_SIZE(eep->calFreqPier ## __band),\
+				     eep->calPierData ## __band, is_openloop,\
+				     __is_2g, eep->baseEepHeader.txMask,\
+				     (eep->modalHeader ## __band).xpdGain);\
+		printf("\n");
 #define PR_TARGET_POWER(__pref, __field, __rates, __is_2g)		\
 		EEP_PRINT_SUBSECT_NAME(__pref " per-rate target power");\
 		ar5416_dump_target_power((void *)eep->__field,		\
@@ -399,8 +507,16 @@ static void eep_5416_dump_power_info(struct edump *edump)
 
 	struct eep_5416_priv *emp = edump->eepmap_priv;
 	const struct ar5416_eeprom *eep = &emp->eep;
+	int is_openloop = 0;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
+
+	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_19 &&
+	    eep->baseEepHeader.openLoopPwrCntl & 0x01)
+		is_openloop = 1;
+
+	PR_PD_CAL("2 GHz", 2G, 1);
+	PR_PD_CAL("5 GHz", 5G, 0);
 
 	PR_TARGET_POWER("2 GHz CCK", calTargetPowerCck, eep_rates_cck, 1);
 	PR_TARGET_POWER("2 GHz OFDM", calTargetPower2G, eep_rates_ofdm, 1);
@@ -412,6 +528,7 @@ static void eep_5416_dump_power_info(struct edump *edump)
 	PR_TARGET_POWER("5 GHz HT40", calTargetPower5GHT40, eep_rates_ht, 0);
 
 #undef PR_TARGET_POWER
+#undef PR_PD_CAL
 }
 
 const struct eepmap eepmap_5416 = {
