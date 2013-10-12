@@ -59,7 +59,7 @@ struct ar9285_modal_eep_hdr {
 	uint8_t txEndToRxOn;
 	uint8_t txFrameToXpaOn;
 	uint8_t thresh62;
-	uint8_t noiseFloorThreshCh[AR9285_MAX_CHAINS];
+	int8_t noiseFloorThreshCh[AR9285_MAX_CHAINS];
 	uint8_t xpdGain;
 	uint8_t xpd;
 	uint8_t iqCalICh[AR9285_MAX_CHAINS];
