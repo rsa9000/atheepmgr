@@ -191,6 +191,12 @@ static void eep_9285_dump_base_header(struct edump *edump)
 	       "TX Mask", pBase->txMask);
 	printf("%-30s : 0x%04X\n",
 	       "RX Mask", pBase->rxMask);
+	if (pBase->rfSilent & AR5416_RFSILENT_ENABLED)
+		printf("%-30s : GPIO:%u Pol:%c\n", "RfSilent",
+		       MS(pBase->rfSilent, AR5416_RFSILENT_GPIO_SEL),
+		       MS(pBase->rfSilent, AR5416_RFSILENT_POLARITY)?'H':'L');
+	else
+		printf("%-30s : disabled\n", "RfSilent");
 	printf("%-30s : %d\n",
 	       "OpFlags(5GHz)",
 	       !!(pBase->opCapFlags & AR5416_OPFLAGS_11A));
