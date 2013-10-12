@@ -260,138 +260,110 @@ static void eep_5416_dump_base_header(struct edump *edump)
 
 static void eep_5416_dump_modal_header(struct edump *edump)
 {
-#define PR(_token, _p, _val_fmt, _val)				\
+#define _PR(_token, _fmt, _field)				\
 	do {							\
-		printf("%-23s %-8s", (_token), ":");		\
+		printf("%-23s :", _token);			\
 		if (pBase->opCapFlags & AR5416_OPFLAGS_11G) {	\
-			pModal = &ar5416Eep->modalHeader2G;	\
-			printf("%s%-6"_val_fmt, _p, (_val));	\
+			snprintf(buf, sizeof(buf), _fmt,	\
+				 ar5416Eep->modalHeader2G._field);\
+			printf("%7s%-7s", "", buf);		\
 		}						\
 		if (pBase->opCapFlags & AR5416_OPFLAGS_11A) {	\
-			pModal = &ar5416Eep->modalHeader5G;	\
-			printf("%8s%"_val_fmt"\n", _p, (_val)); \
-		} else {					\
-			printf("\n");				\
+			snprintf(buf, sizeof(buf), _fmt,	\
+				 ar5416Eep->modalHeader5G._field);\
+			printf("%7s%s", "", buf);		\
 		}						\
+		printf("\n");					\
 	} while(0)
+#define PR_DEC(_token, _field)					\
+		_PR(_token, "%d", _field)
+#define PR_HEX(_token, _field)					\
+		_PR(_token, "0x%X", _field)
+#define PR_PWR(_token, _field)					\
+		_PR(_token, "%.1f", _field / (double)2.0);
 
 	struct eep_5416_priv *emp = edump->eepmap_priv;
 	struct ar5416_eeprom *ar5416Eep = &emp->eep;
 	struct ar5416_base_eep_hdr *pBase = &ar5416Eep->baseEepHeader;
-	struct ar5416_modal_eep_hdr *pModal = NULL;
+	char buf[0x10];
 
 	EEP_PRINT_SECT_NAME("EEPROM Modal Header");
 
+	printf("%20s", "");
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11G)
-		printf("%34s", "2G");
+		printf("%14s", "2G");
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11A)
-		printf("%16s", "5G\n\n");
-	else
-		printf("\n\n");
+		printf("%14s", "5G");
+	printf("\n\n");
 
-	PR("Ant Chain 0", "0x", "X", pModal->antCtrlChain[0]);
-	PR("Ant Chain 1", "0x", "X", pModal->antCtrlChain[1]);
-	PR("Ant Chain 2", "0x", "X", pModal->antCtrlChain[2]);
-	PR("Antenna Common", "0x", "X", pModal->antCtrlCommon);
-	PR("Antenna Gain Chain 0", "", "d", pModal->antennaGainCh[0]);
-	PR("Antenna Gain Chain 1", "", "d", pModal->antennaGainCh[1]);
-	PR("Antenna Gain Chain 2", "", "d", pModal->antennaGainCh[2]);
-	PR("Switch Settling", "", "d", pModal->switchSettling);
-	PR("TxRxAttenuation Ch 0", "", "d", pModal->txRxAttenCh[0]);
-	PR("TxRxAttenuation Ch 1", "", "d", pModal->txRxAttenCh[1]);
-	PR("TxRxAttenuation Ch 2", "", "d", pModal->txRxAttenCh[2]);
-	PR("RxTxMargin Chain 0", "", "d", pModal->rxTxMarginCh[0]);
-	PR("RxTxMargin Chain 1", "", "d", pModal->rxTxMarginCh[1]);
-	PR("RxTxMargin Chain 2", "", "d", pModal->rxTxMarginCh[2]);
-	PR("ADC Desired Size", "", "d", pModal->adcDesiredSize);
-	PR("PGA Desired Size", "", "d", pModal->pgaDesiredSize);
-	PR("TX end to xlna on", "", "d", pModal->txEndToRxOn);
-	PR("xlna gain Chain 0", "", "d", pModal->xlnaGainCh[0]);
-	PR("xlna gain Chain 1", "", "d", pModal->xlnaGainCh[1]);
-	PR("xlna gain Chain 2", "", "d", pModal->xlnaGainCh[2]);
-	PR("TX end to xpa off", "", "d", pModal->txEndToXpaOff);
-	PR("TX frame to xpa on", "", "d", pModal->txFrameToXpaOn);
-	PR("THRESH62", "", "d", pModal->thresh62);
-	PR("NF Thresh 0", "", "d", pModal->noiseFloorThreshCh[0]);
-	PR("NF Thresh 1", "", "d", pModal->noiseFloorThreshCh[1]);
-	PR("NF Thresh 2", "", "d", pModal->noiseFloorThreshCh[2]);
-	PR("Xpd Gain Mask", "0x", "X", pModal->xpdGain);
-	PR("Xpd", "", "d", pModal->xpd);
-	PR("IQ Cal I Chain 0", "", "d", pModal->iqCalICh[0]);
-	PR("IQ Cal I Chain 1", "", "d", pModal->iqCalICh[1]);
-	PR("IQ Cal I Chain 2", "", "d", pModal->iqCalICh[2]);
-	PR("IQ Cal Q Chain 0", "", "d", pModal->iqCalQCh[0]);
-	PR("IQ Cal Q Chain 1", "", "d", pModal->iqCalQCh[1]);
-	PR("IQ Cal Q Chain 2", "", "d", pModal->iqCalQCh[2]);
-	PR("Analog Output Bias(ob)", "", "d", pModal->ob);
-	PR("Analog Driver Bias(db)", "", "d", pModal->db);
-	PR("Xpa bias level", "", "d", pModal->xpaBiasLvl);
-	PR("Xpa bias level Freq 0", "", "d", pModal->xpaBiasLvlFreq[0]);
-	PR("Xpa bias level Freq 1", "", "d", pModal->xpaBiasLvlFreq[1]);
-	PR("Xpa bias level Freq 2", "", "d", pModal->xpaBiasLvlFreq[2]);
-	PR("LNA Control", "0x", "X", pModal->lna_ctl);
+	PR_HEX("Ant Chain 0", antCtrlChain[0]);
+	PR_HEX("Ant Chain 1", antCtrlChain[1]);
+	PR_HEX("Ant Chain 2", antCtrlChain[2]);
+	PR_HEX("Antenna Common", antCtrlCommon);
+	PR_DEC("Antenna Gain Chain 0", antennaGainCh[0]);
+	PR_DEC("Antenna Gain Chain 1", antennaGainCh[1]);
+	PR_DEC("Antenna Gain Chain 2", antennaGainCh[2]);
+	PR_DEC("Switch Settling", switchSettling);
+	PR_DEC("TxRxAttenuation Ch 0", txRxAttenCh[0]);
+	PR_DEC("TxRxAttenuation Ch 1", txRxAttenCh[1]);
+	PR_DEC("TxRxAttenuation Ch 2", txRxAttenCh[2]);
+	PR_DEC("RxTxMargin Chain 0", rxTxMarginCh[0]);
+	PR_DEC("RxTxMargin Chain 1", rxTxMarginCh[1]);
+	PR_DEC("RxTxMargin Chain 2", rxTxMarginCh[2]);
+	PR_DEC("ADC Desired Size", adcDesiredSize);
+	PR_DEC("PGA Desired Size", pgaDesiredSize);
+	PR_DEC("TX end to xlna on", txEndToRxOn);
+	PR_DEC("xlna gain Chain 0", xlnaGainCh[0]);
+	PR_DEC("xlna gain Chain 1", xlnaGainCh[1]);
+	PR_DEC("xlna gain Chain 2", xlnaGainCh[2]);
+	PR_DEC("TX end to xpa off", txEndToXpaOff);
+	PR_DEC("TX frame to xpa on", txFrameToXpaOn);
+	PR_DEC("THRESH62", thresh62);
+	PR_DEC("NF Thresh 0", noiseFloorThreshCh[0]);
+	PR_DEC("NF Thresh 1", noiseFloorThreshCh[1]);
+	PR_DEC("NF Thresh 2", noiseFloorThreshCh[2]);
+	PR_HEX("Xpd Gain Mask", xpdGain);
+	PR_DEC("Xpd", xpd);
+	PR_DEC("IQ Cal I Chain 0", iqCalICh[0]);
+	PR_DEC("IQ Cal I Chain 1", iqCalICh[1]);
+	PR_DEC("IQ Cal I Chain 2", iqCalICh[2]);
+	PR_DEC("IQ Cal Q Chain 0", iqCalQCh[0]);
+	PR_DEC("IQ Cal Q Chain 1", iqCalQCh[1]);
+	PR_DEC("IQ Cal Q Chain 2", iqCalQCh[2]);
+	PR_DEC("Analog Output Bias(ob)", ob);
+	PR_DEC("Analog Driver Bias(db)", db);
+	PR_DEC("Xpa bias level", xpaBiasLvl);
+	PR_DEC("Xpa bias level Freq 0", xpaBiasLvlFreq[0]);
+	PR_DEC("Xpa bias level Freq 1", xpaBiasLvlFreq[1]);
+	PR_DEC("Xpa bias level Freq 2", xpaBiasLvlFreq[2]);
+	PR_HEX("LNA Control", lna_ctl);
 
-	printf("%-23s %-7s", "pdGain Overlap (dB)", ":");
-	if (pBase->opCapFlags & AR5416_OPFLAGS_11G) {
-		pModal = &ar5416Eep->modalHeader2G;
-		printf("%2d.%-6d", pModal->pdGainOverlap / 2,
-		       (pModal->pdGainOverlap % 2) * 5);
-	}
-	if (pBase->opCapFlags & AR5416_OPFLAGS_11A) {
-		pModal = &ar5416Eep->modalHeader5G;
-		printf("%7d.%d\n", pModal->pdGainOverlap / 2,
-		       (pModal->pdGainOverlap % 2) * 5);
-	} else {
-		printf("\n");
-	}
-
-	printf("%-23s %-7s", "PWR dec 2 chain", ":");
-	if (pBase->opCapFlags & AR5416_OPFLAGS_11G) {
-		pModal = &ar5416Eep->modalHeader2G;
-		printf("%2d.%-6d", pModal->pwrDecreaseFor2Chain / 2,
-		       (pModal->pwrDecreaseFor2Chain % 2) * 5);
-	}
-	if (pBase->opCapFlags & AR5416_OPFLAGS_11A) {
-		pModal = &ar5416Eep->modalHeader5G;
-		printf("%7d.%d\n", pModal->pwrDecreaseFor2Chain / 2,
-		       (pModal->pwrDecreaseFor2Chain % 2) * 5);
-	} else {
-		printf("\n");
-	}
-
-	printf("%-23s %-7s", "PWR dec 3 chain", ":");
-	if (pBase->opCapFlags & AR5416_OPFLAGS_11G) {
-		pModal = &ar5416Eep->modalHeader2G;
-		printf("%2d.%-6d", pModal->pwrDecreaseFor3Chain / 2,
-		       (pModal->pwrDecreaseFor3Chain % 2) * 5);
-	}
-	if (pBase->opCapFlags & AR5416_OPFLAGS_11A) {
-		pModal = &ar5416Eep->modalHeader5G;
-		printf("%7d.%d\n", pModal->pwrDecreaseFor3Chain / 2,
-		       (pModal->pwrDecreaseFor3Chain % 2) * 5);
-	} else {
-		printf("\n");
-	}
+	PR_PWR("pdGain Overlap (dB)", pdGainOverlap);
+	PR_PWR("PWR dec 2 chain", pwrDecreaseFor2Chain);
+	PR_PWR("PWR dec 3 chain", pwrDecreaseFor3Chain);
 
 	if (AR_SREV_9280_20_OR_LATER(edump)) {
-		PR("xatten2Db Chain 0", "", "d", pModal->xatten2Db[0]);
-		PR("xatten2Db Chain 1", "", "d", pModal->xatten2Db[1]);
-		PR("xatten2Margin Chain 0", "", "d", pModal->xatten2Margin[0]);
-		PR("xatten2Margin Chain 1", "", "d", pModal->xatten2Margin[1]);
-		PR("ob_ch1", "", "d", pModal->ob_ch1);
-		PR("db_ch1", "", "d", pModal->db_ch1);
+		PR_DEC("xatten2Db Chain 0", xatten2Db[0]);
+		PR_DEC("xatten2Db Chain 1", xatten2Db[1]);
+		PR_DEC("xatten2Margin Chain 0", xatten2Margin[0]);
+		PR_DEC("xatten2Margin Chain 1", xatten2Margin[1]);
+		PR_DEC("ob_ch1", ob_ch1);
+		PR_DEC("db_ch1", db_ch1);
 	}
 
 	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_3) {
-		PR("txFrameToDataStart", "", "d", pModal->txFrameToDataStart);
-		PR("txFrameToPaOn", "", "d", pModal->txFrameToPaOn);
-		PR("HT40PowerIncForPDADC", "", "d", pModal->ht40PowerIncForPdadc);
-		PR("bswAtten Chain 0", "", "d", pModal->bswAtten[0]);
+		PR_DEC("txFrameToDataStart", txFrameToDataStart);
+		PR_DEC("txFrameToPaOn", txFrameToPaOn);
+		PR_DEC("HT40PowerIncForPDADC", ht40PowerIncForPdadc);
+		PR_DEC("bswAtten Chain 0", bswAtten[0]);
 	}
 
 	printf("\n");
 
-#undef PR
+#undef PR_PWR
+#undef PR_HEX
+#undef PR_DEC
+#undef _PR
 }
 
 static void
