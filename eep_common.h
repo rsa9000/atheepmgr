@@ -59,6 +59,9 @@
 #define AR5416_NUM_TARGET_POWER_RATES_LEG	4
 #define AR5416_NUM_TARGET_POWER_RATES_HT	8
 
+#define CTL_EDGE_POWER(__ctl)			((__ctl) & 0x3f)
+#define CTL_EDGE_FLAGS(__ctl)			(((__ctl) & 0xc0) >> 6)
+
 #define FREQ2FBIN(f, is_2g)	((is_2g) ? (f) - 2300 : ((f) - 4800) / 5)
 #define FBIN2FREQ(b, is_2g)	((is_2g) ? (b) + 2300 : (b) * 5 + 4800)
 
@@ -66,6 +69,8 @@ extern const char * const sDeviceType[];
 extern const char * const eep_rates_cck[AR5416_NUM_TARGET_POWER_RATES_LEG];
 extern const char * const eep_rates_ofdm[AR5416_NUM_TARGET_POWER_RATES_LEG];
 extern const char * const eep_rates_ht[AR5416_NUM_TARGET_POWER_RATES_HT];
+extern const char * const eep_ctldomains[];
+extern const char * const eep_ctlmodes[];
 
 struct ar5416_spur_chan {
 	uint16_t spurChan;
@@ -103,5 +108,8 @@ struct ar5416_cal_target_power {
 void ar5416_dump_target_power(const struct ar5416_cal_target_power *pow,
 			      int maxchans, const char * const rates[],
 			      int nrates, int is_2g);
+void ar5416_dump_ctl(const uint8_t *index,
+		     const struct ar5416_cal_ctl_edges *data,
+		     int maxctl, int maxchains, int maxradios, int maxedges);
 
 #endif /* EEP_COMMON_H */

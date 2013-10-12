@@ -308,6 +308,7 @@ static void eep_9287_dump_power_info(struct edump *edump)
 
 	struct eep_9287_priv *emp = edump->eepmap_priv;
 	const struct ar9287_eeprom *eep = &emp->eep;
+	int maxradios = 0, i;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
 
@@ -315,6 +316,15 @@ static void eep_9287_dump_power_info(struct edump *edump)
 	PR_TARGET_POWER("2 GHz OFDM", calTargetPower2G, eep_rates_ofdm);
 	PR_TARGET_POWER("2 GHz HT20", calTargetPower2GHT20, eep_rates_ht);
 	PR_TARGET_POWER("2 GHz HT40", calTargetPower2GHT40, eep_rates_ht);
+
+	EEP_PRINT_SUBSECT_NAME("CTL data");
+	for (i = 0; i < AR9287_MAX_CHAINS; ++i) {
+		if (eep->baseEepHeader.txMask & (1 << i))
+			maxradios++;
+	}
+	ar5416_dump_ctl(eep->ctlIndex, &eep->ctlData[0].ctlEdges[0][0],
+			AR9287_NUM_CTLS, AR9287_MAX_CHAINS, maxradios,
+			AR9287_NUM_BAND_EDGES);
 
 #undef PR_TARGET_POWER
 }

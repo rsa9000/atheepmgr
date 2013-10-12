@@ -507,7 +507,7 @@ static void eep_5416_dump_power_info(struct edump *edump)
 
 	struct eep_5416_priv *emp = edump->eepmap_priv;
 	const struct ar5416_eeprom *eep = &emp->eep;
-	int is_openloop = 0;
+	int is_openloop = 0, maxradios = 0, i;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
 
@@ -526,6 +526,15 @@ static void eep_5416_dump_power_info(struct edump *edump)
 	PR_TARGET_POWER("5 GHz OFDM", calTargetPower5G, eep_rates_ofdm, 0);
 	PR_TARGET_POWER("5 GHz HT20", calTargetPower5GHT20, eep_rates_ht, 0);
 	PR_TARGET_POWER("5 GHz HT40", calTargetPower5GHT40, eep_rates_ht, 0);
+
+	EEP_PRINT_SUBSECT_NAME("CTL data");
+	for (i = 0; i < AR5416_MAX_CHAINS; ++i) {
+		if (eep->baseEepHeader.txMask & (1 << i))
+			maxradios++;
+	}
+	ar5416_dump_ctl(eep->ctlIndex, &eep->ctlData[0].ctlEdges[0][0],
+			AR5416_NUM_CTLS, AR5416_MAX_CHAINS, maxradios,
+			AR5416_NUM_BAND_EDGES);
 
 #undef PR_TARGET_POWER
 #undef PR_PD_CAL

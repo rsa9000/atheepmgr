@@ -40,6 +40,20 @@ const char * const eep_rates_ht[AR5416_NUM_TARGET_POWER_RATES_HT] = {
 	"MCS 4/12", "MCS 5/13", "MCS 6/14", "MCS 7/15"
 };
 
+const char * const eep_ctldomains[] = {
+	 "Unknown (0)",          "FCC",  "Unknown (2)",         "ETSI",
+	         "MKK",  "Unknown (5)",  "Unknown (6)",  "Unknown (7)",
+	 "Unknown (8)",  "Unknown (9)", "Unknown (10)", "Unknown (11)",
+	"Unknown (12)", "Unknown (13)",    "SD no ctl",       "No ctl"
+};
+
+const char * const eep_ctlmodes[] = {
+	   "5GHz OFDM",     "2GHz CCK",    "2GHz OFDM",  "Unknown (3)",
+	 "Unknown (4)",    "2GHz HT20",    "5GHz HT20",    "2GHz HT40",
+	   "5GHz HT40",  "Unknown (9)", "Unknown (10)", "Unknown (11)",
+	"Unknown (12)", "Unknown (13)", "Unknown (14)", "Unknown (15)"
+};
+
 void ar5416_dump_target_power(const struct ar5416_cal_target_power *caldata,
 			      int maxchans, const char * const rates[],
 			      int nrates, int is_2g)
@@ -77,4 +91,60 @@ void ar5416_dump_target_power(const struct ar5416_cal_target_power *caldata,
 #undef TP_NEXT_CHAN
 #undef TP_ITEM_SIZE
 #undef MARGIN
+}
+
+void ar5416_dump_ctl_edges(const struct ar5416_cal_ctl_edges *edges,
+			   int maxradios, int maxedges, int is_2g)
+{
+	const struct ar5416_cal_ctl_edges *e;
+	int edge, rnum, open;
+
+	for (rnum = 0; rnum < maxradios; ++rnum) {
+		printf("\n");
+		if (maxradios > 1)
+			printf("    %d radio(s) Tx:\n", rnum + 1);
+		printf("           Edges, MHz:");
+		for (edge = 0, open = 1; edge < maxedges; ++edge) {
+			e = &edges[rnum * maxedges + edge];
+			if (!e->bChannel)
+				break;
+			printf(" %c%4u%c",
+			       !CTL_EDGE_FLAGS(e->ctl) && open ? '[' : ' ',
+			       FBIN2FREQ(e->bChannel, is_2g),
+			       !CTL_EDGE_FLAGS(e->ctl) && !open ? ']' : ' ');
+			if (!CTL_EDGE_FLAGS(e->ctl))
+				open = !open;
+		}
+		printf("\n");
+		printf("      MaxTxPower, dBm:");
+		for (edge = 0; edge < maxedges; ++edge) {
+			e = &edges[rnum * maxedges + edge];
+			if (!e->bChannel)
+				break;
+			printf("  %4.1f ", (double)CTL_EDGE_POWER(e->ctl) / 2);
+		}
+		printf("\n");
+	}
+}
+
+void ar5416_dump_ctl(const uint8_t *index,
+		     const struct ar5416_cal_ctl_edges *data,
+		     int maxctl, int maxchains, int maxradios, int maxedges)
+{
+	int i;
+	uint8_t ctl;
+
+	for (i = 0; i < maxctl; ++i) {
+		if (!index[i])
+			break;
+		ctl = index[i];
+		printf("  %s %s:\n", eep_ctldomains[ctl >> 4],
+		       eep_ctlmodes[ctl & 0x0f]);
+
+		ar5416_dump_ctl_edges(data + i * (maxchains * maxedges),
+				      maxradios, maxedges,
+				      eep_ctlmodes[ctl & 0x0f][0] == '2'/*:)*/);
+
+		printf("\n");
+	}
 }

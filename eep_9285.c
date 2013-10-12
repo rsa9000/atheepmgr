@@ -322,6 +322,11 @@ static void eep_9285_dump_power_info(struct edump *edump)
 	PR_TARGET_POWER("2 GHz HT20", calTargetPower2GHT20, eep_rates_ht);
 	PR_TARGET_POWER("2 GHz HT40", calTargetPower2GHT40, eep_rates_ht);
 
+	EEP_PRINT_SUBSECT_NAME("CTL data");
+	ar5416_dump_ctl(eep->ctlIndex, &eep->ctlData[0].ctlEdges[0][0],
+			AR9285_NUM_CTLS, AR9285_MAX_CHAINS, 1,
+			AR9285_NUM_BAND_EDGES);
+
 #undef PR_TARGET_POWER
 }
 
