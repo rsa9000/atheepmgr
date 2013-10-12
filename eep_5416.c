@@ -236,7 +236,7 @@ static void eep_5416_dump_base_header(struct edump *edump)
 	       "Cal Bin Build",
 	       (pBase->binBuildNumber >> 8) & 0xFF);
 
-	if (eep_5416_get_ver(emp) >= AR5416_EEP_MINOR_VER_3) {
+	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_3) {
 		printf("%-30s : %s\n",
 		       "Device Type",
 		       sDeviceType[(pBase->deviceType & 0x7)]);
