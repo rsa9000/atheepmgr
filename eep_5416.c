@@ -33,22 +33,18 @@ static int eep_5416_get_rev(struct eep_5416_priv *emp)
 
 static bool eep_5416_fill(struct edump *edump)
 {
-#define AR5416_SIZE (sizeof(struct ar5416_eeprom) / sizeof(uint16_t))
-
 	struct eep_5416_priv *emp = edump->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
-	int addr, ar5416_eep_start_loc = 0x100;
+	int addr;
 
-	for (addr = 0; addr < AR5416_SIZE; addr++) {
-		if (!EEP_READ(addr + ar5416_eep_start_loc, eep_data)) {
+	for (addr = 0; addr < AR5416_DATA_SZ; addr++) {
+		if (!EEP_READ(addr + AR5416_DATA_START_LOC, eep_data)) {
 			fprintf(stderr, "Unable to read eeprom region\n");
 			return false;
 		}
 		eep_data++;
 	}
 	return true;
-
-#undef AR5416_SIZE
 }
 
 static bool eep_5416_check(struct edump *edump)
@@ -58,7 +54,7 @@ static bool eep_5416_check(struct edump *edump)
 	uint16_t *eepdata, temp, magic, magic2;
 	uint32_t sum = 0, el;
 	bool need_swap = false;
-	int i, addr, size;
+	int i, addr;
 
 	if (!EEP_READ(AR5416_EEPROM_MAGIC_OFFSET, &magic)) {
 		fprintf(stderr, "Reading Magic # failed\n");
@@ -71,10 +67,9 @@ static bool eep_5416_check(struct edump *edump)
 		magic2 = bswap_16(magic);
 
 		if (magic2 == AR5416_EEPROM_MAGIC) {
-			size = sizeof(struct ar5416_eeprom);
 			eepdata = (uint16_t *)eep;
 
-			for (addr = 0; addr < size / sizeof(uint16_t); addr++) {
+			for (addr = 0; addr < AR5416_DATA_SZ; addr++) {
 				temp = bswap_16(*eepdata);
 				*eepdata = temp;
 				eepdata++;
@@ -94,10 +89,9 @@ static bool eep_5416_check(struct edump *edump)
 	else
 		el = eep->baseEepHeader.length;
 
-	if (el > sizeof(struct ar5416_eeprom))
-		el = sizeof(struct ar5416_eeprom) / sizeof(uint16_t);
-	else
-		el = el / sizeof(uint16_t);
+	el /= sizeof(uint16_t);
+	if (el > AR5416_DATA_SZ)
+		el = AR5416_DATA_SZ;
 
 	eepdata = (uint16_t *)eep;
 
@@ -249,7 +243,7 @@ static void eep_5416_dump_base_header(struct edump *edump)
 	}
 
 	printf("\nCustomer Data in hex:\n");
-	for (i = 0; i < 64; i++) {
+	for (i = 0; i < ARRAY_SIZE(ar5416Eep->custData); i++) {
 		printf("%02X ", ar5416Eep->custData[i]);
 		if ((i % 16) == 15)
 			printf("\n");

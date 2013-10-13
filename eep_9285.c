@@ -33,16 +33,12 @@ static int eep_9285_get_rev(struct eep_9285_priv *emp)
 
 static bool eep_9285_fill(struct edump *edump)
 {
-#define EEP_9285_SIZE (sizeof(struct ar9285_eeprom) / sizeof(uint16_t))
-
 	struct eep_9285_priv *emp = edump->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
-	int addr, eep_start_loc = 0;
+	int addr;
 
-	eep_start_loc = 64;
-
-	for (addr = 0; addr < EEP_9285_SIZE; addr++) {
-		if (!EEP_READ(addr + eep_start_loc, eep_data)) {
+	for (addr = 0; addr < AR9285_DATA_SZ; addr++) {
+		if (!EEP_READ(addr + AR9285_DATA_START_LOC, eep_data)) {
 			fprintf(stderr, "Unable to read eeprom region\n");
 			return false;
 		}
@@ -50,14 +46,10 @@ static bool eep_9285_fill(struct edump *edump)
 	}
 
 	return true;
-
-#undef EEP_9285_SIZE
 }
 
 static bool eep_9285_check(struct edump *edump)
 {
-#define EEP_9285_SIZE (sizeof(struct ar9285_eeprom) / sizeof(uint16_t))
-
 	struct eep_9285_priv *emp = edump->eepmap_priv;
 	struct ar9285_eeprom *eep = &emp->eep;
 	uint16_t *eepdata, temp, magic, magic2;
@@ -76,7 +68,7 @@ static bool eep_9285_check(struct edump *edump)
 		if (magic2 == AR5416_EEPROM_MAGIC) {
 			eepdata = (uint16_t *)eep;
 
-			for (addr = 0; addr < EEP_9285_SIZE; addr++) {
+			for (addr = 0; addr < AR9285_DATA_SZ; addr++) {
 				temp = bswap_16(*eepdata);
 				*eepdata = temp;
 				eepdata++;
@@ -96,10 +88,9 @@ static bool eep_9285_check(struct edump *edump)
 	else
 		el = eep->baseEepHeader.length;
 
-	if (el > sizeof(struct ar9285_eeprom))
-		el = sizeof(struct ar9285_eeprom) / sizeof(uint16_t);
-	else
-		el = el / sizeof(uint16_t);
+	el /= sizeof(uint16_t);
+	if (el > AR9285_DATA_SZ)
+		el = AR9285_DATA_SZ;
 
 	eepdata = (uint16_t *)eep;
 
@@ -158,8 +149,6 @@ static bool eep_9285_check(struct edump *edump)
 	}
 
 	return true;
-
-#undef EEP_9285_SIZE
 }
 
 static void eep_9285_dump_base_header(struct edump *edump)
@@ -235,7 +224,7 @@ static void eep_9285_dump_base_header(struct edump *edump)
 	}
 
 	printf("\nCustomer Data in hex:\n");
-	for (i = 0; i < 64; i++) {
+	for (i = 0; i < ARRAY_SIZE(eep->custData); i++) {
 		printf("%02X ", eep->custData[i]);
 		if ((i % 16) == 15)
 			printf("\n");

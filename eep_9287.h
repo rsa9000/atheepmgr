@@ -17,9 +17,8 @@
 #ifndef EEP_9287_H
 #define EEP_9287_H
 
-#define AR9287_EEP_VER                  0xE
-#define AR9287_EEP_START_LOC            128
-#define AR9287_DATA_SZ                  32
+#define AR9287_DATA_START_LOC		0x0080
+#define AR9287_CUSTOMER_DATA_SZ		32
 #define AR9287_MAX_CHAINS               2
 #define AR9287_NUM_2G_CAL_PIERS         3
 #define AR9287_NUM_2G_CCK_TARGET_POWERS 3
@@ -112,7 +111,7 @@ struct ar9287_cal_ctl_data {
 
 struct ar9287_eeprom {
 	struct ar9287_base_eep_hdr baseEepHeader;
-	uint8_t custData[AR9287_DATA_SZ];
+	uint8_t custData[AR9287_CUSTOMER_DATA_SZ];
 	struct ar9287_modal_eep_hdr modalHeader;
 	uint8_t calFreqPier2G[AR9287_NUM_2G_CAL_PIERS];
 	union ar9287_cal_data_per_freq_u
@@ -129,5 +128,7 @@ struct ar9287_eeprom {
 	struct ar9287_cal_ctl_data ctlData[AR9287_NUM_CTLS];
 	uint8_t padding;
 } __attribute__ ((packed));
+
+#define AR9287_DATA_SZ	(sizeof(struct ar9287_eeprom) / sizeof(uint16_t))
 
 #endif /* EEP_9287_H */

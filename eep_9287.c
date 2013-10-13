@@ -17,8 +17,6 @@
 #include "edump.h"
 #include "eep_9287.h"
 
-#define SIZE_EEPROM_AR9287 (sizeof(struct ar9287_eeprom) / sizeof(uint16_t))
-
 struct eep_9287_priv {
 	struct ar9287_eeprom eep;
 };
@@ -37,12 +35,10 @@ static bool eep_9287_fill_eeprom(struct edump *edump)
 {
 	struct eep_9287_priv *emp = edump->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
-	int addr, eep_start_loc = 0;
+	int addr;
 
-	eep_start_loc = AR9287_EEP_START_LOC;
-
-	for (addr = 0; addr < SIZE_EEPROM_AR9287; addr++) {
-		if (!EEP_READ(addr + eep_start_loc, eep_data)) {
+	for (addr = 0; addr < AR9287_DATA_SZ; addr++) {
+		if (!EEP_READ(addr + AR9287_DATA_START_LOC, eep_data)) {
 			fprintf(stderr, "Unable to read eeprom region\n");
 			return false;
 		}
@@ -72,7 +68,7 @@ static bool eep_9287_check_eeprom(struct edump *edump)
 		if (magic2 == AR5416_EEPROM_MAGIC) {
 			eepdata = (uint16_t *)eep;
 
-			for (addr = 0; addr < SIZE_EEPROM_AR9287; addr++) {
+			for (addr = 0; addr < AR9287_DATA_SZ; addr++) {
 				temp = bswap_16(*eepdata);
 				*eepdata = temp;
 				eepdata++;
@@ -92,10 +88,9 @@ static bool eep_9287_check_eeprom(struct edump *edump)
 	else
 		el = eep->baseEepHeader.length;
 
-	if (el > sizeof(struct ar9287_eeprom))
-		el = sizeof(struct ar9287_eeprom) / sizeof(uint16_t);
-	else
-		el = el / sizeof(uint16_t);
+	el /= sizeof(uint16_t);
+	if (el > AR9287_DATA_SZ)
+		el = AR9287_DATA_SZ;
 
 	eepdata = (uint16_t *)eep;
 
@@ -146,7 +141,7 @@ static bool eep_9287_check_eeprom(struct edump *edump)
 		}
 	}
 
-	if (sum != 0xffff || eep_9287_get_ver(emp) != AR9287_EEP_VER ||
+	if (sum != 0xffff || eep_9287_get_ver(emp) != AR5416_EEP_VER ||
 	    eep_9287_get_rev(emp) < AR5416_EEP_NO_BACK_VER) {
 		fprintf(stderr, "Bad EEPROM checksum 0x%x or revision 0x%04x\n",
 			sum, eep_9287_get_ver(emp));
@@ -235,7 +230,7 @@ static void eep_9287_dump_base_header(struct edump *edump)
 	}
 
 	printf("\nCustomer Data in hex:\n");
-	for (i = 0; i < 64; i++) {
+	for (i = 0; i < ARRAY_SIZE(eep->custData); i++) {
 		printf("%02X ", eep->custData[i]);
 		if ((i % 16) == 15)
 			printf("\n");

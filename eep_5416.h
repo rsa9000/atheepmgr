@@ -17,6 +17,8 @@
 #ifndef EEP_5416_H
 #define EEP_5416_H
 
+#define AR5416_DATA_START_LOC		0x0100
+#define AR5416_CUSTOMER_DATA_SZ		64
 #define AR5416_MAX_CHAINS       3
 #define AR5416_NUM_BAND_EDGES   8
 #define AR5416_NUM_5G_CAL_PIERS 8
@@ -111,7 +113,7 @@ struct ar5416_cal_ctl_data {
 
 struct ar5416_eeprom {
 	struct ar5416_base_eep_hdr baseEepHeader;
-	uint8_t custData[64];
+	uint8_t custData[AR5416_CUSTOMER_DATA_SZ];
 	struct ar5416_modal_eep_hdr modalHeader5G;
 	struct ar5416_modal_eep_hdr modalHeader2G;
 	uint8_t calFreqPier5G[AR5416_NUM_5G_CAL_PIERS];
@@ -138,5 +140,7 @@ struct ar5416_eeprom {
 	struct ar5416_cal_ctl_data ctlData[AR5416_NUM_CTLS];
 	uint8_t padding;
 } __attribute__ ((packed));
+
+#define AR5416_DATA_SZ	(sizeof(struct ar5416_eeprom) / sizeof(uint16_t))
 
 #endif /* EEP_5416_H */

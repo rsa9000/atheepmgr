@@ -17,7 +17,8 @@
 #ifndef EEP_9285_H
 #define EEP_9285_H
 
-#define AR9285_START_LOC		64
+#define AR9285_DATA_START_LOC		0x0040
+#define AR9285_CUSTOMER_DATA_SZ		20
 #define AR9285_NUM_2G_CAL_PIERS		3
 #define AR9285_NUM_2G_CCK_TARGET_POWERS	3
 #define AR9285_NUM_2G_20_TARGET_POWERS	3
@@ -121,7 +122,7 @@ struct ar9285_cal_ctl_data {
 
 struct ar9285_eeprom {
 	struct ar9285_base_eep_hdr baseEepHeader;
-	uint8_t custData[20];
+	uint8_t custData[AR9285_CUSTOMER_DATA_SZ];
 	struct ar9285_modal_eep_hdr modalHeader;
 	uint8_t calFreqPier2G[AR9285_NUM_2G_CAL_PIERS];
 	struct ar9285_cal_data_per_freq
@@ -138,5 +139,7 @@ struct ar9285_eeprom {
 	struct ar9285_cal_ctl_data ctlData[AR9285_NUM_CTLS];
 	uint8_t padding;
 } __attribute__ ((packed));
+
+#define AR9285_DATA_SZ	(sizeof(struct ar9285_eeprom) / sizeof(uint16_t))
 
 #endif /* EEP_9285_H */
