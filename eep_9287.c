@@ -35,15 +35,20 @@ static bool eep_9287_fill_eeprom(struct edump *edump)
 {
 	struct eep_9287_priv *emp = edump->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
+	uint16_t *buf = edump->eep_buf;
 	int addr;
 
-	for (addr = 0; addr < AR9287_DATA_SZ; addr++) {
-		if (!EEP_READ(addr + AR9287_DATA_START_LOC, eep_data)) {
-			fprintf(stderr, "Unable to read eeprom region\n");
+	/* Read to the intermediate buffer */
+	for (addr = 0; addr < AR9287_DATA_START_LOC + AR9287_DATA_SZ; ++addr) {
+		if (!EEP_READ(addr, &buf[addr])) {
+			fprintf(stderr, "Unable to read EEPROM to buffer\n");
 			return false;
 		}
-		eep_data++;
 	}
+
+	/* Copy from buffer to the EEPROM structure */
+	for (addr = 0; addr < AR9287_DATA_SZ; ++addr)
+		eep_data[addr] = buf[AR9287_DATA_START_LOC + addr];
 
 	return true;
 }
@@ -57,10 +62,7 @@ static bool eep_9287_check_eeprom(struct edump *edump)
 	bool need_swap = false;
 	int i, addr;
 
-	if (!EEP_READ(AR5416_EEPROM_MAGIC_OFFSET, &magic)) {
-		fprintf(stderr, "Reading Magic # failed\n");
-		return false;
-	}
+	magic = edump->eep_buf[AR5416_EEPROM_MAGIC_OFFSET];
 
 	if (magic != AR5416_EEPROM_MAGIC) {
 		magic2 = bswap_16(magic);
@@ -334,6 +336,7 @@ const struct eepmap eepmap_9287 = {
 	.name = "9287",
 	.desc = "AR9287 chip EEPROM map",
 	.priv_data_sz = sizeof(struct eep_9287_priv),
+	.eep_buf_sz = AR9287_DATA_START_LOC + AR9287_DATA_SZ,
 	.fill_eeprom  = eep_9287_fill_eeprom,
 	.check_eeprom = eep_9287_check_eeprom,
 	.dump_base_header = eep_9287_dump_base_header,

@@ -348,6 +348,14 @@ int main(int argc, char *argv[])
 			goto con_clean;
 		}
 
+		edump->eep_buf = malloc(edump->eepmap->eep_buf_sz *
+					sizeof(uint16_t));
+		if (!edump->eep_buf) {
+			fprintf(stderr, "Unable to allocate memory for EEPROM buffer\n");
+			ret = -ENOMEM;
+			goto con_clean;
+		}
+
 		if (!edump->eepmap->fill_eeprom(edump)) {
 			fprintf(stderr, "Unable to fill EEPROM data\n");
 			ret = -EIO;
@@ -367,6 +375,7 @@ con_clean:
 	edump->con->clean(edump);
 
 exit:
+	free(edump->eep_buf);
 	free(edump->eepmap_priv);
 	free(edump->con_priv);
 

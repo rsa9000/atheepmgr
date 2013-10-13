@@ -106,6 +106,7 @@ struct eepmap {
 	const char *name;
 	const char *desc;
 	size_t priv_data_sz;
+	size_t eep_buf_sz;		/* EEP buffer size in 16-bit words */
 	bool (*fill_eeprom)(struct edump *edump);
 	int (*check_eeprom)(struct edump *edump);
 	void (*dump_base_header)(struct edump *edump);
@@ -124,6 +125,8 @@ struct edump {
 
 	const struct eepmap *eepmap;
 	void *eepmap_priv;
+
+	uint16_t *eep_buf;			/* Intermediated EEPROM buf */
 };
 
 extern const struct connector con_file;
