@@ -143,10 +143,16 @@ static bool eep_9285_check(struct edump *edump)
 		}
 	}
 
-	if (sum != 0xffff || eep_9285_get_ver(emp) != AR5416_EEP_VER ||
+	if (eep_9285_get_ver(emp) != AR5416_EEP_VER ||
 	    eep_9285_get_rev(emp) < AR5416_EEP_NO_BACK_VER) {
-		fprintf(stderr, "Bad EEPROM checksum 0x%x or revision 0x%04x\n",
-			sum, eep_9285_get_ver(emp));
+		fprintf(stderr, "Bad EEPROM version 0x%04x (%d.%d)\n",
+			eep->baseEepHeader.version, eep_9285_get_ver(emp),
+			eep_9285_get_rev(emp));
+		return false;
+	}
+
+	if (sum != 0xffff) {
+		fprintf(stderr, "Bad EEPROM checksum 0x%04x\n", sum);
 		return false;
 	}
 
