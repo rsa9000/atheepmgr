@@ -57,12 +57,11 @@ static bool eep_9287_check_eeprom(struct edump *edump)
 {
 	struct eep_9287_priv *emp = edump->eepmap_priv;
 	struct ar9287_eeprom *eep = &emp->eep;
-	uint16_t *eepdata, temp, magic, magic2;
-	uint32_t sum = 0, el;
-	bool need_swap = false;
-	int i, addr;
+	const uint16_t *buf = edump->eep_buf;
+	uint16_t *eepdata, temp, magic, magic2, sum;
+	int i, addr, el;
 
-	magic = edump->eep_buf[AR5416_EEPROM_MAGIC_OFFSET];
+	magic = buf[AR5416_EEPROM_MAGIC_OFFSET];
 
 	if (magic != AR5416_EEPROM_MAGIC) {
 		magic2 = bswap_16(magic);
@@ -82,24 +81,7 @@ static bool eep_9287_check_eeprom(struct edump *edump)
 	}
 
 	if (!!(eep->baseEepHeader.eepMisc & AR5416_EEPMISC_BIG_ENDIAN) !=
-	    edump->host_is_be)
-		need_swap = true;
-
-	if (need_swap)
-		el = bswap_16(eep->baseEepHeader.length);
-	else
-		el = eep->baseEepHeader.length;
-
-	el /= sizeof(uint16_t);
-	if (el > AR9287_DATA_SZ)
-		el = AR9287_DATA_SZ;
-
-	eepdata = (uint16_t *)eep;
-
-	for (i = 0; i < el; i++)
-		sum ^= *eepdata++;
-
-	if (need_swap) {
+	    edump->host_is_be) {
 		uint32_t integer;
 		uint16_t word;
 
@@ -151,6 +133,11 @@ static bool eep_9287_check_eeprom(struct edump *edump)
 		return false;
 	}
 
+	el = eep->baseEepHeader.length / sizeof(uint16_t);
+	if (el > AR9287_DATA_SZ)
+		el = AR9287_DATA_SZ;
+
+	sum = eep_calc_csum(&buf[AR9287_DATA_START_LOC], el);
 	if (sum != 0xffff) {
 		fprintf(stderr, "Bad EEPROM checksum 0x%04x\n", sum);
 		return false;

@@ -148,3 +148,14 @@ void ar5416_dump_ctl(const uint8_t *index,
 		printf("\n");
 	}
 }
+
+uint16_t eep_calc_csum(const uint16_t *buf, size_t len)
+{
+	uint16_t csum = 0;
+	size_t i;
+
+	for (i = 0; i < len; i++)
+		csum ^= *buf++;
+
+	return csum;
+}
