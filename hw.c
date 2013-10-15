@@ -101,3 +101,14 @@ bool hw_eeprom_read_9xxx(struct edump *edump, uint32_t off, uint16_t *data)
 
 	return true;
 }
+
+bool hw_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data)
+{
+	if (!edump->con->eep_read(edump, off, data))
+		return false;
+
+	if (edump->eep_io_swap)
+		*data = bswap_16(*data);
+
+	return true;
+}

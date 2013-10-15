@@ -126,6 +126,7 @@ struct edump {
 	const struct eepmap *eepmap;
 	void *eepmap_priv;
 
+	int eep_io_swap;			/* Swap words */
 	uint16_t *eep_buf;			/* Intermediated EEPROM buf */
 };
 
@@ -142,9 +143,10 @@ void hw_read_revisions(struct edump *edump);
 bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
 	     uint32_t val, uint32_t timeout);
 bool hw_eeprom_read_9xxx(struct edump *edump, uint32_t off, uint16_t *data);
+bool hw_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data);
 
 #define EEP_READ(_off, _data)		\
-		edump->con->eep_read(edump, _off, _data)
+		hw_eeprom_read(edump, _off, _data)
 #define REG_READ(_reg)			\
 		edump->con->reg_read(edump, _reg)
 

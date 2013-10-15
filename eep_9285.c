@@ -36,7 +36,16 @@ static bool eep_9285_fill(struct edump *edump)
 	struct eep_9285_priv *emp = edump->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
 	uint16_t *buf = edump->eep_buf;
+	uint16_t magic;
 	int addr;
+
+	/* Check byteswaping requirements */
+	if (!EEP_READ(AR5416_EEPROM_MAGIC_OFFSET, &magic)) {
+		fprintf(stderr, "EEPROM magic read failed\n");
+		return false;
+	}
+	if (bswap_16(magic) == AR5416_EEPROM_MAGIC)
+		edump->eep_io_swap = !edump->eep_io_swap;
 
 	/* Read to the intermediate buffer */
 	for (addr = 0; addr < AR9285_DATA_START_LOC + AR9285_DATA_SZ; ++addr) {
@@ -58,26 +67,14 @@ static bool eep_9285_check(struct edump *edump)
 	struct eep_9285_priv *emp = edump->eepmap_priv;
 	struct ar9285_eeprom *eep = &emp->eep;
 	const uint16_t *buf = edump->eep_buf;
-	uint16_t *eepdata, temp, magic, magic2, sum;
-	int i, addr, el;
+	uint16_t sum;
+	int i, el;
 
-	magic = buf[AR5416_EEPROM_MAGIC_OFFSET];
-
-	if (magic != AR5416_EEPROM_MAGIC) {
-		magic2 = bswap_16(magic);
-
-		if (magic2 == AR5416_EEPROM_MAGIC) {
-			eepdata = (uint16_t *)eep;
-
-			for (addr = 0; addr < AR9285_DATA_SZ; addr++) {
-				temp = bswap_16(*eepdata);
-				*eepdata = temp;
-				eepdata++;
-			}
-		} else {
-			fprintf(stderr, "Invalid EEPROM Magic, endianness mismatch.\n");
-			return false;
-		}
+	if (buf[AR5416_EEPROM_MAGIC_OFFSET] != AR5416_EEPROM_MAGIC) {
+		fprintf(stderr, "Invalid EEPROM Magic 0x%04x, expected 0x%04x\n",
+			buf[AR5416_EEPROM_MAGIC_OFFSET],
+			AR5416_EEPROM_MAGIC);
+		return false;
 	}
 
 	if (!!(eep->baseEepHeader.eepMisc & AR5416_EEPMISC_BIG_ENDIAN) !=
