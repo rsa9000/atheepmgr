@@ -110,6 +110,40 @@ static int act_eep_dump(struct edump *edump, int argc, char *argv[])
 	return 0;
 }
 
+static int act_eep_save(struct edump *edump, int argc, char *argv[])
+{
+	FILE *fp;
+	const uint16_t *buf = edump->eep_buf;
+	int buf_sz = edump->eepmap->eep_buf_sz;
+	size_t res;
+
+	if (!buf_sz) {
+		fprintf(stderr, "EEPROM map does not support buffered operation, so the content saving is not possible\n");
+		return -EOPNOTSUPP;
+	}
+
+	if (argc < 1) {
+		fprintf(stderr, "Output file for EEPROM saving is not specified, aborting\n");
+		return -EINVAL;
+	}
+
+	fp = fopen(argv[0], "wb");
+	if (!fp) {
+		fprintf(stderr, "Unable to open output file for writing: %s\n",
+			strerror(errno));
+		return -errno;
+	}
+
+	res = fwrite(buf, sizeof(buf[0]), buf_sz, fp);
+	if (res != buf_sz)
+		fprintf(stderr, "Unable to save whole EEPROM contents: %s\n",
+			strerror(errno));
+
+	fclose(fp);
+
+	return res == buf_sz ? 0 : -EIO;
+}
+
 static int act_reg_read(struct edump *edump, int argc, char *argv[])
 {
 	unsigned long addr;
@@ -146,6 +180,10 @@ static const struct action {
 	{
 		.name = "dump",
 		.func = act_eep_dump,
+		.flags = ACT_F_EEPROM,
+	}, {
+		.name = "save",
+		.func = act_eep_save,
 		.flags = ACT_F_EEPROM,
 	}, {
 		.name = "regread",
@@ -214,6 +252,7 @@ static void usage(char *name)
 		"                  keywords: 'all' and 'none'. The first causes the dump of all\n"
 		"                  sections and the second disables any dump to the terminal. The\n"
 		"                  default behaviour is to dump all EEPROM sections.\n"
+		"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
 		"  regread <addr>  Read register at address <addr> and print it value.\n"
 		"\n"
 		"Available connectors (card interactions interface):\n"
