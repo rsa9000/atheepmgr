@@ -34,6 +34,13 @@ static uint32_t mem_reg_read(struct edump *edump, uint32_t reg)
 	return *((volatile uint32_t *)(mpd->io_map + reg));
 }
 
+static void mem_reg_write(struct edump *edump, uint32_t reg, uint32_t val)
+{
+	struct mem_priv *mpd = edump->con_priv;
+
+	*((volatile uint32_t *)(mpd->io_map + reg)) = val;
+}
+
 static int mem_init(struct edump *edump, const char *arg_str)
 {
 	struct mem_priv *mpd = edump->con_priv;
@@ -48,15 +55,15 @@ static int mem_init(struct edump *edump, const char *arg_str)
 		return -EINVAL;
 	}
 
-	mpd->devmem_fd = open("/dev/mem", O_RDONLY);
+	mpd->devmem_fd = open("/dev/mem", O_RDWR);
 	if (mpd->devmem_fd < 0) {
 		fprintf(stderr, "conmem: opening /dev/mem failed: %s\n",
 			strerror(errno));
 		return -errno;
 	}
 
-	mpd->io_map = mmap(NULL, mem_size, PROT_READ, MAP_SHARED | MAP_FILE,
-			   mpd->devmem_fd, mpd->io_addr);
+	mpd->io_map = mmap(NULL, mem_size, PROT_READ | PROT_WRITE,
+			   MAP_SHARED | MAP_FILE, mpd->devmem_fd, mpd->io_addr);
 	if (MAP_FAILED == mpd->io_map) {
 		fprintf(stderr, "conmem: mmap of device at 0x%08lx for 0x%08lx bytes failed: %s\n",
 			(unsigned long)mpd->io_addr,
@@ -82,6 +89,7 @@ const struct connector con_mem = {
 	.init = mem_init,
 	.clean = mem_clean,
 	.reg_read = mem_reg_read,
+	.reg_write = mem_reg_write,
 	.eep_read = hw_eeprom_read_9xxx,
 };
 

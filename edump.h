@@ -99,6 +99,7 @@ struct connector {
 	int (*init)(struct edump *edump, const char *arg_str);
 	void (*clean)(struct edump *edump);
 	uint32_t (*reg_read)(struct edump *edump, uint32_t reg);
+	void (*reg_write)(struct edump *edump, uint32_t reg, uint32_t val);
 	bool (*eep_read)(struct edump *edump, uint32_t off, uint16_t *data);
 };
 
@@ -149,5 +150,7 @@ bool hw_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data);
 		hw_eeprom_read(edump, _off, _data)
 #define REG_READ(_reg)			\
 		edump->con->reg_read(edump, _reg)
+#define REG_WRITE(_reg, _val)		\
+		edump->con->reg_write(edump, _reg, _val)
 
 #endif /* EDUMP_H */

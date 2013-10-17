@@ -90,8 +90,8 @@ static int pci_device_init(struct edump *edump, struct pci_device *pdev)
 	       (unsigned long)ppd->base_addr,
 	       (unsigned long)(ppd->base_addr + ppd->size - 1));
 
-	err = pci_device_map_range(pdev, ppd->base_addr, ppd->size, 0,
-				   &ppd->io_map);
+	err = pci_device_map_range(pdev, ppd->base_addr, ppd->size,
+				   PCI_DEV_MAP_FLAG_WRITABLE, &ppd->io_map);
 	if (err) {
 		fprintf(stderr, "%s\n", strerror(err));
 		return err;
@@ -119,6 +119,13 @@ static uint32_t pci_reg_read(struct edump *edump, uint32_t reg)
 	struct pci_priv *ppd = edump->con_priv;
 
 	return *((volatile uint32_t *)(ppd->io_map + reg));
+}
+
+static void pci_reg_write(struct edump *edump, uint32_t reg, uint32_t val)
+{
+	struct pci_priv *ppd = edump->con_priv;
+
+	*((volatile uint32_t *)(ppd->io_map + reg)) = val;
 }
 
 static int pci_init(struct edump *edump, const char *arg_str)
@@ -196,5 +203,6 @@ const struct connector con_pci = {
 	.init = pci_init,
 	.clean = pci_clean,
 	.reg_read = pci_reg_read,
+	.reg_write = pci_reg_write,
 	.eep_read = hw_eeprom_read_9xxx,
 };

@@ -42,6 +42,11 @@ static uint32_t file_reg_read(struct edump *edump, uint32_t reg)
 	return 0;
 }
 
+static void file_reg_write(struct edump *edump, uint32_t reg, uint32_t val)
+{
+	fprintf(stderr, "confile: direct reg write is not supported\n");
+}
+
 static bool file_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data)
 {
 	struct file_priv *fpd = edump->con_priv;
@@ -120,5 +125,6 @@ const struct connector con_file = {
 	.init = file_init,
 	.clean = file_clean,
 	.reg_read = file_reg_read,
+	.reg_write = file_reg_write,
 	.eep_read = file_eeprom_read,
 };

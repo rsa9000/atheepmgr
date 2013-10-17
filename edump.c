@@ -169,6 +169,35 @@ static int act_reg_read(struct edump *edump, int argc, char *argv[])
 	return 0;
 }
 
+static int act_reg_write(struct edump *edump, int argc, char *argv[])
+{
+	unsigned long addr, val;
+	char *endp;
+
+	if (argc < 2) {
+		fprintf(stderr, "Register address and (or) value are not specified, aborting\n");
+		return -EINVAL;
+	}
+
+	errno = 0;
+
+	addr = strtoul(argv[0], &endp, 16);
+	if (errno != 0 || *endp != '\0' || addr % 4 != 0) {
+		fprintf(stderr, "Invalid register address -- %s\n", argv[0]);
+		return -EINVAL;
+	}
+
+	val = strtoul(argv[1], &endp, 16);
+	if (errno != 0 || *endp != '\0') {
+		fprintf(stderr, "Invalid register value -- %s\n", argv[1]);
+		return -EINVAL;
+	}
+
+	REG_WRITE(addr, val);
+
+	return 0;
+}
+
 #define ACT_F_EEPROM	(1 << 0)	/* Action will interact with EEPROM */
 #define ACT_F_HW	(1 << 1)	/* Action require direct HW access */
 
@@ -188,6 +217,10 @@ static const struct action {
 	}, {
 		.name = "regread",
 		.func = act_reg_read,
+		.flags = ACT_F_HW,
+	}, {
+		.name = "regwrite",
+		.func = act_reg_write,
 		.flags = ACT_F_HW,
 	}
 };
@@ -254,6 +287,7 @@ static void usage(char *name)
 		"                  default behaviour is to dump all EEPROM sections.\n"
 		"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
 		"  regread <addr>  Read register at address <addr> and print it value.\n"
+		"  regwrite <addr> <val> Write value <val> to the register at address <addr>.\n"
 		"\n"
 		"Available connectors (card interactions interface):\n"
 		"  File            Read EEPROM dump from file, activated by -F option with dump\n"
