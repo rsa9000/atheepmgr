@@ -86,20 +86,22 @@ bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
 
 bool hw_eeprom_read_9xxx(struct edump *edump, uint32_t off, uint16_t *data)
 {
+#define WAIT_MASK	AR_EEPROM_STATUS_DATA_BUSY | \
+			AR_EEPROM_STATUS_DATA_PROT_ACCESS
+#define WAIT_TIME	AH_WAIT_TIMEOUT
+
 	(void)REG_READ(AR5416_EEPROM_OFFSET + (off << AR5416_EEPROM_S));
 
-	if (!hw_wait(edump,
-		     AR_EEPROM_STATUS_DATA,
-		     AR_EEPROM_STATUS_DATA_BUSY |
-		     AR_EEPROM_STATUS_DATA_PROT_ACCESS, 0,
-		     AH_WAIT_TIMEOUT)) {
+	if (!hw_wait(edump, AR_EEPROM_STATUS_DATA, WAIT_MASK, 0, WAIT_TIME))
 		return false;
-	}
 
 	*data = MS(REG_READ(AR_EEPROM_STATUS_DATA),
 		   AR_EEPROM_STATUS_DATA_VAL);
 
 	return true;
+
+#undef WAIT_TIME
+#undef WAIT_MASK
 }
 
 bool hw_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data)
