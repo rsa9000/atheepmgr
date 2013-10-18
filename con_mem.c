@@ -91,5 +91,6 @@ const struct connector con_mem = {
 	.reg_read = mem_reg_read,
 	.reg_write = mem_reg_write,
 	.eep_read = hw_eeprom_read_9xxx,
+	.eep_write = hw_eeprom_write_9xxx,
 };
 

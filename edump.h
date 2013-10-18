@@ -101,6 +101,7 @@ struct connector {
 	uint32_t (*reg_read)(struct edump *edump, uint32_t reg);
 	void (*reg_write)(struct edump *edump, uint32_t reg, uint32_t val);
 	bool (*eep_read)(struct edump *edump, uint32_t off, uint16_t *data);
+	bool (*eep_write)(struct edump *edump, uint32_t off, uint16_t data);
 };
 
 struct eepmap {
@@ -144,10 +145,14 @@ void hw_read_revisions(struct edump *edump);
 bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
 	     uint32_t val, uint32_t timeout);
 bool hw_eeprom_read_9xxx(struct edump *edump, uint32_t off, uint16_t *data);
+bool hw_eeprom_write_9xxx(struct edump *edump, uint32_t off, uint16_t data);
 bool hw_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data);
+bool hw_eeprom_write(struct edump *edump, uint32_t off, uint16_t data);
 
 #define EEP_READ(_off, _data)		\
 		hw_eeprom_read(edump, _off, _data)
+#define EEP_WRITE(_off, _data)		\
+		hw_eeprom_write(edump, _off, _data)
 #define REG_READ(_reg)			\
 		edump->con->reg_read(edump, _reg)
 #define REG_WRITE(_reg, _val)		\

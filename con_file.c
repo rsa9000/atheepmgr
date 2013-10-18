@@ -68,13 +68,41 @@ static bool file_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data)
 	return true;
 }
 
+static bool file_eeprom_write(struct edump *edump, uint32_t off, uint16_t data)
+{
+	struct file_priv *fpd = edump->con_priv;
+	static const uint16_t fill = 0xffff;
+	uint32_t pos = off * 2, addr;
+
+	pos = pos % fpd->ic_sz;		/* Emulate address wrap */
+
+	if (pos >= fpd->data_len) {
+		/* Fill the empty area before writing position */
+		if (fseek(fpd->fp, fpd->data_len, SEEK_SET) != 0)
+			return false;
+		for (addr = fpd->data_len; addr < pos; addr += sizeof(uint16_t))
+			if (fwrite(&fill, sizeof(uint16_t), 1, fpd->fp) != 1)
+				return false;
+		fpd->data_len = pos + sizeof(uint16_t);	/* NB: with new data */
+	} else {
+		/* Immediatly go to writing position */
+		if (fseek(fpd->fp, pos, SEEK_SET) != 0)
+			return false;
+	}
+
+	if (fwrite(&data, sizeof(uint16_t), 1, fpd->fp) != 1)
+		return false;
+
+	return true;
+}
+
 static int file_init(struct edump *edump, const char *arg_str)
 {
 	struct file_priv *fpd = edump->con_priv;
 	int err;
 	long len;
 
-	fpd->fp = fopen(arg_str, "rb");
+	fpd->fp = fopen(arg_str, "r+b");
 	if (!fpd->fp) {
 		fprintf(stderr, "confile: can not open dump file '%s': %s\n",
 			arg_str, strerror(errno));
@@ -127,4 +155,5 @@ const struct connector con_file = {
 	.reg_read = file_reg_read,
 	.reg_write = file_reg_write,
 	.eep_read = file_eeprom_read,
+	.eep_write = file_eeprom_write,
 };
