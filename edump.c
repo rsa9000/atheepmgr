@@ -144,6 +144,65 @@ static int act_eep_save(struct edump *edump, int argc, char *argv[])
 	return res == buf_sz ? 0 : -EIO;
 }
 
+static const struct eepmap_param {
+	int id;
+	const char *name;
+	const char *arg;
+	const char *desc;
+} eepmap_params_list[] = {
+	{
+		.name = NULL,
+	}
+};
+
+static int act_eep_update(struct edump *edump, int argc, char *argv[])
+{
+	const struct eepmap *eepmap = edump->eepmap;
+	const struct eepmap_param *param;
+	char *val;
+	int namelen;
+	void *data;
+
+	if (!eepmap->update_eeprom || !eepmap->params_mask) {
+		fprintf(stderr, "EEPROM map does not support content updation, aborting\n");
+		return -EOPNOTSUPP;
+	}
+
+	if (argc < 1) {
+		fprintf(stderr, "Parameter for updation is not specified, aborting\n");
+		return -EINVAL;
+	}
+
+	val = strchr(argv[0], '=');
+	if (val) {
+		namelen = val - argv[0];
+		val = val[1] == '\0' ? NULL : val + 1;
+	} else {
+		namelen = strlen(argv[0]);
+	}
+
+	for (param = &eepmap_params_list[0]; param->name; ++param) {
+		if (strncasecmp(param->name, argv[0], namelen) == 0)
+			break;
+	}
+	if (!param->name) {
+		fprintf(stderr, "Unknown parameter name -- %.*s\n", namelen,
+			argv[0]);
+		return -EINVAL;
+	} else if (!(eepmap->params_mask & BIT(param->id))) {
+		fprintf(stderr, "EEPROM map does not support parameter -- %.*s\n",
+			namelen, argv[0]);
+		return -EINVAL;
+	}
+
+	switch (param->id) {
+	default:
+		data = val;
+	}
+
+	return eepmap->update_eeprom(edump, param->id, data) ? 0 : -EIO;
+}
+
 static int act_reg_read(struct edump *edump, int argc, char *argv[])
 {
 	unsigned long addr;
@@ -215,6 +274,10 @@ static const struct action {
 		.func = act_eep_save,
 		.flags = ACT_F_EEPROM,
 	}, {
+		.name = "update",
+		.func = act_eep_update,
+		.flags = ACT_F_EEPROM,
+	}, {
 		.name = "regread",
 		.func = act_reg_read,
 		.flags = ACT_F_HW,
@@ -240,6 +303,29 @@ static const struct action {
 #endif
 
 static const char *optstr = CON_OPTSTR "ht:";
+
+static void usage_eepmap(const struct eepmap *eepmap)
+{
+	const struct eepmap_param *param;
+	char buf[0x100];
+
+	printf("  %-15s %s\n", eepmap->name, eepmap->desc);
+	if (eepmap->params_mask && eepmap->update_eeprom) {
+		printf("%18s%s:\n", "", "Updateable EEPROM params");
+		for (param = &eepmap_params_list[0]; param->name; ++param) {
+			if (!(eepmap->params_mask & BIT(param->id)))
+				continue;
+
+			if (param->arg)
+				snprintf(buf, sizeof(buf), "%s=%s", param->name,
+					 param->arg);
+			else
+				snprintf(buf, sizeof(buf), "%s", param->name);
+
+			printf("%20s%-10s %s\n", "", buf, param->desc);
+		}
+	}
+}
 
 static void usage(char *name)
 {
@@ -286,6 +372,8 @@ static void usage(char *name)
 		"                  sections and the second disables any dump to the terminal. The\n"
 		"                  default behaviour is to dump all EEPROM sections.\n"
 		"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
+		"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>. See per-map\n"
+		"                  supported parameters list below.\n"
 		"  regread <addr>  Read register at address <addr> and print it value.\n"
 		"  regwrite <addr> <val> Write value <val> to the register at address <addr>.\n"
 		"\n"
@@ -305,9 +393,9 @@ static void usage(char *name)
 		name, name
 	);
 
-	printf("Supported EEPROM map(s):\n");
+	printf("Supported EEPROM map(s) and per-map capabilities:\n");
 	for (i = 0; i < ARRAY_SIZE(eepmaps); ++i)
-		printf("  %-15s %s\n", eepmaps[i]->name, eepmaps[i]->desc);
+		usage_eepmap(eepmaps[i]);
 	printf("\n");
 }
 

@@ -30,6 +30,8 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define MS(_v, _f)  (((_v) & _f) >> _f##_S)
+#define BIT(_n)				(1 << (_n))
+#define offsetof(_type, _member)	__builtin_offsetof(_type, _member)
 
 enum {
 	false = 0,
@@ -104,6 +106,10 @@ struct connector {
 	bool (*eep_write)(struct edump *edump, uint32_t off, uint16_t data);
 };
 
+enum eepmap_param_id {
+	__EEP_PARAM_MAX
+};
+
 struct eepmap {
 	const char *name;
 	const char *desc;
@@ -114,6 +120,9 @@ struct eepmap {
 	void (*dump_base_header)(struct edump *edump);
 	void (*dump_modal_header)(struct edump *edump);
 	void (*dump_power_info)(struct edump *edump);
+	bool (*update_eeprom)(struct edump *edump, int param,
+			      const void *data);
+	int params_mask;		/* Mask of updateable params */
 };
 
 struct edump {
