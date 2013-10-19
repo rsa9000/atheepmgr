@@ -503,6 +503,54 @@ static void eep_5416_dump_power_info(struct edump *edump)
 #undef PR_PD_CAL
 }
 
+static bool eep_5416_update_eeprom(struct edump *edump, int param,
+				   const void *data)
+{
+#define EEP_FIELD_OFFSET(__field)					\
+		(offsetof(typeof(*eep), __field) / sizeof(uint16_t));
+#define EEP_FIELD_SIZE(__field)						\
+		(sizeof(eep->__field) / sizeof(uint16_t))
+	struct eep_5416_priv *emp = edump->eepmap_priv;
+	struct ar5416_eeprom *eep = &emp->eep;
+	uint16_t *buf = edump->eep_buf;
+	int data_pos, data_len = 0, addr, el;
+	uint16_t sum;
+
+	switch (param) {
+	default:
+		fprintf(stderr, "Internal error: unknown parameter Id\n");
+		return false;
+	}
+
+	/* Store updated data */
+	for (addr = data_pos; addr < (data_pos + data_len); ++addr) {
+		if (!EEP_WRITE(addr, buf[addr])) {
+			fprintf(stderr, "Unable to write EEPROM data at 0x%04x\n",
+				addr);
+			return false;
+		}
+	}
+
+	/* Update checksum if need it */
+	if (data_pos > AR5416_DATA_START_LOC) {
+		el = eep->baseEepHeader.length / sizeof(uint16_t);
+		if (el > AR5416_DATA_SZ)
+			el = AR5416_DATA_SZ;
+		buf[AR5416_DATA_CSUM_LOC] = 0xffff;
+		sum = eep_calc_csum(&buf[AR5416_DATA_START_LOC], el);
+		buf[AR5416_DATA_CSUM_LOC] = sum;
+		if (!EEP_WRITE(AR5416_DATA_CSUM_LOC, sum)) {
+			fprintf(stderr, "Unable to update EEPROM checksum\n");
+			return false;
+		}
+	}
+
+	return true;
+
+#undef EEP_FIELD_SIZE
+#undef EEP_FIELD_OFFSET
+}
+
 const struct eepmap eepmap_5416 = {
 	.name = "5416",
 	.desc = "Default EEPROM map for earlier .11n chips (AR5416/AR9160/AR92xx/etc.)",
@@ -513,4 +561,6 @@ const struct eepmap eepmap_5416 = {
 	.dump_base_header = eep_5416_dump_base_header,
 	.dump_modal_header = eep_5416_dump_modal_header,
 	.dump_power_info = eep_5416_dump_power_info,
+	.update_eeprom = eep_5416_update_eeprom,
+	.params_mask = 0,
 };
