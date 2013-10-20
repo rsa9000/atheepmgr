@@ -52,12 +52,9 @@ static const char *mac_bb_name(uint32_t mac_bb_version)
 
 void hw_read_revisions(struct edump *edump)
 {
-	uint32_t val;
+	uint32_t val = REG_READ(AR_SREV);
 
-	val = REG_READ(AR_SREV) & AR_SREV_ID;
-
-	if (val == 0xFF) {
-		val = REG_READ(AR_SREV);
+	if ((val & AR_SREV_ID) == 0xFF) {
 		edump->macVersion = (val & AR_SREV_VERSION2) >> AR_SREV_TYPE2_S;
 		edump->macRev = MS(val, AR_SREV_REVISION2);
 	} else {
@@ -65,8 +62,8 @@ void hw_read_revisions(struct edump *edump)
 		edump->macRev = val & AR_SREV_REVISION;
 	}
 
-	printf("Atheros AR%s MAC/BB Rev:%x\n",
-	       mac_bb_name(edump->macVersion), edump->macRev);
+	printf("Atheros AR%s MAC/BB Rev:%x (SREV: 0x%08x)\n",
+	       mac_bb_name(edump->macVersion), edump->macRev, val);
 }
 
 bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
