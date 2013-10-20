@@ -50,7 +50,7 @@ static const char *mac_bb_name(uint32_t mac_bb_version)
 	return "????";
 }
 
-void hw_read_revisions(struct edump *edump)
+static void hw_read_revisions(struct edump *edump)
 {
 	uint32_t val = REG_READ(AR_SREV);
 
@@ -139,4 +139,11 @@ bool hw_eeprom_write(struct edump *edump, uint32_t off, uint16_t data)
 		return false;
 
 	return true;
+}
+
+int hw_init(struct edump *edump)
+{
+	hw_read_revisions(edump);
+
+	return 0;
 }

@@ -155,13 +155,13 @@ extern const struct eepmap eepmap_9285;
 extern const struct eepmap eepmap_9287;
 extern const struct eepmap eepmap_9300;
 
-void hw_read_revisions(struct edump *edump);
 bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
 	     uint32_t val, uint32_t timeout);
 bool hw_eeprom_read_9xxx(struct edump *edump, uint32_t off, uint16_t *data);
 bool hw_eeprom_write_9xxx(struct edump *edump, uint32_t off, uint16_t data);
 bool hw_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data);
 bool hw_eeprom_write(struct edump *edump, uint32_t off, uint16_t data);
+int hw_init(struct edump *edump);
 
 #define EEP_READ(_off, _data)		\
 		hw_eeprom_read(edump, _off, _data)

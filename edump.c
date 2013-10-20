@@ -515,8 +515,11 @@ int main(int argc, char *argv[])
 	if (ret)
 		goto exit;
 
-	if (edump->con->caps & CON_CAP_HW)
-		hw_read_revisions(edump);
+	if (edump->con->caps & CON_CAP_HW) {
+		ret = hw_init(edump);
+		if (ret)
+			goto con_clean;
+	}
 
 	if (act->flags & ACT_F_EEPROM) {
 		if (!edump->eepmap) {
