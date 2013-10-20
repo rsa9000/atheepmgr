@@ -15,6 +15,7 @@
  */
 
 #include "edump.h"
+#include "utils.h"
 
 static struct edump __edump;
 
@@ -151,6 +152,11 @@ static const struct eepmap_param {
 	const char *desc;
 } eepmap_params_list[] = {
 	{
+		.id = EEP_UPDATE_MAC,
+		.name = "mac",
+		.arg = "<addr>",
+		.desc = "Update device MAC address",
+	}, {
 		.name = NULL,
 	}
 };
@@ -161,6 +167,7 @@ static int act_eep_update(struct edump *edump, int argc, char *argv[])
 	const struct eepmap_param *param;
 	char *val;
 	int namelen;
+	uint8_t macaddr[6];
 	void *data;
 
 	if (!eepmap->update_eeprom || !eepmap->params_mask) {
@@ -196,6 +203,20 @@ static int act_eep_update(struct edump *edump, int argc, char *argv[])
 	}
 
 	switch (param->id) {
+	case EEP_UPDATE_MAC:
+		if (!val) {
+			fprintf(stderr, "MAC address updation requires an argument, aborting\n");
+			return -EINVAL;
+		} else if (macaddr_parse(val, macaddr) != 0) {
+			fprintf(stderr, "Can not parse MAC address - %s\n",
+				val);
+			return -EINVAL;
+		} else if(!macaddr_is_valid(macaddr)) {
+			fprintf(stderr, "Invalid MAC address - %s\n", val);
+			return -EINVAL;
+		}
+		data = macaddr;
+		break;
 	default:
 		data = val;
 	}

@@ -10,6 +10,7 @@ OBJ=\
 	eep_9300.o	\
 	eep_common.o	\
 	hw.o		\
+	utils.o		\
 
 DEFS=
 

@@ -107,6 +107,7 @@ struct connector {
 };
 
 enum eepmap_param_id {
+	EEP_UPDATE_MAC,			/* Update device MAC address */
 	__EEP_PARAM_MAX
 };
 
