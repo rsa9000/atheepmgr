@@ -66,26 +66,26 @@ typedef int bool;
 #define AR_SREV_VERSION_9340            0x300
 #define AR_SREV_VERSION_9550            0x400
 
-#define AR_SREV_9280_20_OR_LATER(edump) \
-	(((edump)->macVersion >= AR_SREV_VERSION_9280))
-#define AR_SREV_9285(_ah) \
-	(((edump)->macVersion == AR_SREV_VERSION_9285))
-#define AR_SREV_9287(_ah) \
-	(((edump)->macVersion == AR_SREV_VERSION_9287))
-#define AR_SREV_9300_20_OR_LATER(edump) \
-	(((edump)->macVersion >= AR_SREV_VERSION_9300))
-#define AR_SREV_9485(edump) \
-	(((edump)->macVersion == AR_SREV_VERSION_9485))
-#define AR_SREV_9330(edump) \
-	(((edump)->macVersion == AR_SREV_VERSION_9330))
-#define AR_SREV_9340(edump) \
-	(((edump)->macVersion == AR_SREV_VERSION_9340))
-#define AR_SREV_9462(edump) \
-	(((edump)->macVersion == AR_SREV_VERSION_9462))
-#define AR_SREV_9550(edump) \
-	(((edump)->macVersion == AR_SREV_VERSION_9550))
-#define AR_SREV_9565(edump) \
-	(((edump)->macVersion == AR_SREV_VERSION_9565))
+#define AR_SREV_9280_20_OR_LATER(_edump) \
+	((_edump)->macVersion >= AR_SREV_VERSION_9280)
+#define AR_SREV_9285(_edump) \
+	((_edump)->macVersion == AR_SREV_VERSION_9285)
+#define AR_SREV_9287(_edump) \
+	((_edump)->macVersion == AR_SREV_VERSION_9287)
+#define AR_SREV_9300_20_OR_LATER(_edump) \
+	((_edump)->macVersion >= AR_SREV_VERSION_9300)
+#define AR_SREV_9485(_edump) \
+	((_edump)->macVersion == AR_SREV_VERSION_9485)
+#define AR_SREV_9330(_edump) \
+	((_edump)->macVersion == AR_SREV_VERSION_9330)
+#define AR_SREV_9340(_edump) \
+	((_edump)->macVersion == AR_SREV_VERSION_9340)
+#define AR_SREV_9462(_edump) \
+	((_edump)->macVersion == AR_SREV_VERSION_9462)
+#define AR_SREV_9550(_edump) \
+	((_edump)->macVersion == AR_SREV_VERSION_9550)
+#define AR_SREV_9565(_edump) \
+	((_edump)->macVersion == AR_SREV_VERSION_9565)
 
 #define AH_WAIT_TIMEOUT 100000 /* (us) */
 #define AH_TIME_QUANTUM 10
