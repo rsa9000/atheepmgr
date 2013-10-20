@@ -41,6 +41,18 @@ static void mem_reg_write(struct edump *edump, uint32_t reg, uint32_t val)
 	*((volatile uint32_t *)(mpd->io_map + reg)) = val;
 }
 
+static void mem_reg_rmw(struct edump *edump, uint32_t reg, uint32_t set,
+			uint32_t clr)
+{
+	struct mem_priv *mpd = edump->con_priv;
+	uint32_t tmp;
+
+	tmp = *((volatile uint32_t *)(mpd->io_map + reg));
+	tmp &= ~clr;
+	tmp |= set;
+	*((volatile uint32_t *)(mpd->io_map + reg)) = tmp;
+}
+
 static int mem_init(struct edump *edump, const char *arg_str)
 {
 	struct mem_priv *mpd = edump->con_priv;
@@ -90,6 +102,7 @@ const struct connector con_mem = {
 	.clean = mem_clean,
 	.reg_read = mem_reg_read,
 	.reg_write = mem_reg_write,
+	.reg_rmw = mem_reg_rmw,
 	.eep_read = hw_eeprom_read_9xxx,
 	.eep_write = hw_eeprom_write_9xxx,
 };

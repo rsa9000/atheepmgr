@@ -128,6 +128,18 @@ static void pci_reg_write(struct edump *edump, uint32_t reg, uint32_t val)
 	*((volatile uint32_t *)(ppd->io_map + reg)) = val;
 }
 
+static void pci_reg_rmw(struct edump *edump, uint32_t reg, uint32_t set,
+			uint32_t clr)
+{
+	struct pci_priv *ppd = edump->con_priv;
+	uint32_t tmp;
+
+	tmp = *((volatile uint32_t *)(ppd->io_map + reg));
+	tmp &= ~clr;
+	tmp |= set;
+	*((volatile uint32_t *)(ppd->io_map + reg)) = tmp;
+}
+
 static int pci_init(struct edump *edump, const char *arg_str)
 {
 	struct pci_slot_match slot[2];
@@ -204,6 +216,7 @@ const struct connector con_pci = {
 	.clean = pci_clean,
 	.reg_read = pci_reg_read,
 	.reg_write = pci_reg_write,
+	.reg_rmw = pci_reg_rmw,
 	.eep_read = hw_eeprom_read_9xxx,
 	.eep_write = hw_eeprom_write_9xxx,
 };
