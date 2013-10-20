@@ -66,6 +66,8 @@ typedef int bool;
 #define AR_SREV_VERSION_9340            0x300
 #define AR_SREV_VERSION_9550            0x400
 
+#define AR_SREV_5416_OR_LATER(_edump) \
+	((_edump)->macVersion >= AR_SREV_VERSION_5416_PCIE)
 #define AR_SREV_9280_20_OR_LATER(_edump) \
 	((_edump)->macVersion >= AR_SREV_VERSION_9280)
 #define AR_SREV_9285(_edump) \

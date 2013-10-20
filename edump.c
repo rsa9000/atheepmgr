@@ -38,19 +38,19 @@ static const struct eepmap *eepmap_find_by_name(const char *name)
 	return NULL;
 }
 
-int register_eepmap(struct edump *edump)
+static int eepmap_detect(struct edump *edump)
 {
-	if (edump->eepmap)
-		return 0;
-
 	if (AR_SREV_9300_20_OR_LATER(edump)) {
 		edump->eepmap = &eepmap_9300;
 	} else if (AR_SREV_9287(edump)) {
 		edump->eepmap = &eepmap_9287;
 	} else if (AR_SREV_9285(edump)) {
 		edump->eepmap = &eepmap_9285;
-	} else {
+	} else if (AR_SREV_5416_OR_LATER(edump)) {
 		edump->eepmap = &eepmap_5416;
+	} else {
+		fprintf(stderr, "Unable to determine an EEPROM map suitable for this chip\n");
+		return -ENOENT;
 	}
 
 	printf("Detected EEPROM map: %s\n", edump->eepmap->name);
@@ -519,9 +519,11 @@ int main(int argc, char *argv[])
 		hw_read_revisions(edump);
 
 	if (act->flags & ACT_F_EEPROM) {
-		ret = register_eepmap(edump);
-		if (ret)
-			goto con_clean;
+		if (!edump->eepmap) {
+			ret = eepmap_detect(edump);
+			if (ret)
+				goto con_clean;
+		}
 
 		edump->eepmap_priv = malloc(edump->eepmap->priv_data_sz);
 		if (!edump->eepmap_priv) {
