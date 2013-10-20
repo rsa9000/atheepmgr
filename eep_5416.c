@@ -517,6 +517,12 @@ static bool eep_5416_update_eeprom(struct edump *edump, int param,
 	uint16_t sum;
 
 	switch (param) {
+	case EEP_UPDATE_MAC:
+		data_pos = AR5416_DATA_START_LOC +
+			   EEP_FIELD_OFFSET(baseEepHeader.macAddr);
+		data_len = EEP_FIELD_SIZE(baseEepHeader.macAddr);
+		memcpy(&buf[data_pos], data, data_len * sizeof(uint16_t));
+		break;
 	default:
 		fprintf(stderr, "Internal error: unknown parameter Id\n");
 		return false;
@@ -562,5 +568,5 @@ const struct eepmap eepmap_5416 = {
 	.dump_modal_header = eep_5416_dump_modal_header,
 	.dump_power_info = eep_5416_dump_power_info,
 	.update_eeprom = eep_5416_update_eeprom,
-	.params_mask = 0,
+	.params_mask = BIT(EEP_UPDATE_MAC),
 };
