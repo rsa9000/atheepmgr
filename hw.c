@@ -81,6 +81,160 @@ bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
 	return false;
 }
 
+static int hw_gpio_input_get_ar9xxx(struct edump *edump, unsigned gpio)
+{
+	uint32_t regval = REG_READ(AR9XXX_GPIO_IN_OUT);
+
+	if (gpio >= edump->gpio_num)
+		return 0;
+
+	if (AR_SREV_9300_20_OR_LATER(edump))
+		regval = MS(regval, AR9300_GPIO_IN_VAL);
+	else if (AR_SREV_9287_11_OR_LATER(edump))
+		regval = MS(regval, AR9287_GPIO_IN_VAL);
+	else if (AR_SREV_9285_12_OR_LATER(edump))
+		regval = MS(regval, AR9285_GPIO_IN_VAL);
+	else if (AR_SREV_9280_20_OR_LATER(edump))
+		regval = MS(regval, AR9280_GPIO_IN_VAL);
+	else
+		regval = MS(regval, AR5416_GPIO_IN_VAL);
+
+	return !!(regval & BIT(gpio));
+}
+
+static int hw_gpio_output_get_ar9xxx(struct edump *edump, unsigned gpio)
+{
+	if (gpio >= edump->gpio_num)
+		return 0;
+
+	return !!(REG_READ(AR9XXX_GPIO_IN_OUT) & BIT(gpio));
+}
+
+static void hw_gpio_output_set_ar9xxx(struct edump *edump, unsigned gpio,
+				      int val)
+{
+	REG_RMW(AR9XXX_GPIO_IN_OUT, !!val << gpio, 1 << gpio);
+}
+
+static int hw_gpio_out_mux_get_ar9xxx(struct edump *edump, unsigned gpio)
+{
+	uint32_t reg;
+	unsigned sh = (gpio % 6) * 5;
+
+	if (gpio >= edump->gpio_num)
+		return 0;
+
+	if (gpio > 11)
+		reg = AR9XXX_GPIO_OUTPUT_MUX3;
+	else if (gpio > 5)
+		reg = AR9XXX_GPIO_OUTPUT_MUX2;
+	else
+		reg = AR9XXX_GPIO_OUTPUT_MUX1;
+
+	return (REG_READ(reg) >> sh) & AR9XXX_GPIO_OUTPUT_MUX_MASK;
+}
+
+static void hw_gpio_out_mux_set_ar9xxx(struct edump *edump, unsigned gpio,
+				       int type)
+{
+	uint32_t reg, tmp;
+	unsigned sh = (gpio % 6) * 5;
+
+	if (gpio >= edump->gpio_num)
+		return;
+
+	if (gpio > 11)
+		reg = AR9XXX_GPIO_OUTPUT_MUX3;
+	else if (gpio > 5)
+		reg = AR9XXX_GPIO_OUTPUT_MUX2;
+	else
+		reg = AR9XXX_GPIO_OUTPUT_MUX1;
+
+	if (AR_SREV_9280_20_OR_LATER(edump) ||
+	    reg != AR9XXX_GPIO_OUTPUT_MUX1) {
+		REG_RMW(reg, type << sh, AR9XXX_GPIO_OUTPUT_MUX_MASK << sh);
+	} else {
+		tmp = REG_READ(reg);
+		tmp = ((tmp & 0x1f0) << 1) | (tmp & ~0x1f0);
+		tmp &= ~(AR9XXX_GPIO_OUTPUT_MUX_MASK << sh);
+		tmp |= type << sh;
+		REG_WRITE(reg, tmp);
+	}
+}
+
+static const char *hw_gpio_out_mux_get_str_ar9xxx(struct edump *edump,
+						  unsigned gpio)
+{
+	int type = hw_gpio_out_mux_get_ar9xxx(edump, gpio);
+
+	switch (type) {
+	case AR9XXX_GPIO_OUTPUT_MUX_OUTPUT:
+		return "Out";
+	case AR9XXX_GPIO_OUTPUT_MUX_TX_FRAME:
+		return "TxF";
+	case AR9XXX_GPIO_OUTPUT_MUX_RX_CLEAR:
+		return "RxC";
+	case AR9XXX_GPIO_OUTPUT_MUX_MAC_NETWORK:
+		return "Net";
+	case AR9XXX_GPIO_OUTPUT_MUX_MAC_POWER:
+		return "Pwr";
+	}
+
+	return "Unk";
+}
+
+static int hw_gpio_dir_get_ar9xxx(struct edump *edump, unsigned gpio)
+{
+	unsigned sh = gpio * 2;
+
+	if (gpio >= edump->gpio_num)
+		return -1;
+
+	return (REG_READ(AR9XXX_GPIO_OE_OUT) >> sh) & AR9XXX_GPIO_OE_OUT_DRV;
+}
+
+static void hw_gpio_dir_set_out_ar9xxx(struct edump *edump, unsigned gpio)
+{
+	unsigned sh = gpio * 2;
+
+	if (gpio >= edump->gpio_num)
+		return;
+
+	hw_gpio_out_mux_set_ar9xxx(edump, gpio, AR9XXX_GPIO_OUTPUT_MUX_OUTPUT);
+
+	REG_RMW(AR9XXX_GPIO_OE_OUT,
+		AR9XXX_GPIO_OE_OUT_DRV_ALL << sh,
+		AR9XXX_GPIO_OE_OUT_DRV << sh);
+}
+
+static const char *hw_gpio_dir_get_str_ar9xxx(struct edump *edump,
+					      unsigned gpio)
+{
+	int dir = hw_gpio_dir_get_ar9xxx(edump, gpio);
+
+	switch (dir) {
+	case AR9XXX_GPIO_OE_OUT_DRV_NO:
+		return "In";
+	case AR9XXX_GPIO_OE_OUT_DRV_LOW:
+		return "Low";
+	case AR9XXX_GPIO_OE_OUT_DRV_HI:
+		return "Hi";
+	case AR9XXX_GPIO_OE_OUT_DRV_ALL:
+		return "Out";
+	}
+
+	return "Unk";
+}
+
+static const struct gpio_ops gpio_ops_ar9xxx = {
+	.input_get = hw_gpio_input_get_ar9xxx,
+	.output_get = hw_gpio_output_get_ar9xxx,
+	.output_set = hw_gpio_output_set_ar9xxx,
+	.dir_set_out = hw_gpio_dir_set_out_ar9xxx,
+	.dir_get_str = hw_gpio_dir_get_str_ar9xxx,
+	.out_mux_get_str = hw_gpio_out_mux_get_str_ar9xxx,
+};
+
 bool hw_eeprom_read_9xxx(struct edump *edump, uint32_t off, uint16_t *data)
 {
 #define WAIT_MASK	AR_EEPROM_STATUS_DATA_BUSY | \
@@ -144,6 +298,23 @@ bool hw_eeprom_write(struct edump *edump, uint32_t off, uint16_t data)
 int hw_init(struct edump *edump)
 {
 	hw_read_revisions(edump);
+
+	if (AR_SREV_5416_OR_LATER(edump)) {
+		edump->gpio = &gpio_ops_ar9xxx;
+
+		if (AR_SREV_9300_20_OR_LATER(edump))
+			edump->gpio_num = 17;
+		else if (AR_SREV_9287_11_OR_LATER(edump))
+			edump->gpio_num = 11;
+		else if (AR_SREV_9285_12_OR_LATER(edump))
+			edump->gpio_num = 12;
+		else if (AR_SREV_9280_20_OR_LATER(edump))
+			edump->gpio_num = 10;
+		else
+			edump->gpio_num = 14;
+	} else {
+		fprintf(stderr, "Unable to configure chip GPIO support\n");
+	}
 
 	return 0;
 }

@@ -224,6 +224,39 @@ static int act_eep_update(struct edump *edump, int argc, char *argv[])
 	return eepmap->update_eeprom(edump, param->id, data) ? 0 : -EIO;
 }
 
+static int act_gpio_dump(struct edump *edump, int argc, char *argv[])
+{
+#define FOR_EACH_GPIO(_caption)				\
+		printf("%20s:", _caption);		\
+		for (i = 0; i < edump->gpio_num; ++i)
+	int i;
+
+	if (!edump->gpio) {
+		fprintf(stderr, "GPIO control is not supported for this chip, aborting\n");
+		return -EOPNOTSUPP;
+	}
+
+	FOR_EACH_GPIO("GPIO #")
+		printf(" %-3u", i);
+	printf("\n");
+	FOR_EACH_GPIO("Direction")
+		printf(" %-3s", edump->gpio->dir_get_str(edump, i));
+	printf("\n");
+	FOR_EACH_GPIO("Output mux")
+		printf(" %-3s", edump->gpio->out_mux_get_str(edump, i));
+	printf("\n");
+	FOR_EACH_GPIO("Input value")
+		printf(" %c  ", edump->gpio->input_get(edump, i) ? '1' : ' ');
+	printf("\n");
+	FOR_EACH_GPIO("Output value")
+		printf(" %c  ", edump->gpio->output_get(edump, i) ? '1' : ' ');
+	printf("\n");
+
+	return 0;
+
+#undef FOR_EACH_GPIO
+}
+
 static int act_reg_read(struct edump *edump, int argc, char *argv[])
 {
 	unsigned long addr;
@@ -298,6 +331,10 @@ static const struct action {
 		.name = "update",
 		.func = act_eep_update,
 		.flags = ACT_F_EEPROM,
+	}, {
+		.name = "gpiodump",
+		.func = act_gpio_dump,
+		.flags = ACT_F_HW,
 	}, {
 		.name = "regread",
 		.func = act_reg_read,
@@ -395,6 +432,7 @@ static void usage(char *name)
 		"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
 		"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>. See per-map\n"
 		"                  supported parameters list below.\n"
+		"  gpiodump        Dump GPIO lines state to the terminal.\n"
 		"  regread <addr>  Read register at address <addr> and print it value.\n"
 		"  regwrite <addr> <val> Write value <val> to the register at address <addr>.\n"
 		"\n"
