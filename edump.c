@@ -169,6 +169,7 @@ static int act_eep_update(struct edump *edump, int argc, char *argv[])
 	int namelen;
 	uint8_t macaddr[6];
 	void *data;
+	bool res;
 
 	if (!eepmap->update_eeprom || !eepmap->params_mask) {
 		fprintf(stderr, "EEPROM map does not support content updation, aborting\n");
@@ -221,7 +222,13 @@ static int act_eep_update(struct edump *edump, int argc, char *argv[])
 		data = val;
 	}
 
-	return eepmap->update_eeprom(edump, param->id, data) ? 0 : -EIO;
+	EEP_UNLOCK();
+
+	res = eepmap->update_eeprom(edump, param->id, data);
+
+	EEP_LOCK();
+
+	return res ? 0 : -EIO;
 }
 
 static int act_gpio_dump(struct edump *edump, int argc, char *argv[])
@@ -472,6 +479,8 @@ int main(int argc, char *argv[])
 	}
 
 	edump->host_is_be = __BYTE_ORDER == __BIG_ENDIAN;
+	edump->eep_wp_gpio_num = EEP_WP_GPIO_AUTO;	/* Autodetection */
+	edump->eep_wp_gpio_pol = 0;		/* Unlock by low level */
 
 	ret = -EINVAL;
 	while ((opt = getopt(argc, argv, optstr)) != -1) {
@@ -557,6 +566,13 @@ int main(int argc, char *argv[])
 		ret = hw_init(edump);
 		if (ret)
 			goto con_clean;
+
+		if (edump->eep_wp_gpio_num != EEP_WP_GPIO_NONE &&
+		    edump->eep_wp_gpio_num >= edump->gpio_num) {
+			fprintf(stderr, "EEPROM unlocking GPIO #%d is out of range 0...%d\n",
+				edump->eep_wp_gpio_num, edump->gpio_num - 1);
+			goto con_clean;
+		}
 	}
 
 	if (act->flags & ACT_F_EEPROM) {

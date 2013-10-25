@@ -273,6 +273,26 @@ bool hw_eeprom_write_9xxx(struct edump *edump, uint32_t off, uint16_t data)
 #undef WAIT_MASK
 }
 
+void hw_eeprom_lock_gpio(struct edump *edump, int lock)
+{
+	int val = !!edump->eep_wp_gpio_pol ^ !!lock;
+
+	if (edump->eep_wp_gpio_num >= edump->gpio_num ||
+	    edump->eep_wp_gpio_num < 0)
+		return;
+
+	if (!edump->gpio) {
+		fprintf(stderr, "GPIO management is not available, EEPROM %s is impossible\n",
+			lock ? "locking" : "unlocking");
+		return;
+	}
+
+	edump->gpio->dir_set_out(edump, edump->eep_wp_gpio_num);
+	usleep(1);
+	edump->gpio->output_set(edump, edump->eep_wp_gpio_num, val);
+	usleep(1);
+}
+
 bool hw_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data)
 {
 	if (!edump->con->eep_read(edump, off, data))
@@ -295,6 +315,12 @@ bool hw_eeprom_write(struct edump *edump, uint32_t off, uint16_t data)
 	return true;
 }
 
+void hw_eeprom_lock(struct edump *edump, int lock)
+{
+	if (edump->con->eep_lock)
+		edump->con->eep_lock(edump, lock);
+}
+
 int hw_init(struct edump *edump)
 {
 	hw_read_revisions(edump);
@@ -314,6 +340,16 @@ int hw_init(struct edump *edump)
 			edump->gpio_num = 14;
 	} else {
 		fprintf(stderr, "Unable to configure chip GPIO support\n");
+	}
+
+	if (edump->eep_wp_gpio_num == EEP_WP_GPIO_AUTO) {
+		if (AR_SREV_5416_OR_LATER(edump)) {
+			edump->eep_wp_gpio_num = 3;
+			edump->eep_wp_gpio_pol = 0;
+		} else {
+			fprintf(stderr, "Unable to determine EEPROM unlocking GPIO, the feature will be disabled\n");
+			edump->eep_wp_gpio_num = EEP_WP_GPIO_NONE;
+		}
 	}
 
 	return 0;

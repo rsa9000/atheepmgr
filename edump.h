@@ -138,6 +138,9 @@ typedef int bool;
 
 #define CON_CAP_HW		1	/* Con. is able to interact with HW */
 
+#define EEP_WP_GPIO_AUTO	-1	/* Use autodetection */
+#define EEP_WP_GPIO_NONE	-2	/* Do not use GPIO for unlocking */
+
 struct edump;
 
 struct gpio_ops {
@@ -161,6 +164,7 @@ struct connector {
 			uint32_t clr);
 	bool (*eep_read)(struct edump *edump, uint32_t off, uint16_t *data);
 	bool (*eep_write)(struct edump *edump, uint32_t off, uint16_t data);
+	void (*eep_lock)(struct edump *edump, int lock);
 };
 
 enum eepmap_param_id {
@@ -198,6 +202,9 @@ struct edump {
 	int eep_io_swap;			/* Swap words */
 	uint16_t *eep_buf;			/* Intermediated EEPROM buf */
 
+	int eep_wp_gpio_num;			/* EEPROM WP GPIO number */
+	int eep_wp_gpio_pol;			/* EEPROM WP unlock polarity */
+
 	const struct gpio_ops *gpio;
 	unsigned gpio_num;			/* Number of GPIO lines */
 };
@@ -215,14 +222,20 @@ bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
 	     uint32_t val, uint32_t timeout);
 bool hw_eeprom_read_9xxx(struct edump *edump, uint32_t off, uint16_t *data);
 bool hw_eeprom_write_9xxx(struct edump *edump, uint32_t off, uint16_t data);
+void hw_eeprom_lock_gpio(struct edump *edump, int lock);
 bool hw_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data);
 bool hw_eeprom_write(struct edump *edump, uint32_t off, uint16_t data);
+void hw_eeprom_lock(struct edump *edump, int lock);
 int hw_init(struct edump *edump);
 
 #define EEP_READ(_off, _data)		\
 		hw_eeprom_read(edump, _off, _data)
 #define EEP_WRITE(_off, _data)		\
 		hw_eeprom_write(edump, _off, _data)
+#define EEP_LOCK()			\
+		hw_eeprom_lock(edump, 1)
+#define EEP_UNLOCK()			\
+		hw_eeprom_lock(edump, 0)
 #define REG_READ(_reg)			\
 		edump->con->reg_read(edump, _reg)
 #define REG_WRITE(_reg, _val)		\
