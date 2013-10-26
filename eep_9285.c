@@ -324,7 +324,9 @@ const struct eepmap eepmap_9285 = {
 	.eep_buf_sz = AR9285_DATA_START_LOC + AR9285_DATA_SZ,
 	.fill_eeprom  = eep_9285_fill,
 	.check_eeprom = eep_9285_check,
-	.dump_base_header = eep_9285_dump_base_header,
-	.dump_modal_header = eep_9285_dump_modal_header,
-	.dump_power_info = eep_9285_dump_power_info,
+	.dump = {
+		[EEP_SECT_BASE] = eep_9285_dump_base_header,
+		[EEP_SECT_MODAL] = eep_9285_dump_modal_header,
+		[EEP_SECT_POWER] = eep_9285_dump_power_info,
+	},
 };

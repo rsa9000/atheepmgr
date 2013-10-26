@@ -58,17 +58,28 @@ static int eepmap_detect(struct edump *edump)
 	return 0;
 }
 
+static const struct eepmap_section {
+	const char *name;
+	const char *desc;
+} eepmap_sections_list[EEP_SECT_MAX] = {
+	[EEP_SECT_BASE] = {
+		.name = "base",
+		.desc = "Main device configuration (common for all modes)",
+	},
+	[EEP_SECT_MODAL] = {
+		.name = "modal",
+		.desc = "Per-band (per-mode) device configuration",
+	},
+	[EEP_SECT_POWER] = {
+		.name = "power",
+		.desc = "Tx Power information (calibrations and limitations)",
+	},
+};
+
 static int act_eep_dump(struct edump *edump, int argc, char *argv[])
 {
-	struct {
-		const char *name;
-		void (*func)(struct edump *edump);
-	} known_sections[] = {
-		{"base", edump->eepmap->dump_base_header},
-		{"modal", edump->eepmap->dump_modal_header},
-		{"power", edump->eepmap->dump_power_info},
-	};
 	static char def[4] = {'a', 'l', 'l', '\0'};
+	const struct eepmap *eepmap = edump->eepmap;
 	char *list = argc > 0 ? argv[0] : def;
 	int dump_mask = 0;
 	char *tok, *p;
@@ -89,23 +100,32 @@ static int act_eep_dump(struct edump *edump, int argc, char *argv[])
 		if (strcasecmp(tok, "none") == 0)
 			return 0;
 
-		for (i = 0; i < ARRAY_SIZE(known_sections); ++i)
-			if (strcasecmp(tok, known_sections[i].name) == 0)
+		for (i = 0; i < EEP_SECT_MAX; ++i) {
+			if (!eepmap_sections_list[i].name)
+				continue;
+			if (strcasecmp(tok, eepmap_sections_list[i].name) == 0)
 				break;
-		if (i == ARRAY_SIZE(known_sections)) {
+		}
+		if (i == EEP_SECT_MAX) {
 			fprintf(stderr, "Unknown EEPROM section to dump -- %s\n",
 				tok);
 			return -EINVAL;
+		} else if (!eepmap->dump[i]) {
+			fprintf(stderr, "%s EEPROM map does not support %s section dumping\n",
+				eepmap->name, eepmap_sections_list[i].name);
+			continue;	/* Just ignore without interruption */
 		}
 
 		dump_mask |= 1 << i;
 	}
 
-	for (i = 0; i < ARRAY_SIZE(known_sections); ++i) {
+	for (i = 0; i < EEP_SECT_MAX; ++i) {
 		if (!(dump_mask & (1 << i)))
 			continue;
+		if (!eepmap->dump[i])
+			continue;
 
-		known_sections[i].func(edump);
+		eepmap->dump[i](edump);
 	}
 
 	return 0;
@@ -373,8 +393,16 @@ static void usage_eepmap(const struct eepmap *eepmap)
 {
 	const struct eepmap_param *param;
 	char buf[0x100];
+	int i;
 
 	printf("  %-15s %s\n", eepmap->name, eepmap->desc);
+	printf("%18s%s:\n", "", "Supported sections for dumping");
+	for (i = 0; i < EEP_SECT_MAX; ++i) {
+		if (!eepmap->dump[i])
+			continue;
+		printf("%20s%-10s %s\n", "", eepmap_sections_list[i].name,
+		       eepmap_sections_list[i].desc);
+	}
 	if (eepmap->params_mask && eepmap->update_eeprom) {
 		printf("%18s%s:\n", "", "Updateable EEPROM params");
 		for (param = &eepmap_params_list[0]; param->name; ++param) {
@@ -426,16 +454,15 @@ static void usage(char *name)
 		"\n"
 		"Available actions:\n"
 		"  dump [<sects>]  Read & parse the EEPROM content and then dump it to the\n"
-		"                  terminal (default action). An optional list of the\n"
+		"                  terminal (this is the default action). An optional list of the\n"
 		"                  comma-separated EEPROM sections <sect> can be specified as the\n"
-		"                  action argument. This argument tells the utility what sections\n"
-		"                  should be dumped. The following sections are supported:\n"
-		"                  'base', 'modal' and 'power'. These are for: dump of the base\n"
-		"                  EEPROM header, dump of the modal EEPROM header(s) and dump of\n"
-		"                  the power information respectively. Also there are two special\n"
-		"                  keywords: 'all' and 'none'. The first causes the dump of all\n"
-		"                  sections and the second disables any dump to the terminal. The\n"
-		"                  default behaviour is to dump all EEPROM sections.\n"
+		"                  argument. This argument tells the utility what sections should\n"
+		"                  be dumped. See the list of awailable sections for dumping\n"
+		"                  below in the EEPROM maps. Also there are two special keywords:\n"
+		"                  'all' and 'none'. The first causes the dumping of all sections\n"
+		"                  and the second disables any dumping to the terminal.\n"
+		"                  The default action behaviour is to print the contents of all\n"
+		"                  supported EEPROM sections.\n"
 		"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
 		"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>. See per-map\n"
 		"                  supported parameters list below.\n"

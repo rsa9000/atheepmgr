@@ -564,9 +564,11 @@ const struct eepmap eepmap_5416 = {
 	.eep_buf_sz = AR5416_DATA_START_LOC + AR5416_DATA_SZ,
 	.fill_eeprom  = eep_5416_fill,
 	.check_eeprom = eep_5416_check,
-	.dump_base_header = eep_5416_dump_base_header,
-	.dump_modal_header = eep_5416_dump_modal_header,
-	.dump_power_info = eep_5416_dump_power_info,
+	.dump = {
+		[EEP_SECT_BASE] = eep_5416_dump_base_header,
+		[EEP_SECT_MODAL] = eep_5416_dump_modal_header,
+		[EEP_SECT_POWER] = eep_5416_dump_power_info,
+	},
 	.update_eeprom = eep_5416_update_eeprom,
 	.params_mask = BIT(EEP_UPDATE_MAC),
 };

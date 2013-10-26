@@ -167,6 +167,14 @@ struct connector {
 	void (*eep_lock)(struct edump *edump, int lock);
 };
 
+enum eepmap_section_id {
+	EEP_SECT_BASE,
+	EEP_SECT_MODAL,
+	EEP_SECT_POWER,
+	__EEP_SECT_MAX
+};
+#define EEP_SECT_MAX			(__EEP_SECT_MAX)
+
 enum eepmap_param_id {
 	EEP_UPDATE_MAC,			/* Update device MAC address */
 	__EEP_PARAM_MAX
@@ -179,9 +187,7 @@ struct eepmap {
 	size_t eep_buf_sz;		/* EEP buffer size in 16-bit words */
 	bool (*fill_eeprom)(struct edump *edump);
 	int (*check_eeprom)(struct edump *edump);
-	void (*dump_base_header)(struct edump *edump);
-	void (*dump_modal_header)(struct edump *edump);
-	void (*dump_power_info)(struct edump *edump);
+	void (*dump[EEP_SECT_MAX])(struct edump *edump);
 	bool (*update_eeprom)(struct edump *edump, int param,
 			      const void *data);
 	int params_mask;		/* Mask of updateable params */
