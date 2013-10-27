@@ -73,11 +73,24 @@
 #define FBIN2FREQ(b, is_2g)	((is_2g) ? (b) + 2300 : (b) * 5 + 4800)
 
 extern const char * const sDeviceType[];
+extern const char * const sAccessType[];
 extern const char * const eep_rates_cck[AR5416_NUM_TARGET_POWER_RATES_LEG];
 extern const char * const eep_rates_ofdm[AR5416_NUM_TARGET_POWER_RATES_LEG];
 extern const char * const eep_rates_ht[AR5416_NUM_TARGET_POWER_RATES_HT];
 extern const char * const eep_ctldomains[];
 extern const char * const eep_ctlmodes[];
+
+struct ar5416_reg_init {
+	uint16_t addr;
+	uint32_t val;
+} __attribute__ ((packed));
+
+struct ar5416_init {
+	uint16_t magic;
+	uint16_t prot;
+	uint16_t iptr;
+	struct ar5416_reg_init regs[];
+} __attribute__ ((packed));
 
 struct ar5416_spur_chan {
 	uint16_t spurChan;

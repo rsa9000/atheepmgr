@@ -62,6 +62,10 @@ static const struct eepmap_section {
 	const char *name;
 	const char *desc;
 } eepmap_sections_list[EEP_SECT_MAX] = {
+	[EEP_SECT_INIT] = {
+		.name = "init",
+		.desc = "Device initialization information (e.g. PCI IDs)",
+	},
 	[EEP_SECT_BASE] = {
 		.name = "base",
 		.desc = "Main device configuration (common for all modes)",

@@ -168,6 +168,7 @@ struct connector {
 };
 
 enum eepmap_section_id {
+	EEP_SECT_INIT,
 	EEP_SECT_BASE,
 	EEP_SECT_MODAL,
 	EEP_SECT_POWER,

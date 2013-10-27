@@ -27,6 +27,10 @@ const char * const sDeviceType[] = {
 	"UNKNOWN [7] ",
 };
 
+const char * const sAccessType[] = {
+	"ReadWrite", "WriteOnly", "ReadOnly", "NoAccess"
+};
+
 const char * const eep_rates_cck[AR5416_NUM_TARGET_POWER_RATES_LEG] = {
 	"1 mbps", "2 mbps", "5.5 mbps", "11 mbps"
 };

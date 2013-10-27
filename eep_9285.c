@@ -18,6 +18,10 @@
 #include "eep_9285.h"
 
 struct eep_9285_priv {
+	union {
+		struct ar5416_init ini;
+		uint16_t init_data[AR9285_DATA_START_LOC];
+	};
 	struct ar9285_eeprom eep;
 };
 
@@ -35,6 +39,7 @@ static bool eep_9285_fill(struct edump *edump)
 {
 	struct eep_9285_priv *emp = edump->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
+	uint16_t *eep_init = (uint16_t *)&emp->ini;
 	uint16_t *buf = edump->eep_buf;
 	uint16_t magic;
 	int addr;
@@ -55,6 +60,10 @@ static bool eep_9285_fill(struct edump *edump)
 		}
 	}
 
+	/* Copy from buffer to the Init data */
+	for (addr = 0; addr < AR9285_DATA_START_LOC; ++addr)
+		eep_init[addr] = buf[addr];
+
 	/* Copy from buffer to the EEPROM structure */
 	for (addr = 0; addr < AR9285_DATA_SZ; ++addr)
 		eep_data[addr] = buf[AR9285_DATA_START_LOC + addr];
@@ -65,15 +74,15 @@ static bool eep_9285_fill(struct edump *edump)
 static bool eep_9285_check(struct edump *edump)
 {
 	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct ar5416_init *ini = &emp->ini;
 	struct ar9285_eeprom *eep = &emp->eep;
 	const uint16_t *buf = edump->eep_buf;
 	uint16_t sum;
 	int i, el;
 
-	if (buf[AR5416_EEPROM_MAGIC_OFFSET] != AR5416_EEPROM_MAGIC) {
+	if (ini->magic != AR5416_EEPROM_MAGIC) {
 		fprintf(stderr, "Invalid EEPROM Magic 0x%04x, expected 0x%04x\n",
-			buf[AR5416_EEPROM_MAGIC_OFFSET],
-			AR5416_EEPROM_MAGIC);
+			ini->magic, AR5416_EEPROM_MAGIC);
 		return false;
 	}
 
@@ -141,6 +150,38 @@ static bool eep_9285_check(struct edump *edump)
 	}
 
 	return true;
+}
+
+static void eep_9285_dump_init_data(struct edump *edump)
+{
+	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct ar5416_init *ini = &emp->ini;
+	uint16_t magic = le16toh(ini->magic);
+	uint16_t prot = le16toh(ini->prot);
+	uint16_t iptr = le16toh(ini->iptr);
+	int i, maxregsnum;
+
+	EEP_PRINT_SECT_NAME("EEPROM Init data");
+
+	printf("%-20s : 0x%04X\n", "Magic", magic);
+	for (i = 0; i < 8; ++i)
+		printf("Region%d access       : %s\n", i,
+		       sAccessType[(prot >> (i * 2)) & 0x3]);
+	printf("%-20s : 0x%04X\n", "Regs init data ptr", iptr);
+	printf("\n");
+
+	EEP_PRINT_SUBSECT_NAME("Register initialization data");
+
+	maxregsnum = (sizeof(emp->init_data) - offsetof(typeof(*ini), regs)) /
+		     sizeof(ini->regs[0]);
+	for (i = 0; i < maxregsnum; ++i) {
+		if (ini->regs[i].addr == 0xffff)
+			break;
+		printf("  %04X: %08X\n", le16toh(ini->regs[i].addr),
+		       le32toh(ini->regs[i].val));
+	}
+
+	printf("\n");
 }
 
 static void eep_9285_dump_base_header(struct edump *edump)
@@ -325,6 +366,7 @@ const struct eepmap eepmap_9285 = {
 	.fill_eeprom  = eep_9285_fill,
 	.check_eeprom = eep_9285_check,
 	.dump = {
+		[EEP_SECT_INIT] = eep_9285_dump_init_data,
 		[EEP_SECT_BASE] = eep_9285_dump_base_header,
 		[EEP_SECT_MODAL] = eep_9285_dump_modal_header,
 		[EEP_SECT_POWER] = eep_9285_dump_power_info,
