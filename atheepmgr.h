@@ -41,18 +41,6 @@ enum {
 
 typedef int bool;
 
-#define AR_SREV                 0x4020
-#define AR_SREV_ID              0x000000FF
-#define AR_SREV_VERSION         0x000000F0
-#define AR_SREV_VERSION_S       4
-#define AR_SREV_REVISION        0x00000007
-#define AR_SREV_VERSION2        0xFFFC0000
-#define AR_SREV_VERSION2_S      18
-#define AR_SREV_TYPE2           0x0003F000
-#define AR_SREV_TYPE2_S         12
-#define AR_SREV_REVISION2       0x00000F00
-#define AR_SREV_REVISION2_S     8
-
 #define AR_SREV_VERSION_5418		0xC
 #define AR_SREV_REVISION_5418		0
 #define AR_SREV_VERSION_5416		0xD
@@ -95,46 +83,6 @@ typedef int bool;
 	((_aem)->macVersion == AR_SREV_VERSION_9550)
 #define AR_SREV_9565(_aem) \
 	((_aem)->macVersion == AR_SREV_VERSION_9565)
-
-#define AR9XXX_GPIO_IN_OUT	(AR_SREV_9340(aem) ? 0x4028 : 0x4048)
-
-#define AR5416_GPIO_IN_VAL	0x0FFFC000
-#define AR5416_GPIO_IN_VAL_S	14
-#define AR9280_GPIO_IN_VAL	0x000FFC00
-#define AR9280_GPIO_IN_VAL_S	10
-#define AR9285_GPIO_IN_VAL	0x00FFF000
-#define AR9285_GPIO_IN_VAL_S	12
-#define AR9287_GPIO_IN_VAL	0x003FF800
-#define AR9287_GPIO_IN_VAL_S	11
-#define AR9300_GPIO_IN_VAL	0x0001FFFF
-#define AR9300_GPIO_IN_VAL_S	0
-
-#define AR9XXX_GPIO_OE_OUT	(AR_SREV_9340(aem) ? 0x4030 : \
-				 (AR_SREV_9300_20_OR_LATER(aem) ? 0x4050 : \
-				  0x404c))
-
-#define AR9XXX_GPIO_OE_OUT_DRV		0x3
-#define AR9XXX_GPIO_OE_OUT_DRV_NO	0x0
-#define AR9XXX_GPIO_OE_OUT_DRV_LOW	0x1
-#define AR9XXX_GPIO_OE_OUT_DRV_HI	0x2
-#define AR9XXX_GPIO_OE_OUT_DRV_ALL	0x3
-
-#define AR9XXX_GPIO_OUTPUT_MUX1	(AR_SREV_9340(aem) ? 0x4048 : \
-				 (AR_SREV_9300_20_OR_LATER(aem) ? 0x4068 : \
-				  0x4060))
-#define AR9XXX_GPIO_OUTPUT_MUX2	(AR_SREV_9340(aem) ? 0x404C : \
-				 (AR_SREV_9300_20_OR_LATER(aem) ? 0x406C : \
-				  0x4064))
-#define AR9XXX_GPIO_OUTPUT_MUX3	(AR_SREV_9340(aem) ? 0x4050 : \
-				 (AR_SREV_9300_20_OR_LATER(aem) ? 0x4070 : \
-				  0x4068))
-
-#define AR9XXX_GPIO_OUTPUT_MUX_MASK		0x1f
-#define AR9XXX_GPIO_OUTPUT_MUX_OUTPUT		0x00
-#define AR9XXX_GPIO_OUTPUT_MUX_TX_FRAME		0x03
-#define AR9XXX_GPIO_OUTPUT_MUX_RX_CLEAR		0x04
-#define AR9XXX_GPIO_OUTPUT_MUX_MAC_NETWORK	0x05
-#define AR9XXX_GPIO_OUTPUT_MUX_MAC_POWER	0x06
 
 #define AH_WAIT_TIMEOUT 100000 /* (us) */
 #define AH_TIME_QUANTUM 10

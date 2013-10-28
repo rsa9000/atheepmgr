@@ -16,6 +16,7 @@
  */
 
 #include "atheepmgr.h"
+#include "hw.h"
 
 static struct {
 	uint32_t version;

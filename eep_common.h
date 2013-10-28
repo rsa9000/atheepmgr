@@ -28,19 +28,6 @@
 #define AR5416_EEP_NO_BACK_VER          0x1
 #define AR5416_EEP_VER                  0xE
 
-#define AR5416_EEPROM_S         2
-#define AR5416_EEPROM_OFFSET    0x2000
-
-#define AR_EEPROM_STATUS_DATA             (AR_SREV_9340(aem) ? 0x40c8 : \
-					   (AR_SREV_9300_20_OR_LATER(aem) ? \
-					    0x4084 : 0x407c))
-#define AR_EEPROM_STATUS_DATA_VAL                0x0000ffff
-#define AR_EEPROM_STATUS_DATA_VAL_S              0
-#define AR_EEPROM_STATUS_DATA_BUSY               0x00010000
-#define AR_EEPROM_STATUS_DATA_BUSY_ACCESS        0x00020000
-#define AR_EEPROM_STATUS_DATA_PROT_ACCESS        0x00040000
-#define AR_EEPROM_STATUS_DATA_ABSENT_ACCESS      0x00080000
-
 #define AR5416_OPFLAGS_11A           0x01
 #define AR5416_OPFLAGS_11G           0x02
 #define AR5416_OPFLAGS_N_5G_HT40     0x04
