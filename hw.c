@@ -19,11 +19,18 @@
 
 static struct {
 	uint32_t version;
+	uint32_t revision;
 	const char * name;
 } mac_bb_names[] = {
+	{ AR_SREV_VERSION_5416,	AR_SREV_REVISION_5416,	"5416" },
+	{ AR_SREV_VERSION_5418,	AR_SREV_REVISION_5418,	"5418" },
+};
+
+static struct {
+	uint32_t version;
+	const char * name;
+} mac_bb_names2[] = {
 	/* Devices with external radios */
-	{ AR_SREV_VERSION_5416_PCI,	"5416" },
-	{ AR_SREV_VERSION_5416_PCIE,	"5418" },
 	{ AR_SREV_VERSION_9160,		"9160" },
 	/* Single-chip solutions */
 	{ AR_SREV_VERSION_9280,		"9280" },
@@ -38,13 +45,31 @@ static struct {
 	{ AR_SREV_VERSION_9550,         "9550" },
 };
 
-static const char *mac_bb_name(uint32_t mac_bb_version)
+static const char *mac_bb_name(uint32_t ver, uint32_t rev)
 {
+	const char *name = "????";
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(mac_bb_names); i++) {
-		if (mac_bb_names[i].version == mac_bb_version) {
-			return mac_bb_names[i].name;
+		if (mac_bb_names[i].version == ver)
+			name = mac_bb_names[i].name;
+		else
+			continue;
+
+		if (mac_bb_names[i].revision == rev)
+			break;	/* NB: name already assigned above */
+	}
+
+	return name;
+}
+
+static const char *mac_bb_name2(uint32_t mac_bb_version)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(mac_bb_names2); i++) {
+		if (mac_bb_names2[i].version == mac_bb_version) {
+			return mac_bb_names2[i].name;
 		}
 	}
 
@@ -58,13 +83,16 @@ static void hw_read_revisions(struct atheepmgr *aem)
 	if ((val & AR_SREV_ID) == 0xFF) {
 		aem->macVersion = (val & AR_SREV_VERSION2) >> AR_SREV_TYPE2_S;
 		aem->macRev = MS(val, AR_SREV_REVISION2);
+
+		printf("Atheros AR%s MAC/BB Rev:%x (SREV: 0x%08x)\n",
+		       mac_bb_name2(aem->macVersion), aem->macRev, val);
 	} else {
 		aem->macVersion = MS(val, AR_SREV_VERSION);
 		aem->macRev = val & AR_SREV_REVISION;
-	}
 
-	printf("Atheros AR%s MAC/BB Rev:%x (SREV: 0x%08x)\n",
-	       mac_bb_name(aem->macVersion), aem->macRev, val);
+		printf("Atheros AR%s MAC/BB (SREV: 0x%08x)\n",
+		       mac_bb_name(aem->macVersion, aem->macRev), val);
+	}
 }
 
 bool hw_wait(struct atheepmgr *aem, uint32_t reg, uint32_t mask,

@@ -53,8 +53,10 @@ typedef int bool;
 #define AR_SREV_REVISION2       0x00000F00
 #define AR_SREV_REVISION2_S     8
 
-#define AR_SREV_VERSION_5416_PCI        0xD
-#define AR_SREV_VERSION_5416_PCIE       0xC
+#define AR_SREV_VERSION_5418		0xC
+#define AR_SREV_REVISION_5418		0
+#define AR_SREV_VERSION_5416		0xD
+#define AR_SREV_REVISION_5416		0
 #define AR_SREV_VERSION_9160            0x40
 #define AR_SREV_VERSION_9280            0x80
 #define AR_SREV_VERSION_9285            0xC0
@@ -68,7 +70,7 @@ typedef int bool;
 #define AR_SREV_VERSION_9550            0x400
 
 #define AR_SREV_5416_OR_LATER(_aem) \
-	((_aem)->macVersion >= AR_SREV_VERSION_5416_PCIE)
+	((_aem)->macVersion >= AR_SREV_VERSION_5418)
 #define AR_SREV_9280_20_OR_LATER(_aem) \
 	((_aem)->macVersion >= AR_SREV_VERSION_9280)
 #define AR_SREV_9285(_aem) \
