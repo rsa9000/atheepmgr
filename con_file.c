@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "edump.h"
+#include "atheepmgr.h"
 
 struct file_priv {
 	FILE *fp;
@@ -35,27 +35,27 @@ static uint32_t roundup_pow_of_2(uint32_t v)
 	return v + 1;
 }
 
-static uint32_t file_reg_read(struct edump *edump, uint32_t reg)
+static uint32_t file_reg_read(struct atheepmgr *aem, uint32_t reg)
 {
 	fprintf(stderr, "confile: direct reg access is not supported\n");
 
 	return 0;
 }
 
-static void file_reg_write(struct edump *edump, uint32_t reg, uint32_t val)
+static void file_reg_write(struct atheepmgr *aem, uint32_t reg, uint32_t val)
 {
 	fprintf(stderr, "confile: direct reg write is not supported\n");
 }
 
-static void file_reg_rmw(struct edump *edump, uint32_t reg, uint32_t set,
+static void file_reg_rmw(struct atheepmgr *aem, uint32_t reg, uint32_t set,
 			 uint32_t clr)
 {
 	fprintf(stderr, "confile: direct reg RMW is not supported\n");
 }
 
-static bool file_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data)
+static bool file_eeprom_read(struct atheepmgr *aem, uint32_t off, uint16_t *data)
 {
-	struct file_priv *fpd = edump->con_priv;
+	struct file_priv *fpd = aem->con_priv;
 	uint32_t pos = off * 2;
 
 	pos = pos % fpd->ic_sz;		/* Emulate address wrap */
@@ -74,9 +74,9 @@ static bool file_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data)
 	return true;
 }
 
-static bool file_eeprom_write(struct edump *edump, uint32_t off, uint16_t data)
+static bool file_eeprom_write(struct atheepmgr *aem, uint32_t off, uint16_t data)
 {
-	struct file_priv *fpd = edump->con_priv;
+	struct file_priv *fpd = aem->con_priv;
 	static const uint16_t fill = 0xffff;
 	uint32_t pos = off * 2, addr;
 
@@ -102,9 +102,9 @@ static bool file_eeprom_write(struct edump *edump, uint32_t off, uint16_t data)
 	return true;
 }
 
-static int file_init(struct edump *edump, const char *arg_str)
+static int file_init(struct atheepmgr *aem, const char *arg_str)
 {
-	struct file_priv *fpd = edump->con_priv;
+	struct file_priv *fpd = aem->con_priv;
 	int err;
 	long len;
 
@@ -146,9 +146,9 @@ err:
 	return -err;
 }
 
-static void file_clean(struct edump *edump)
+static void file_clean(struct atheepmgr *aem)
 {
-	struct file_priv *fpd = edump->con_priv;
+	struct file_priv *fpd = aem->con_priv;
 
 	fclose(fpd->fp);
 }

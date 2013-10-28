@@ -17,7 +17,7 @@
 
 #include <pciaccess.h>
 
-#include "edump.h"
+#include "atheepmgr.h"
 #include "con_pci.h"
 
 struct pci_priv {
@@ -72,9 +72,9 @@ not_supported:
 	return 0;
 }
 
-static int pci_device_init(struct edump *edump, struct pci_device *pdev)
+static int pci_device_init(struct atheepmgr *aem, struct pci_device *pdev)
 {
-	struct pci_priv *ppd = edump->con_priv;
+	struct pci_priv *ppd = aem->con_priv;
 	int err;
 
 	if (!pdev->regions[0].base_addr) {
@@ -85,7 +85,7 @@ static int pci_device_init(struct edump *edump, struct pci_device *pdev)
 	ppd->pdev = pdev;
 	ppd->base_addr = pdev->regions[0].base_addr;
 	ppd->size = pdev->regions[0].size;
-	pdev->user_data = (intptr_t)edump;
+	pdev->user_data = (intptr_t)aem;
 
 	printf("Try to map %08lx-%08lx I/O region to the process memory\n",
 	       (unsigned long)ppd->base_addr,
@@ -103,9 +103,9 @@ static int pci_device_init(struct edump *edump, struct pci_device *pdev)
 	return 0;
 }
 
-static void pci_device_cleanup(struct edump *edump)
+static void pci_device_cleanup(struct atheepmgr *aem)
 {
-	struct pci_priv *ppd = edump->con_priv;
+	struct pci_priv *ppd = aem->con_priv;
 	int err;
 
 	printf("Freeing Mapped IO region at: %p\n", ppd->io_map);
@@ -115,24 +115,24 @@ static void pci_device_cleanup(struct edump *edump)
 		fprintf(stderr, "%s\n", strerror(err));
 }
 
-static uint32_t pci_reg_read(struct edump *edump, uint32_t reg)
+static uint32_t pci_reg_read(struct atheepmgr *aem, uint32_t reg)
 {
-	struct pci_priv *ppd = edump->con_priv;
+	struct pci_priv *ppd = aem->con_priv;
 
 	return *((volatile uint32_t *)(ppd->io_map + reg));
 }
 
-static void pci_reg_write(struct edump *edump, uint32_t reg, uint32_t val)
+static void pci_reg_write(struct atheepmgr *aem, uint32_t reg, uint32_t val)
 {
-	struct pci_priv *ppd = edump->con_priv;
+	struct pci_priv *ppd = aem->con_priv;
 
 	*((volatile uint32_t *)(ppd->io_map + reg)) = val;
 }
 
-static void pci_reg_rmw(struct edump *edump, uint32_t reg, uint32_t set,
+static void pci_reg_rmw(struct atheepmgr *aem, uint32_t reg, uint32_t set,
 			uint32_t clr)
 {
-	struct pci_priv *ppd = edump->con_priv;
+	struct pci_priv *ppd = aem->con_priv;
 	uint32_t tmp;
 
 	tmp = *((volatile uint32_t *)(ppd->io_map + reg));
@@ -141,7 +141,7 @@ static void pci_reg_rmw(struct edump *edump, uint32_t reg, uint32_t set,
 	*((volatile uint32_t *)(ppd->io_map + reg)) = tmp;
 }
 
-static int pci_init(struct edump *edump, const char *arg_str)
+static int pci_init(struct atheepmgr *aem, const char *arg_str)
 {
 	struct pci_slot_match slot[2];
 	struct pci_device_iterator *iter;
@@ -191,7 +191,7 @@ static int pci_init(struct edump *edump, const char *arg_str)
 		goto err;
 	}
 
-	ret = pci_device_init(edump, pdev);
+	ret = pci_device_init(aem, pdev);
 	if (ret)
 		goto err;
 
@@ -203,9 +203,9 @@ err:
 	return -ret;
 }
 
-static void pci_clean(struct edump *edump)
+static void pci_clean(struct atheepmgr *aem)
 {
-	pci_device_cleanup(edump);
+	pci_device_cleanup(aem);
 	pci_system_cleanup();
 }
 

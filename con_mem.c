@@ -19,7 +19,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
-#include "edump.h"
+#include "atheepmgr.h"
 
 struct mem_priv {
 	int devmem_fd;
@@ -27,24 +27,24 @@ struct mem_priv {
 	void *io_map;
 };
 
-static uint32_t mem_reg_read(struct edump *edump, uint32_t reg)
+static uint32_t mem_reg_read(struct atheepmgr *aem, uint32_t reg)
 {
-	struct mem_priv *mpd = edump->con_priv;
+	struct mem_priv *mpd = aem->con_priv;
 
 	return *((volatile uint32_t *)(mpd->io_map + reg));
 }
 
-static void mem_reg_write(struct edump *edump, uint32_t reg, uint32_t val)
+static void mem_reg_write(struct atheepmgr *aem, uint32_t reg, uint32_t val)
 {
-	struct mem_priv *mpd = edump->con_priv;
+	struct mem_priv *mpd = aem->con_priv;
 
 	*((volatile uint32_t *)(mpd->io_map + reg)) = val;
 }
 
-static void mem_reg_rmw(struct edump *edump, uint32_t reg, uint32_t set,
+static void mem_reg_rmw(struct atheepmgr *aem, uint32_t reg, uint32_t set,
 			uint32_t clr)
 {
-	struct mem_priv *mpd = edump->con_priv;
+	struct mem_priv *mpd = aem->con_priv;
 	uint32_t tmp;
 
 	tmp = *((volatile uint32_t *)(mpd->io_map + reg));
@@ -53,9 +53,9 @@ static void mem_reg_rmw(struct edump *edump, uint32_t reg, uint32_t set,
 	*((volatile uint32_t *)(mpd->io_map + reg)) = tmp;
 }
 
-static int mem_init(struct edump *edump, const char *arg_str)
+static int mem_init(struct atheepmgr *aem, const char *arg_str)
 {
-	struct mem_priv *mpd = edump->con_priv;
+	struct mem_priv *mpd = aem->con_priv;
 	static const size_t mem_size = 0x10000;	/* TODO: use autodetection */
 	char *endp;
 
@@ -87,9 +87,9 @@ static int mem_init(struct edump *edump, const char *arg_str)
 	return 0;
 }
 
-static void mem_clean(struct edump *edump)
+static void mem_clean(struct atheepmgr *aem)
 {
-	struct mem_priv *mpd = edump->con_priv;
+	struct mem_priv *mpd = aem->con_priv;
 
 	close(mpd->devmem_fd);
 }

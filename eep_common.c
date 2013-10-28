@@ -15,7 +15,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "edump.h"
+#include "atheepmgr.h"
 
 const char * const sDeviceType[] = {
 	"UNKNOWN [0] ",

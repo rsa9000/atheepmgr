@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "edump.h"
+#include "atheepmgr.h"
 #include "eep_9300.h"
 
 struct eep_9300_priv {
@@ -2812,7 +2812,7 @@ static struct ar9300_eeprom *ar9300_eeprom_struct_find_by_id(int id)
 #undef N_LOOP
 }
 
-static bool ar9300_eeprom_read_byte(struct edump *edump, int address,
+static bool ar9300_eeprom_read_byte(struct atheepmgr *aem, int address,
 				    uint8_t *buffer)
 {
 	uint16_t val;
@@ -2824,7 +2824,7 @@ static bool ar9300_eeprom_read_byte(struct edump *edump, int address,
 	return true;
 }
 
-static bool ar9300_eeprom_read_word(struct edump *edump, int address,
+static bool ar9300_eeprom_read_word(struct atheepmgr *aem, int address,
 				    uint8_t *buffer)
 {
 	uint16_t val;
@@ -2837,7 +2837,7 @@ static bool ar9300_eeprom_read_word(struct edump *edump, int address,
 	return true;
 }
 
-static bool ar9300_read_eeprom(struct edump *edump, int address,
+static bool ar9300_read_eeprom(struct atheepmgr *aem, int address,
 			       uint8_t *buffer, int count)
 {
 	int i;
@@ -2853,14 +2853,14 @@ static bool ar9300_read_eeprom(struct edump *edump, int address,
 	 * the 16-bit word at that address
 	 */
 	if (address % 2 == 0) {
-		if (!ar9300_eeprom_read_byte(edump, address--, buffer++))
+		if (!ar9300_eeprom_read_byte(aem, address--, buffer++))
 			goto error;
 
 		count--;
 	}
 
 	for (i = 0; i < count / 2; i++) {
-		if (!ar9300_eeprom_read_word(edump, address, buffer))
+		if (!ar9300_eeprom_read_word(aem, address, buffer))
 			goto error;
 
 		address -= 2;
@@ -2868,7 +2868,7 @@ static bool ar9300_read_eeprom(struct edump *edump, int address,
 	}
 
 	if (count % 2)
-		if (!ar9300_eeprom_read_byte(edump, address, buffer))
+		if (!ar9300_eeprom_read_byte(aem, address, buffer))
 			goto error;
 
 	return true;
@@ -2879,11 +2879,11 @@ error:
 	return false;
 }
 
-static bool ar9300_otp_read_word(struct edump *edump, int addr, uint32_t *data)
+static bool ar9300_otp_read_word(struct atheepmgr *aem, int addr, uint32_t *data)
 {
 	REG_READ(AR9300_OTP_BASE + (4 * addr));
 
-	if (!hw_wait(edump, AR9300_OTP_STATUS, AR9300_OTP_STATUS_TYPE,
+	if (!hw_wait(aem, AR9300_OTP_STATUS, AR9300_OTP_STATUS_TYPE,
 		     AR9300_OTP_STATUS_VALID, 1000))
 		return false;
 
@@ -2891,7 +2891,7 @@ static bool ar9300_otp_read_word(struct edump *edump, int addr, uint32_t *data)
 	return true;
 }
 
-static bool ar9300_read_otp(struct edump *edump, int address, uint8_t *buffer,
+static bool ar9300_read_otp(struct atheepmgr *aem, int address, uint8_t *buffer,
 			    int count)
 {
 	uint32_t data;
@@ -2899,7 +2899,7 @@ static bool ar9300_read_otp(struct edump *edump, int address, uint8_t *buffer,
 
 	for (i = 0; i < count; i++) {
 		int offset = 8 * ((address - i) % 4);
-		if (!ar9300_otp_read_word(edump, (address - i) / 4, &data))
+		if (!ar9300_otp_read_word(aem, (address - i) / 4, &data))
 			return false;
 
 		buffer[i] = (data >> offset) & 0xff;
@@ -3014,7 +3014,7 @@ static int ar9300_compress_decision(int it,
 	return 0;
 }
 
-typedef bool (*eeprom_read_op)(struct edump *edump, int address,
+typedef bool (*eeprom_read_op)(struct atheepmgr *aem, int address,
 			       uint8_t *buffer, int count);
 
 static bool ar9300_check_header(void *data)
@@ -3023,12 +3023,12 @@ static bool ar9300_check_header(void *data)
 	return !(*word == 0 || *word == ~0);
 }
 
-static bool ar9300_check_eeprom_header(struct edump *edump, eeprom_read_op read,
+static bool ar9300_check_eeprom_header(struct atheepmgr *aem, eeprom_read_op read,
 				       int base_addr)
 {
 	uint8_t header[4] = { 0 };
 
-	if (!read(edump, base_addr, header, 4))
+	if (!read(aem, base_addr, header, 4))
 		return false;
 
 	return ar9300_check_header(header);
@@ -3115,7 +3115,7 @@ void ar9300_fill_antctlcmn_template(bool is_2g)
  * Returns -1 on error.
  * Returns address of next memory location on success.
  */
-static int ar9300_eeprom_restore_internal(struct edump *edump,
+static int ar9300_eeprom_restore_internal(struct atheepmgr *aem,
 					  uint8_t *mptr, int mdata_size)
 {
 #define MDEFAULT 15
@@ -3141,34 +3141,34 @@ static int ar9300_eeprom_restore_internal(struct edump *edump,
 	memcpy(mptr, &ar9300_default, mdata_size);
 
 	read = ar9300_read_eeprom;
-	if (AR_SREV_9485(edump))
+	if (AR_SREV_9485(aem))
 		cptr = AR9300_BASE_ADDR_4K;
-	else if (AR_SREV_9330(edump))
+	else if (AR_SREV_9330(aem))
 		cptr = AR9300_BASE_ADDR_512;
 	else
 		cptr = AR9300_BASE_ADDR;
 	printf("Trying EEPROM access at Address 0x%04x\n", cptr);
-	if (ar9300_check_eeprom_header(edump, read, cptr))
+	if (ar9300_check_eeprom_header(aem, read, cptr))
 		goto found;
 
 	cptr = AR9300_BASE_ADDR_512;
 	printf("Trying EEPROM access at Address 0x%04x\n", cptr);
-	if (ar9300_check_eeprom_header(edump, read, cptr))
+	if (ar9300_check_eeprom_header(aem, read, cptr))
 		goto found;
 
 	/* Avoid OTP touching if no real access to the hardware. */
-	if (!(edump->con->caps & CON_CAP_HW))
+	if (!(aem->con->caps & CON_CAP_HW))
 		goto fail;
 
 	read = ar9300_read_otp;
 	cptr = AR9300_BASE_ADDR;
 	printf("Trying OTP access at Address 0x%04x\n", cptr);
-	if (ar9300_check_eeprom_header(edump, read, cptr))
+	if (ar9300_check_eeprom_header(aem, read, cptr))
 		goto found;
 
 	cptr = AR9300_BASE_ADDR_512;
 	printf("Trying OTP access at Address 0x%04x\n", cptr);
-	if (ar9300_check_eeprom_header(edump, read, cptr))
+	if (ar9300_check_eeprom_header(aem, read, cptr))
 		goto found;
 
 	goto fail;
@@ -3177,7 +3177,7 @@ found:
 	printf("Found valid EEPROM data\n");
 
 	for (it = 0; it < MSTATE; it++) {
-		if (!read(edump, cptr, word, COMP_HDR_LEN))
+		if (!read(aem, cptr, word, COMP_HDR_LEN))
 			goto fail;
 
 		if (!ar9300_check_header(word))
@@ -3188,15 +3188,15 @@ found:
 		printf("Found block at %x: code=%d ref=%d length=%d \
 			major=%d minor=%d\n",
 			cptr, code, reference, length, major, minor);
-		if ((!AR_SREV_9485(edump) && length >= 1024) ||
-		    (AR_SREV_9485(edump) && length > EEPROM_DATA_LEN_9485)) {
+		if ((!AR_SREV_9485(aem) && length >= 1024) ||
+		    (AR_SREV_9485(aem) && length > EEPROM_DATA_LEN_9485)) {
 			printf("Skipping bad header\n");
 			cptr -= COMP_HDR_LEN;
 			continue;
 		}
 
 		osize = length;
-		read(edump, cptr, word, COMP_HDR_LEN + osize + COMP_CKSUM_LEN);
+		read(aem, cptr, word, COMP_HDR_LEN + osize + COMP_CKSUM_LEN);
 		checksum = ar9300_comp_cksum(&word[COMP_HDR_LEN], length);
 		ptr = &word[COMP_HDR_LEN + osize];
 		mchecksum = ptr[0] | (ptr[1] << 8);
@@ -3223,26 +3223,26 @@ fail:
  * This function destroys any existing in-memory structure
  * content.
  */
-static bool eep_9300_fill(struct edump *edump)
+static bool eep_9300_fill(struct atheepmgr *aem)
 {
-	struct eep_9300_priv *emp = edump->eepmap_priv;
+	struct eep_9300_priv *emp = aem->eepmap_priv;
 	uint8_t *mptr = (uint8_t *)&emp->eep;
 
-	if (ar9300_eeprom_restore_internal(edump, mptr,
+	if (ar9300_eeprom_restore_internal(aem, mptr,
 			sizeof(struct ar9300_eeprom)) < 0)
 		return false;
 
 	return true;
 }
 
-static int eep_9300_check(struct edump *edump)
+static int eep_9300_check(struct atheepmgr *aem)
 {
 	return 1;
 }
 
-static void eep_9300_dump_base_header(struct edump *edump)
+static void eep_9300_dump_base_header(struct atheepmgr *aem)
 {
-	struct eep_9300_priv *emp = edump->eepmap_priv;
+	struct eep_9300_priv *emp = aem->eepmap_priv;
 	struct ar9300_eeprom *eep = &emp->eep;
 	struct ar9300_base_eep_hdr *pBase = &eep->baseEepHeader;
 
@@ -3310,7 +3310,7 @@ static void eep_9300_dump_base_header(struct edump *edump)
 	printf("\n");
 }
 
-static void eep_9300_dump_modal_header(struct edump *edump)
+static void eep_9300_dump_modal_header(struct atheepmgr *aem)
 {
 #define PR(_token, _p, _val_fmt, _val)				\
 	do {							\
@@ -3327,7 +3327,7 @@ static void eep_9300_dump_modal_header(struct edump *edump)
 		}						\
 	} while (0)
 
-	struct eep_9300_priv *emp = edump->eepmap_priv;
+	struct eep_9300_priv *emp = aem->eepmap_priv;
 	struct ar9300_eeprom *eep = &emp->eep;
 	struct ar9300_base_eep_hdr *pBase = &eep->baseEepHeader;
 	struct ar9300_modal_eep_hdr *pModal = NULL;

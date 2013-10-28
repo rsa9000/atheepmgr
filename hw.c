@@ -15,7 +15,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "edump.h"
+#include "atheepmgr.h"
 
 static struct {
 	uint32_t version;
@@ -51,23 +51,23 @@ static const char *mac_bb_name(uint32_t mac_bb_version)
 	return "????";
 }
 
-static void hw_read_revisions(struct edump *edump)
+static void hw_read_revisions(struct atheepmgr *aem)
 {
 	uint32_t val = REG_READ(AR_SREV);
 
 	if ((val & AR_SREV_ID) == 0xFF) {
-		edump->macVersion = (val & AR_SREV_VERSION2) >> AR_SREV_TYPE2_S;
-		edump->macRev = MS(val, AR_SREV_REVISION2);
+		aem->macVersion = (val & AR_SREV_VERSION2) >> AR_SREV_TYPE2_S;
+		aem->macRev = MS(val, AR_SREV_REVISION2);
 	} else {
-		edump->macVersion = MS(val, AR_SREV_VERSION);
-		edump->macRev = val & AR_SREV_REVISION;
+		aem->macVersion = MS(val, AR_SREV_VERSION);
+		aem->macRev = val & AR_SREV_REVISION;
 	}
 
 	printf("Atheros AR%s MAC/BB Rev:%x (SREV: 0x%08x)\n",
-	       mac_bb_name(edump->macVersion), edump->macRev, val);
+	       mac_bb_name(aem->macVersion), aem->macRev, val);
 }
 
-bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
+bool hw_wait(struct atheepmgr *aem, uint32_t reg, uint32_t mask,
 	     uint32_t val, uint32_t timeout)
 {
 	int i;
@@ -82,20 +82,20 @@ bool hw_wait(struct edump *edump, uint32_t reg, uint32_t mask,
 	return false;
 }
 
-static int hw_gpio_input_get_ar9xxx(struct edump *edump, unsigned gpio)
+static int hw_gpio_input_get_ar9xxx(struct atheepmgr *aem, unsigned gpio)
 {
 	uint32_t regval = REG_READ(AR9XXX_GPIO_IN_OUT);
 
-	if (gpio >= edump->gpio_num)
+	if (gpio >= aem->gpio_num)
 		return 0;
 
-	if (AR_SREV_9300_20_OR_LATER(edump))
+	if (AR_SREV_9300_20_OR_LATER(aem))
 		regval = MS(regval, AR9300_GPIO_IN_VAL);
-	else if (AR_SREV_9287_11_OR_LATER(edump))
+	else if (AR_SREV_9287_11_OR_LATER(aem))
 		regval = MS(regval, AR9287_GPIO_IN_VAL);
-	else if (AR_SREV_9285_12_OR_LATER(edump))
+	else if (AR_SREV_9285_12_OR_LATER(aem))
 		regval = MS(regval, AR9285_GPIO_IN_VAL);
-	else if (AR_SREV_9280_20_OR_LATER(edump))
+	else if (AR_SREV_9280_20_OR_LATER(aem))
 		regval = MS(regval, AR9280_GPIO_IN_VAL);
 	else
 		regval = MS(regval, AR5416_GPIO_IN_VAL);
@@ -103,26 +103,26 @@ static int hw_gpio_input_get_ar9xxx(struct edump *edump, unsigned gpio)
 	return !!(regval & BIT(gpio));
 }
 
-static int hw_gpio_output_get_ar9xxx(struct edump *edump, unsigned gpio)
+static int hw_gpio_output_get_ar9xxx(struct atheepmgr *aem, unsigned gpio)
 {
-	if (gpio >= edump->gpio_num)
+	if (gpio >= aem->gpio_num)
 		return 0;
 
 	return !!(REG_READ(AR9XXX_GPIO_IN_OUT) & BIT(gpio));
 }
 
-static void hw_gpio_output_set_ar9xxx(struct edump *edump, unsigned gpio,
+static void hw_gpio_output_set_ar9xxx(struct atheepmgr *aem, unsigned gpio,
 				      int val)
 {
 	REG_RMW(AR9XXX_GPIO_IN_OUT, !!val << gpio, 1 << gpio);
 }
 
-static int hw_gpio_out_mux_get_ar9xxx(struct edump *edump, unsigned gpio)
+static int hw_gpio_out_mux_get_ar9xxx(struct atheepmgr *aem, unsigned gpio)
 {
 	uint32_t reg;
 	unsigned sh = (gpio % 6) * 5;
 
-	if (gpio >= edump->gpio_num)
+	if (gpio >= aem->gpio_num)
 		return 0;
 
 	if (gpio > 11)
@@ -135,13 +135,13 @@ static int hw_gpio_out_mux_get_ar9xxx(struct edump *edump, unsigned gpio)
 	return (REG_READ(reg) >> sh) & AR9XXX_GPIO_OUTPUT_MUX_MASK;
 }
 
-static void hw_gpio_out_mux_set_ar9xxx(struct edump *edump, unsigned gpio,
+static void hw_gpio_out_mux_set_ar9xxx(struct atheepmgr *aem, unsigned gpio,
 				       int type)
 {
 	uint32_t reg, tmp;
 	unsigned sh = (gpio % 6) * 5;
 
-	if (gpio >= edump->gpio_num)
+	if (gpio >= aem->gpio_num)
 		return;
 
 	if (gpio > 11)
@@ -151,7 +151,7 @@ static void hw_gpio_out_mux_set_ar9xxx(struct edump *edump, unsigned gpio,
 	else
 		reg = AR9XXX_GPIO_OUTPUT_MUX1;
 
-	if (AR_SREV_9280_20_OR_LATER(edump) ||
+	if (AR_SREV_9280_20_OR_LATER(aem) ||
 	    reg != AR9XXX_GPIO_OUTPUT_MUX1) {
 		REG_RMW(reg, type << sh, AR9XXX_GPIO_OUTPUT_MUX_MASK << sh);
 	} else {
@@ -163,10 +163,10 @@ static void hw_gpio_out_mux_set_ar9xxx(struct edump *edump, unsigned gpio,
 	}
 }
 
-static const char *hw_gpio_out_mux_get_str_ar9xxx(struct edump *edump,
+static const char *hw_gpio_out_mux_get_str_ar9xxx(struct atheepmgr *aem,
 						  unsigned gpio)
 {
-	int type = hw_gpio_out_mux_get_ar9xxx(edump, gpio);
+	int type = hw_gpio_out_mux_get_ar9xxx(aem, gpio);
 
 	switch (type) {
 	case AR9XXX_GPIO_OUTPUT_MUX_OUTPUT:
@@ -184,34 +184,34 @@ static const char *hw_gpio_out_mux_get_str_ar9xxx(struct edump *edump,
 	return "Unk";
 }
 
-static int hw_gpio_dir_get_ar9xxx(struct edump *edump, unsigned gpio)
+static int hw_gpio_dir_get_ar9xxx(struct atheepmgr *aem, unsigned gpio)
 {
 	unsigned sh = gpio * 2;
 
-	if (gpio >= edump->gpio_num)
+	if (gpio >= aem->gpio_num)
 		return -1;
 
 	return (REG_READ(AR9XXX_GPIO_OE_OUT) >> sh) & AR9XXX_GPIO_OE_OUT_DRV;
 }
 
-static void hw_gpio_dir_set_out_ar9xxx(struct edump *edump, unsigned gpio)
+static void hw_gpio_dir_set_out_ar9xxx(struct atheepmgr *aem, unsigned gpio)
 {
 	unsigned sh = gpio * 2;
 
-	if (gpio >= edump->gpio_num)
+	if (gpio >= aem->gpio_num)
 		return;
 
-	hw_gpio_out_mux_set_ar9xxx(edump, gpio, AR9XXX_GPIO_OUTPUT_MUX_OUTPUT);
+	hw_gpio_out_mux_set_ar9xxx(aem, gpio, AR9XXX_GPIO_OUTPUT_MUX_OUTPUT);
 
 	REG_RMW(AR9XXX_GPIO_OE_OUT,
 		AR9XXX_GPIO_OE_OUT_DRV_ALL << sh,
 		AR9XXX_GPIO_OE_OUT_DRV << sh);
 }
 
-static const char *hw_gpio_dir_get_str_ar9xxx(struct edump *edump,
+static const char *hw_gpio_dir_get_str_ar9xxx(struct atheepmgr *aem,
 					      unsigned gpio)
 {
-	int dir = hw_gpio_dir_get_ar9xxx(edump, gpio);
+	int dir = hw_gpio_dir_get_ar9xxx(aem, gpio);
 
 	switch (dir) {
 	case AR9XXX_GPIO_OE_OUT_DRV_NO:
@@ -236,7 +236,7 @@ static const struct gpio_ops gpio_ops_ar9xxx = {
 	.out_mux_get_str = hw_gpio_out_mux_get_str_ar9xxx,
 };
 
-bool hw_eeprom_read_9xxx(struct edump *edump, uint32_t off, uint16_t *data)
+bool hw_eeprom_read_9xxx(struct atheepmgr *aem, uint32_t off, uint16_t *data)
 {
 #define WAIT_MASK	AR_EEPROM_STATUS_DATA_BUSY | \
 			AR_EEPROM_STATUS_DATA_PROT_ACCESS
@@ -244,7 +244,7 @@ bool hw_eeprom_read_9xxx(struct edump *edump, uint32_t off, uint16_t *data)
 
 	(void)REG_READ(AR5416_EEPROM_OFFSET + (off << AR5416_EEPROM_S));
 
-	if (!hw_wait(edump, AR_EEPROM_STATUS_DATA, WAIT_MASK, 0, WAIT_TIME))
+	if (!hw_wait(aem, AR_EEPROM_STATUS_DATA, WAIT_MASK, 0, WAIT_TIME))
 		return false;
 
 	*data = MS(REG_READ(AR_EEPROM_STATUS_DATA),
@@ -256,7 +256,7 @@ bool hw_eeprom_read_9xxx(struct edump *edump, uint32_t off, uint16_t *data)
 #undef WAIT_MASK
 }
 
-bool hw_eeprom_write_9xxx(struct edump *edump, uint32_t off, uint16_t data)
+bool hw_eeprom_write_9xxx(struct atheepmgr *aem, uint32_t off, uint16_t data)
 {
 #define WAIT_MASK	AR_EEPROM_STATUS_DATA_BUSY | \
 			AR_EEPROM_STATUS_DATA_BUSY_ACCESS | \
@@ -265,7 +265,7 @@ bool hw_eeprom_write_9xxx(struct edump *edump, uint32_t off, uint16_t data)
 #define WAIT_TIME	AH_WAIT_TIMEOUT
 
 	REG_WRITE(AR5416_EEPROM_OFFSET + (off << AR5416_EEPROM_S), data);
-	if (!hw_wait(edump, AR_EEPROM_STATUS_DATA, WAIT_MASK, 0, WAIT_TIME))
+	if (!hw_wait(aem, AR_EEPROM_STATUS_DATA, WAIT_MASK, 0, WAIT_TIME))
 		return false;
 
 	return true;
@@ -274,82 +274,82 @@ bool hw_eeprom_write_9xxx(struct edump *edump, uint32_t off, uint16_t data)
 #undef WAIT_MASK
 }
 
-void hw_eeprom_lock_gpio(struct edump *edump, int lock)
+void hw_eeprom_lock_gpio(struct atheepmgr *aem, int lock)
 {
-	int val = !!edump->eep_wp_gpio_pol ^ !!lock;
+	int val = !!aem->eep_wp_gpio_pol ^ !!lock;
 
-	if (edump->eep_wp_gpio_num >= edump->gpio_num ||
-	    edump->eep_wp_gpio_num < 0)
+	if (aem->eep_wp_gpio_num >= aem->gpio_num ||
+	    aem->eep_wp_gpio_num < 0)
 		return;
 
-	if (!edump->gpio) {
+	if (!aem->gpio) {
 		fprintf(stderr, "GPIO management is not available, EEPROM %s is impossible\n",
 			lock ? "locking" : "unlocking");
 		return;
 	}
 
-	edump->gpio->dir_set_out(edump, edump->eep_wp_gpio_num);
+	aem->gpio->dir_set_out(aem, aem->eep_wp_gpio_num);
 	usleep(1);
-	edump->gpio->output_set(edump, edump->eep_wp_gpio_num, val);
+	aem->gpio->output_set(aem, aem->eep_wp_gpio_num, val);
 	usleep(1);
 }
 
-bool hw_eeprom_read(struct edump *edump, uint32_t off, uint16_t *data)
+bool hw_eeprom_read(struct atheepmgr *aem, uint32_t off, uint16_t *data)
 {
-	if (!edump->con->eep_read(edump, off, data))
+	if (!aem->con->eep_read(aem, off, data))
 		return false;
 
-	if (edump->eep_io_swap)
+	if (aem->eep_io_swap)
 		*data = bswap_16(*data);
 
 	return true;
 }
 
-bool hw_eeprom_write(struct edump *edump, uint32_t off, uint16_t data)
+bool hw_eeprom_write(struct atheepmgr *aem, uint32_t off, uint16_t data)
 {
-	if (edump->eep_io_swap)
+	if (aem->eep_io_swap)
 		data = bswap_16(data);
 
-	if (!edump->con->eep_write(edump, off, data))
+	if (!aem->con->eep_write(aem, off, data))
 		return false;
 
 	return true;
 }
 
-void hw_eeprom_lock(struct edump *edump, int lock)
+void hw_eeprom_lock(struct atheepmgr *aem, int lock)
 {
-	if (edump->con->eep_lock)
-		edump->con->eep_lock(edump, lock);
+	if (aem->con->eep_lock)
+		aem->con->eep_lock(aem, lock);
 }
 
-int hw_init(struct edump *edump)
+int hw_init(struct atheepmgr *aem)
 {
-	hw_read_revisions(edump);
+	hw_read_revisions(aem);
 
-	if (AR_SREV_5416_OR_LATER(edump)) {
-		edump->gpio = &gpio_ops_ar9xxx;
+	if (AR_SREV_5416_OR_LATER(aem)) {
+		aem->gpio = &gpio_ops_ar9xxx;
 
-		if (AR_SREV_9300_20_OR_LATER(edump))
-			edump->gpio_num = 17;
-		else if (AR_SREV_9287_11_OR_LATER(edump))
-			edump->gpio_num = 11;
-		else if (AR_SREV_9285_12_OR_LATER(edump))
-			edump->gpio_num = 12;
-		else if (AR_SREV_9280_20_OR_LATER(edump))
-			edump->gpio_num = 10;
+		if (AR_SREV_9300_20_OR_LATER(aem))
+			aem->gpio_num = 17;
+		else if (AR_SREV_9287_11_OR_LATER(aem))
+			aem->gpio_num = 11;
+		else if (AR_SREV_9285_12_OR_LATER(aem))
+			aem->gpio_num = 12;
+		else if (AR_SREV_9280_20_OR_LATER(aem))
+			aem->gpio_num = 10;
 		else
-			edump->gpio_num = 14;
+			aem->gpio_num = 14;
 	} else {
 		fprintf(stderr, "Unable to configure chip GPIO support\n");
 	}
 
-	if (edump->eep_wp_gpio_num == EEP_WP_GPIO_AUTO) {
-		if (AR_SREV_5416_OR_LATER(edump)) {
-			edump->eep_wp_gpio_num = 3;
-			edump->eep_wp_gpio_pol = 0;
+	if (aem->eep_wp_gpio_num == EEP_WP_GPIO_AUTO) {
+		if (AR_SREV_5416_OR_LATER(aem)) {
+			aem->eep_wp_gpio_num = 3;
+			aem->eep_wp_gpio_pol = 0;
 		} else {
 			fprintf(stderr, "Unable to determine EEPROM unlocking GPIO, the feature will be disabled\n");
-			edump->eep_wp_gpio_num = EEP_WP_GPIO_NONE;
+			aem->eep_wp_gpio_num = EEP_WP_GPIO_NONE;
 		}
 	}
 

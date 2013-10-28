@@ -31,8 +31,8 @@
 #define AR5416_EEPROM_S         2
 #define AR5416_EEPROM_OFFSET    0x2000
 
-#define AR_EEPROM_STATUS_DATA             (AR_SREV_9340(edump) ? 0x40c8 : \
-					   (AR_SREV_9300_20_OR_LATER(edump) ? \
+#define AR_EEPROM_STATUS_DATA             (AR_SREV_9340(aem) ? 0x40c8 : \
+					   (AR_SREV_9300_20_OR_LATER(aem) ? \
 					    0x4084 : 0x407c))
 #define AR_EEPROM_STATUS_DATA_VAL                0x0000ffff
 #define AR_EEPROM_STATUS_DATA_VAL_S              0
@@ -52,7 +52,7 @@
 #define AR5416_RFSILENT_POLARITY		0x0002
 #define AR5416_RFSILENT_POLARITY_S		1
 #define AR5416_RFSILENT_GPIO_SEL		\
-		(AR_SREV_9462(edump) || AR_SREV_9565(edump) ? 0x00fc : 0x001c)
+		(AR_SREV_9462(aem) || AR_SREV_9565(aem) ? 0x00fc : 0x001c)
 #define AR5416_RFSILENT_GPIO_SEL_S		2
 
 #define AR5416_EEPMISC_BIG_ENDIAN    0x01

@@ -15,10 +15,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "edump.h"
+#include "atheepmgr.h"
 #include "utils.h"
 
-static struct edump __edump;
+static struct atheepmgr __aem;
 
 static const struct eepmap * const eepmaps[] = {
 	&eepmap_5416,
@@ -39,22 +39,22 @@ static const struct eepmap *eepmap_find_by_name(const char *name)
 	return NULL;
 }
 
-static int eepmap_detect(struct edump *edump)
+static int eepmap_detect(struct atheepmgr *aem)
 {
-	if (AR_SREV_9300_20_OR_LATER(edump)) {
-		edump->eepmap = &eepmap_9300;
-	} else if (AR_SREV_9287(edump)) {
-		edump->eepmap = &eepmap_9287;
-	} else if (AR_SREV_9285(edump)) {
-		edump->eepmap = &eepmap_9285;
-	} else if (AR_SREV_5416_OR_LATER(edump)) {
-		edump->eepmap = &eepmap_5416;
+	if (AR_SREV_9300_20_OR_LATER(aem)) {
+		aem->eepmap = &eepmap_9300;
+	} else if (AR_SREV_9287(aem)) {
+		aem->eepmap = &eepmap_9287;
+	} else if (AR_SREV_9285(aem)) {
+		aem->eepmap = &eepmap_9285;
+	} else if (AR_SREV_5416_OR_LATER(aem)) {
+		aem->eepmap = &eepmap_5416;
 	} else {
 		fprintf(stderr, "Unable to determine an EEPROM map suitable for this chip\n");
 		return -ENOENT;
 	}
 
-	printf("Detected EEPROM map: %s\n", edump->eepmap->name);
+	printf("Detected EEPROM map: %s\n", aem->eepmap->name);
 
 	return 0;
 }
@@ -81,10 +81,10 @@ static const struct eepmap_section {
 	},
 };
 
-static int act_eep_dump(struct edump *edump, int argc, char *argv[])
+static int act_eep_dump(struct atheepmgr *aem, int argc, char *argv[])
 {
 	static char def[4] = {'a', 'l', 'l', '\0'};
-	const struct eepmap *eepmap = edump->eepmap;
+	const struct eepmap *eepmap = aem->eepmap;
 	char *list = argc > 0 ? argv[0] : def;
 	int dump_mask = 0;
 	char *tok, *p;
@@ -130,17 +130,17 @@ static int act_eep_dump(struct edump *edump, int argc, char *argv[])
 		if (!eepmap->dump[i])
 			continue;
 
-		eepmap->dump[i](edump);
+		eepmap->dump[i](aem);
 	}
 
 	return 0;
 }
 
-static int act_eep_save(struct edump *edump, int argc, char *argv[])
+static int act_eep_save(struct atheepmgr *aem, int argc, char *argv[])
 {
 	FILE *fp;
-	const uint16_t *buf = edump->eep_buf;
-	int buf_sz = edump->eepmap->eep_buf_sz;
+	const uint16_t *buf = aem->eep_buf;
+	int buf_sz = aem->eepmap->eep_buf_sz;
 	size_t res;
 
 	if (!buf_sz) {
@@ -186,9 +186,9 @@ static const struct eepmap_param {
 	}
 };
 
-static int act_eep_update(struct edump *edump, int argc, char *argv[])
+static int act_eep_update(struct atheepmgr *aem, int argc, char *argv[])
 {
-	const struct eepmap *eepmap = edump->eepmap;
+	const struct eepmap *eepmap = aem->eepmap;
 	const struct eepmap_param *param;
 	char *val;
 	int namelen;
@@ -249,21 +249,21 @@ static int act_eep_update(struct edump *edump, int argc, char *argv[])
 
 	EEP_UNLOCK();
 
-	res = eepmap->update_eeprom(edump, param->id, data);
+	res = eepmap->update_eeprom(aem, param->id, data);
 
 	EEP_LOCK();
 
 	return res ? 0 : -EIO;
 }
 
-static int act_gpio_dump(struct edump *edump, int argc, char *argv[])
+static int act_gpio_dump(struct atheepmgr *aem, int argc, char *argv[])
 {
 #define FOR_EACH_GPIO(_caption)				\
 		printf("%20s:", _caption);		\
-		for (i = 0; i < edump->gpio_num; ++i)
+		for (i = 0; i < aem->gpio_num; ++i)
 	int i;
 
-	if (!edump->gpio) {
+	if (!aem->gpio) {
 		fprintf(stderr, "GPIO control is not supported for this chip, aborting\n");
 		return -EOPNOTSUPP;
 	}
@@ -272,16 +272,16 @@ static int act_gpio_dump(struct edump *edump, int argc, char *argv[])
 		printf(" %-3u", i);
 	printf("\n");
 	FOR_EACH_GPIO("Direction")
-		printf(" %-3s", edump->gpio->dir_get_str(edump, i));
+		printf(" %-3s", aem->gpio->dir_get_str(aem, i));
 	printf("\n");
 	FOR_EACH_GPIO("Output mux")
-		printf(" %-3s", edump->gpio->out_mux_get_str(edump, i));
+		printf(" %-3s", aem->gpio->out_mux_get_str(aem, i));
 	printf("\n");
 	FOR_EACH_GPIO("Input value")
-		printf(" %c  ", edump->gpio->input_get(edump, i) ? '1' : ' ');
+		printf(" %c  ", aem->gpio->input_get(aem, i) ? '1' : ' ');
 	printf("\n");
 	FOR_EACH_GPIO("Output value")
-		printf(" %c  ", edump->gpio->output_get(edump, i) ? '1' : ' ');
+		printf(" %c  ", aem->gpio->output_get(aem, i) ? '1' : ' ');
 	printf("\n");
 
 	return 0;
@@ -289,7 +289,7 @@ static int act_gpio_dump(struct edump *edump, int argc, char *argv[])
 #undef FOR_EACH_GPIO
 }
 
-static int act_reg_read(struct edump *edump, int argc, char *argv[])
+static int act_reg_read(struct atheepmgr *aem, int argc, char *argv[])
 {
 	unsigned long addr;
 	char *endp;
@@ -314,7 +314,7 @@ static int act_reg_read(struct edump *edump, int argc, char *argv[])
 	return 0;
 }
 
-static int act_reg_write(struct edump *edump, int argc, char *argv[])
+static int act_reg_write(struct atheepmgr *aem, int argc, char *argv[])
 {
 	unsigned long addr, val;
 	char *endp;
@@ -348,7 +348,7 @@ static int act_reg_write(struct edump *edump, int argc, char *argv[])
 
 static const struct action {
 	const char *name;
-	int (*func)(struct edump *edump, int argc, char *argv[]);
+	int (*func)(struct atheepmgr *aem, int argc, char *argv[]);
 	int flags;
 } actions[] = {
 	{
@@ -430,7 +430,7 @@ static void usage(char *name)
 	int i;
 
 	printf(
-		"Atheros NIC EEPROM dump utility.\n"
+		"Atheros NIC EEPROM management utility.\n"
 		"\n"
 		"Usage:\n"
 		"  %s " CON_USAGE " [-t <eepmap>] [<action> [<actarg>]]\n"
@@ -499,7 +499,7 @@ static void usage(char *name)
 
 int main(int argc, char *argv[])
 {
-	struct edump *edump = &__edump;
+	struct atheepmgr *aem = &__aem;
 	const struct action *act = NULL;
 	char *con_arg = NULL;
 	int i, opt;
@@ -510,32 +510,32 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	edump->host_is_be = __BYTE_ORDER == __BIG_ENDIAN;
-	edump->eep_wp_gpio_num = EEP_WP_GPIO_AUTO;	/* Autodetection */
-	edump->eep_wp_gpio_pol = 0;		/* Unlock by low level */
+	aem->host_is_be = __BYTE_ORDER == __BIG_ENDIAN;
+	aem->eep_wp_gpio_num = EEP_WP_GPIO_AUTO;	/* Autodetection */
+	aem->eep_wp_gpio_pol = 0;		/* Unlock by low level */
 
 	ret = -EINVAL;
 	while ((opt = getopt(argc, argv, optstr)) != -1) {
 		switch (opt) {
 		case 'F':
-			edump->con = &con_file;
+			aem->con = &con_file;
 			con_arg = optarg;
 			break;
 #if defined(CONFIG_CON_MEM)
 		case 'M':
-			edump->con = &con_mem;
+			aem->con = &con_mem;
 			con_arg = optarg;
 			break;
 #endif
 #if defined(CONFIG_CON_PCI)
 		case 'P':
-			edump->con = &con_pci;
+			aem->con = &con_pci;
 			con_arg = optarg;
 			break;
 #endif
 		case 't':
-			edump->eepmap = eepmap_find_by_name(optarg);
-			if (!edump->eepmap) {
+			aem->eepmap = eepmap_find_by_name(optarg);
+			if (!aem->eepmap) {
 				fprintf(stderr, "Unknown EEPROM map type name: %s\n",
 					optarg);
 				goto exit;
@@ -550,7 +550,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (!edump->con) {
+	if (!aem->con) {
 		fprintf(stderr, "Connector is not specified\n");
 		goto exit;
 	}
@@ -571,86 +571,86 @@ int main(int argc, char *argv[])
 		optind++;
 	}
 
-	if ((act->flags & ACT_F_HW) && !(edump->con->caps & CON_CAP_HW)) {
+	if ((act->flags & ACT_F_HW) && !(aem->con->caps & CON_CAP_HW)) {
 		fprintf(stderr, "%s action require direct HW access, which is not proved by %s connector\n",
-			act->name, edump->con->name);
+			act->name, aem->con->name);
 		goto exit;
 	}
 
-	if ((act->flags & ACT_F_EEPROM) && !edump->eepmap &&
-	    !(edump->con->caps & CON_CAP_HW)) {
+	if ((act->flags & ACT_F_EEPROM) && !aem->eepmap &&
+	    !(aem->con->caps & CON_CAP_HW)) {
 		fprintf(stderr, "EEPROM map type option is mandatory for connectors without direct HW access\n");
 		goto exit;
 	}
 
-	edump->con_priv = malloc(edump->con->priv_data_sz);
-	if (!edump->con_priv) {
+	aem->con_priv = malloc(aem->con->priv_data_sz);
+	if (!aem->con_priv) {
 		fprintf(stderr, "Unable to allocate memory for the connector private data\n");
 		ret = -ENOMEM;
 		goto exit;
 	}
 
-	ret = edump->con->init(edump, con_arg);
+	ret = aem->con->init(aem, con_arg);
 	if (ret)
 		goto exit;
 
-	if (edump->con->caps & CON_CAP_HW) {
-		ret = hw_init(edump);
+	if (aem->con->caps & CON_CAP_HW) {
+		ret = hw_init(aem);
 		if (ret)
 			goto con_clean;
 
-		if (edump->eep_wp_gpio_num != EEP_WP_GPIO_NONE &&
-		    edump->eep_wp_gpio_num >= edump->gpio_num) {
+		if (aem->eep_wp_gpio_num != EEP_WP_GPIO_NONE &&
+		    aem->eep_wp_gpio_num >= aem->gpio_num) {
 			fprintf(stderr, "EEPROM unlocking GPIO #%d is out of range 0...%d\n",
-				edump->eep_wp_gpio_num, edump->gpio_num - 1);
+				aem->eep_wp_gpio_num, aem->gpio_num - 1);
 			goto con_clean;
 		}
 	}
 
 	if (act->flags & ACT_F_EEPROM) {
-		if (!edump->eepmap) {
-			ret = eepmap_detect(edump);
+		if (!aem->eepmap) {
+			ret = eepmap_detect(aem);
 			if (ret)
 				goto con_clean;
 		}
 
-		edump->eepmap_priv = malloc(edump->eepmap->priv_data_sz);
-		if (!edump->eepmap_priv) {
+		aem->eepmap_priv = malloc(aem->eepmap->priv_data_sz);
+		if (!aem->eepmap_priv) {
 			fprintf(stderr, "Unable to allocate memory for the EEPROM parser private data\n");
 			ret = -ENOMEM;
 			goto con_clean;
 		}
 
-		edump->eep_buf = malloc(edump->eepmap->eep_buf_sz *
-					sizeof(uint16_t));
-		if (!edump->eep_buf) {
+		aem->eep_buf = malloc(aem->eepmap->eep_buf_sz *
+				      sizeof(uint16_t));
+		if (!aem->eep_buf) {
 			fprintf(stderr, "Unable to allocate memory for EEPROM buffer\n");
 			ret = -ENOMEM;
 			goto con_clean;
 		}
 
-		if (!edump->eepmap->fill_eeprom(edump)) {
+		if (!aem->eepmap->fill_eeprom(aem)) {
 			fprintf(stderr, "Unable to fill EEPROM data\n");
 			ret = -EIO;
 			goto con_clean;
 		}
 
-		if (!edump->eepmap->check_eeprom(edump)) {
+		if (!aem->eepmap->check_eeprom(aem)) {
 			fprintf(stderr, "EEPROM check failed\n");
 			ret = -EINVAL;
 			goto con_clean;
 		}
 	}
 
-	ret = act->func(edump, argc - optind, argv + optind);
+	ret = act->func(aem, argc - optind, argv + optind);
 
 con_clean:
-	edump->con->clean(edump);
+	aem->con->clean(aem);
 
 exit:
-	free(edump->eep_buf);
-	free(edump->eepmap_priv);
-	free(edump->con_priv);
+	free(aem->eep_buf);
+	free(aem->eepmap_priv);
+	free(aem->con_priv);
 
 	return ret;
 }

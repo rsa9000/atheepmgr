@@ -15,7 +15,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "edump.h"
+#include "atheepmgr.h"
 #include "eep_5416.h"
 
 struct eep_5416_priv {
@@ -36,12 +36,12 @@ static int eep_5416_get_rev(struct eep_5416_priv *emp)
 	return ((emp->eep.baseEepHeader.version) & 0xFFF);
 }
 
-static bool eep_5416_fill(struct edump *edump)
+static bool eep_5416_fill(struct atheepmgr *aem)
 {
-	struct eep_5416_priv *emp = edump->eepmap_priv;
+	struct eep_5416_priv *emp = aem->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
 	uint16_t *eep_init = (uint16_t *)&emp->ini;
-	uint16_t *buf = edump->eep_buf;
+	uint16_t *buf = aem->eep_buf;
 	uint16_t magic;
 	int addr;
 
@@ -51,7 +51,7 @@ static bool eep_5416_fill(struct edump *edump)
 		return false;
 	}
 	if (bswap_16(magic) == AR5416_EEPROM_MAGIC)
-		edump->eep_io_swap = !edump->eep_io_swap;
+		aem->eep_io_swap = !aem->eep_io_swap;
 
 	/* Read to the intermediate buffer */
 	for (addr = 0; addr < AR5416_DATA_START_LOC + AR5416_DATA_SZ; ++addr) {
@@ -72,12 +72,12 @@ static bool eep_5416_fill(struct edump *edump)
 	return true;
 }
 
-static bool eep_5416_check(struct edump *edump)
+static bool eep_5416_check(struct atheepmgr *aem)
 {
-	struct eep_5416_priv *emp = edump->eepmap_priv;
+	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_init *ini = &emp->ini;
 	struct ar5416_eeprom *eep = &emp->eep;
-	const uint16_t *buf = edump->eep_buf;
+	const uint16_t *buf = aem->eep_buf;
 	uint16_t sum;
 	int i, el;
 
@@ -88,7 +88,7 @@ static bool eep_5416_check(struct edump *edump)
 	}
 
 	if (!!(eep->baseEepHeader.eepMisc & AR5416_EEPMISC_BIG_ENDIAN) !=
-	    edump->host_is_be) {
+	    aem->host_is_be) {
 		uint32_t integer;
 		uint16_t word;
 
@@ -166,9 +166,9 @@ static bool eep_5416_check(struct edump *edump)
 	return true;
 }
 
-static void eep_5416_dump_init_data(struct edump *edump)
+static void eep_5416_dump_init_data(struct atheepmgr *aem)
 {
-	struct eep_5416_priv *emp = edump->eepmap_priv;
+	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_init *ini = &emp->ini;
 	uint16_t magic = le16toh(ini->magic);
 	uint16_t prot = le16toh(ini->prot);
@@ -198,9 +198,9 @@ static void eep_5416_dump_init_data(struct edump *edump)
 	printf("\n");
 }
 
-static void eep_5416_dump_base_header(struct edump *edump)
+static void eep_5416_dump_base_header(struct atheepmgr *aem)
 {
-	struct eep_5416_priv *emp = edump->eepmap_priv;
+	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_eeprom *ar5416Eep = &emp->eep;
 	struct ar5416_base_eep_hdr *pBase = &ar5416Eep->baseEepHeader;
 	uint16_t i;
@@ -285,7 +285,7 @@ static void eep_5416_dump_base_header(struct edump *edump)
 	printf("\n");
 }
 
-static void eep_5416_dump_modal_header(struct edump *edump)
+static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 {
 #define _PR(_token, _fmt, _field)				\
 	do {							\
@@ -309,7 +309,7 @@ static void eep_5416_dump_modal_header(struct edump *edump)
 #define PR_PWR(_token, _field)					\
 		_PR(_token, "%.1f", _field / (double)2.0);
 
-	struct eep_5416_priv *emp = edump->eepmap_priv;
+	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_eeprom *ar5416Eep = &emp->eep;
 	struct ar5416_base_eep_hdr *pBase = &ar5416Eep->baseEepHeader;
 	char buf[0x10];
@@ -369,7 +369,7 @@ static void eep_5416_dump_modal_header(struct edump *edump)
 	PR_PWR("PWR dec 2 chain", pwrDecreaseFor2Chain);
 	PR_PWR("PWR dec 3 chain", pwrDecreaseFor3Chain);
 
-	if (AR_SREV_9280_20_OR_LATER(edump)) {
+	if (AR_SREV_9280_20_OR_LATER(aem)) {
 		PR_DEC("xatten2Db Chain 0", xatten2Db[0]);
 		PR_DEC("xatten2Db Chain 1", xatten2Db[1]);
 		PR_DEC("xatten2Margin Chain 0", xatten2Margin[0]);
@@ -493,7 +493,7 @@ static void eep_5416_dump_pd_cal(const uint8_t *freq, int maxfreq,
 	}
 }
 
-static void eep_5416_dump_power_info(struct edump *edump)
+static void eep_5416_dump_power_info(struct atheepmgr *aem)
 {
 #define PR_PD_CAL(__pref, __band, __is_2g)				\
 		EEP_PRINT_SUBSECT_NAME(__pref " per-freq PD cal. data");\
@@ -510,7 +510,7 @@ static void eep_5416_dump_power_info(struct edump *edump)
 				 __rates, ARRAY_SIZE(__rates), __is_2g);\
 		printf("\n");
 
-	struct eep_5416_priv *emp = edump->eepmap_priv;
+	struct eep_5416_priv *emp = aem->eepmap_priv;
 	const struct ar5416_eeprom *eep = &emp->eep;
 	int is_openloop = 0, maxradios = 0, i;
 
@@ -545,16 +545,16 @@ static void eep_5416_dump_power_info(struct edump *edump)
 #undef PR_PD_CAL
 }
 
-static bool eep_5416_update_eeprom(struct edump *edump, int param,
+static bool eep_5416_update_eeprom(struct atheepmgr *aem, int param,
 				   const void *data)
 {
 #define EEP_FIELD_OFFSET(__field)					\
 		(offsetof(typeof(*eep), __field) / sizeof(uint16_t));
 #define EEP_FIELD_SIZE(__field)						\
 		(sizeof(eep->__field) / sizeof(uint16_t))
-	struct eep_5416_priv *emp = edump->eepmap_priv;
+	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_eeprom *eep = &emp->eep;
-	uint16_t *buf = edump->eep_buf;
+	uint16_t *buf = aem->eep_buf;
 	int data_pos, data_len = 0, addr, el;
 	uint16_t sum;
 

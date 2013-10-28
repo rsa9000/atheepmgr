@@ -15,7 +15,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "edump.h"
+#include "atheepmgr.h"
 #include "eep_9285.h"
 
 struct eep_9285_priv {
@@ -36,12 +36,12 @@ static int eep_9285_get_rev(struct eep_9285_priv *emp)
 	return ((emp->eep.baseEepHeader.version) & 0xFFF);
 }
 
-static bool eep_9285_fill(struct edump *edump)
+static bool eep_9285_fill(struct atheepmgr *aem)
 {
-	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct eep_9285_priv *emp = aem->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
 	uint16_t *eep_init = (uint16_t *)&emp->ini;
-	uint16_t *buf = edump->eep_buf;
+	uint16_t *buf = aem->eep_buf;
 	uint16_t magic;
 	int addr;
 
@@ -51,7 +51,7 @@ static bool eep_9285_fill(struct edump *edump)
 		return false;
 	}
 	if (bswap_16(magic) == AR5416_EEPROM_MAGIC)
-		edump->eep_io_swap = !edump->eep_io_swap;
+		aem->eep_io_swap = !aem->eep_io_swap;
 
 	/* Read to the intermediate buffer */
 	for (addr = 0; addr < AR9285_DATA_START_LOC + AR9285_DATA_SZ; ++addr) {
@@ -72,12 +72,12 @@ static bool eep_9285_fill(struct edump *edump)
 	return true;
 }
 
-static bool eep_9285_check(struct edump *edump)
+static bool eep_9285_check(struct atheepmgr *aem)
 {
-	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct eep_9285_priv *emp = aem->eepmap_priv;
 	struct ar5416_init *ini = &emp->ini;
 	struct ar9285_eeprom *eep = &emp->eep;
-	const uint16_t *buf = edump->eep_buf;
+	const uint16_t *buf = aem->eep_buf;
 	uint16_t sum;
 	int i, el;
 
@@ -88,7 +88,7 @@ static bool eep_9285_check(struct edump *edump)
 	}
 
 	if (!!(eep->baseEepHeader.eepMisc & AR5416_EEPMISC_BIG_ENDIAN) !=
-	    edump->host_is_be) {
+	    aem->host_is_be) {
 		uint32_t integer;
 		uint16_t word;
 
@@ -153,9 +153,9 @@ static bool eep_9285_check(struct edump *edump)
 	return true;
 }
 
-static void eep_9285_dump_init_data(struct edump *edump)
+static void eep_9285_dump_init_data(struct atheepmgr *aem)
 {
-	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct eep_9285_priv *emp = aem->eepmap_priv;
 	struct ar5416_init *ini = &emp->ini;
 	uint16_t magic = le16toh(ini->magic);
 	uint16_t prot = le16toh(ini->prot);
@@ -185,9 +185,9 @@ static void eep_9285_dump_init_data(struct edump *edump)
 	printf("\n");
 }
 
-static void eep_9285_dump_base_header(struct edump *edump)
+static void eep_9285_dump_base_header(struct atheepmgr *aem)
 {
-	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct eep_9285_priv *emp = aem->eepmap_priv;
 	struct ar9285_eeprom *eep = &emp->eep;
 	struct ar9285_base_eep_hdr *pBase = &eep->baseEepHeader;
 	uint16_t i;
@@ -267,7 +267,7 @@ static void eep_9285_dump_base_header(struct edump *edump)
 	printf("\n");
 }
 
-static void eep_9285_dump_modal_header(struct edump *edump)
+static void eep_9285_dump_modal_header(struct atheepmgr *aem)
 {
 #define PR(_token, _p, _val_fmt, _val)			\
 	do {						\
@@ -276,7 +276,7 @@ static void eep_9285_dump_modal_header(struct edump *edump)
 		printf("\n");				\
 	} while(0)
 
-	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct eep_9285_priv *emp = aem->eepmap_priv;
 	struct ar9285_eeprom *eep = &emp->eep;
 	struct ar9285_modal_eep_hdr *pModal = &eep->modalHeader;
 
@@ -332,7 +332,7 @@ static void eep_9285_dump_modal_header(struct edump *edump)
 	printf("\n");
 }
 
-static void eep_9285_dump_power_info(struct edump *edump)
+static void eep_9285_dump_power_info(struct atheepmgr *aem)
 {
 #define PR_TARGET_POWER(__pref, __field, __rates)			\
 		EEP_PRINT_SUBSECT_NAME(__pref " per-rate target power");\
@@ -341,7 +341,7 @@ static void eep_9285_dump_power_info(struct edump *edump)
 				 __rates, ARRAY_SIZE(__rates), 1);	\
 		printf("\n");
 
-	struct eep_9285_priv *emp = edump->eepmap_priv;
+	struct eep_9285_priv *emp = aem->eepmap_priv;
 	const struct ar9285_eeprom *eep = &emp->eep;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
