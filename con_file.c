@@ -153,6 +153,11 @@ static void file_clean(struct atheepmgr *aem)
 	fclose(fpd->fp);
 }
 
+static const struct eep_ops eep_file = {
+	.read = file_eeprom_read,
+	.write = file_eeprom_write,
+};
+
 const struct connector con_file = {
 	.name = "File",
 	.priv_data_sz = sizeof(struct file_priv),
@@ -161,6 +166,5 @@ const struct connector con_file = {
 	.reg_read = file_reg_read,
 	.reg_write = file_reg_write,
 	.reg_rmw = file_reg_rmw,
-	.eep_read = file_eeprom_read,
-	.eep_write = file_eeprom_write,
+	.eep = &eep_file,
 };

@@ -265,7 +265,8 @@ static const struct gpio_ops gpio_ops_ar9xxx = {
 	.out_mux_get_str = hw_gpio_out_mux_get_str_ar9xxx,
 };
 
-bool hw_eeprom_read_9xxx(struct atheepmgr *aem, uint32_t off, uint16_t *data)
+static bool hw_eeprom_read_9xxx(struct atheepmgr *aem, uint32_t off,
+				uint16_t *data)
 {
 #define WAIT_MASK	AR_EEPROM_STATUS_DATA_BUSY | \
 			AR_EEPROM_STATUS_DATA_PROT_ACCESS
@@ -285,7 +286,8 @@ bool hw_eeprom_read_9xxx(struct atheepmgr *aem, uint32_t off, uint16_t *data)
 #undef WAIT_MASK
 }
 
-bool hw_eeprom_write_9xxx(struct atheepmgr *aem, uint32_t off, uint16_t data)
+static bool hw_eeprom_write_9xxx(struct atheepmgr *aem, uint32_t off,
+				 uint16_t data)
 {
 #define WAIT_MASK	AR_EEPROM_STATUS_DATA_BUSY | \
 			AR_EEPROM_STATUS_DATA_BUSY_ACCESS | \
@@ -303,7 +305,7 @@ bool hw_eeprom_write_9xxx(struct atheepmgr *aem, uint32_t off, uint16_t data)
 #undef WAIT_MASK
 }
 
-void hw_eeprom_lock_gpio(struct atheepmgr *aem, int lock)
+static void hw_eeprom_lock_gpio(struct atheepmgr *aem, int lock)
 {
 	int val = !!aem->eep_wp_gpio_pol ^ !!lock;
 
@@ -323,9 +325,28 @@ void hw_eeprom_lock_gpio(struct atheepmgr *aem, int lock)
 	usleep(1);
 }
 
+static const struct eep_ops hw_eep_9xxx = {
+	.read = hw_eeprom_read_9xxx,
+	.write = hw_eeprom_write_9xxx,
+	.lock = hw_eeprom_lock_gpio,
+};
+
+void hw_eeprom_set_ops(struct atheepmgr *aem)
+{
+	if (aem->con->eep) {
+		printf("EEPROM access ops: use connector's ops\n");
+		aem->eep = aem->con->eep;
+	} else if (AR_SREV_5416_OR_LATER(aem)) {
+		printf("EEPROM access ops: use AR9xxx ops\n");
+		aem->eep = &hw_eep_9xxx;
+	} else {
+		printf("Unable to select EEPROM access ops due to unknown chip\n");
+	}
+}
+
 bool hw_eeprom_read(struct atheepmgr *aem, uint32_t off, uint16_t *data)
 {
-	if (!aem->con->eep_read(aem, off, data))
+	if (!aem->eep || !aem->eep->read(aem, off, data))
 		return false;
 
 	if (aem->eep_io_swap)
@@ -339,7 +360,7 @@ bool hw_eeprom_write(struct atheepmgr *aem, uint32_t off, uint16_t data)
 	if (aem->eep_io_swap)
 		data = bswap_16(data);
 
-	if (!aem->con->eep_write(aem, off, data))
+	if (!aem->eep || !aem->eep->write(aem, off, data))
 		return false;
 
 	return true;
@@ -347,8 +368,8 @@ bool hw_eeprom_write(struct atheepmgr *aem, uint32_t off, uint16_t data)
 
 void hw_eeprom_lock(struct atheepmgr *aem, int lock)
 {
-	if (aem->con->eep_lock)
-		aem->con->eep_lock(aem, lock);
+	if (aem->eep && aem->eep->lock)
+		aem->eep->lock(aem, lock);
 }
 
 int hw_init(struct atheepmgr *aem)

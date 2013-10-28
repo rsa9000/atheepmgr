@@ -218,7 +218,4 @@ const struct connector con_pci = {
 	.reg_read = pci_reg_read,
 	.reg_write = pci_reg_write,
 	.reg_rmw = pci_reg_rmw,
-	.eep_read = hw_eeprom_read_9xxx,
-	.eep_write = hw_eeprom_write_9xxx,
-	.eep_lock = hw_eeprom_lock_gpio,
 };

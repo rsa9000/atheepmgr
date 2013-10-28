@@ -103,6 +103,12 @@ struct gpio_ops {
 	const char * (*out_mux_get_str)(struct atheepmgr *aem, unsigned gpio);
 };
 
+struct eep_ops {
+	bool (*read)(struct atheepmgr *aem, uint32_t off, uint16_t *data);
+	bool (*write)(struct atheepmgr *aem, uint32_t off, uint16_t data);
+	void (*lock)(struct atheepmgr *aem, int lock);
+};
+
 struct connector {
 	const char *name;
 	size_t priv_data_sz;
@@ -113,9 +119,7 @@ struct connector {
 	void (*reg_write)(struct atheepmgr *aem, uint32_t reg, uint32_t val);
 	void (*reg_rmw)(struct atheepmgr *aem, uint32_t reg, uint32_t set,
 			uint32_t clr);
-	bool (*eep_read)(struct atheepmgr *aem, uint32_t off, uint16_t *data);
-	bool (*eep_write)(struct atheepmgr *aem, uint32_t off, uint16_t data);
-	void (*eep_lock)(struct atheepmgr *aem, int lock);
+	const struct eep_ops *eep;
 };
 
 enum eepmap_section_id {
@@ -163,6 +167,8 @@ struct atheepmgr {
 	int eep_wp_gpio_num;			/* EEPROM WP GPIO number */
 	int eep_wp_gpio_pol;			/* EEPROM WP unlock polarity */
 
+	const struct eep_ops *eep;
+
 	const struct gpio_ops *gpio;
 	unsigned gpio_num;			/* Number of GPIO lines */
 };
@@ -178,9 +184,7 @@ extern const struct eepmap eepmap_9300;
 
 bool hw_wait(struct atheepmgr *aem, uint32_t reg, uint32_t mask,
 	     uint32_t val, uint32_t timeout);
-bool hw_eeprom_read_9xxx(struct atheepmgr *aem, uint32_t off, uint16_t *data);
-bool hw_eeprom_write_9xxx(struct atheepmgr *aem, uint32_t off, uint16_t data);
-void hw_eeprom_lock_gpio(struct atheepmgr *aem, bool lock);
+void hw_eeprom_set_ops(struct atheepmgr *aem);
 bool hw_eeprom_read(struct atheepmgr *aem, uint32_t off, uint16_t *data);
 bool hw_eeprom_write(struct atheepmgr *aem, uint32_t off, uint16_t data);
 void hw_eeprom_lock(struct atheepmgr *aem, int lock);
