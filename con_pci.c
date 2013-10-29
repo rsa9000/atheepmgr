@@ -94,7 +94,7 @@ static int pci_device_init(struct atheepmgr *aem, struct pci_device *pdev)
 	err = pci_device_map_range(pdev, ppd->base_addr, ppd->size,
 				   PCI_DEV_MAP_FLAG_WRITABLE, &ppd->io_map);
 	if (err) {
-		fprintf(stderr, "%s\n", strerror(err));
+		fprintf(stderr, "Unable to map mem range: %s (%d)\n", strerror(err), err);
 		return err;
 	}
 
@@ -160,7 +160,7 @@ static int pci_init(struct atheepmgr *aem, const char *arg_str)
 
 	ret = pci_system_init();
 	if (ret) {
-		fprintf(stderr, "%s\n", strerror(ret));
+		fprintf(stderr, "PCI sys init error: %s\n", strerror(ret));
 		goto err;
 	}
 
@@ -175,14 +175,14 @@ static int pci_init(struct atheepmgr *aem, const char *arg_str)
 	pci_iterator_destroy(iter);
 
 	if (NULL == pdev) {
-		fprintf(stderr, "No suitable card found\n");
+		fprintf(stderr, "No PCI device in specified slot\n");
 		ret = ENODEV;
 		goto err;
 	}
 
 	ret = pci_device_probe(pdev);
 	if (ret) {
-		fprintf(stderr, "%s\n", strerror(ret));
+		fprintf(stderr, "PCI probe error: %s\n", strerror(ret));
 		goto err;
 	}
 
