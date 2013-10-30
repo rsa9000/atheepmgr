@@ -15,12 +15,16 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <fcntl.h>
 #include <pciaccess.h>
 
 #include "atheepmgr.h"
 #include "con_pci.h"
 
 struct pci_priv {
+#if defined(__OpenBSD__)
+	int memfd;
+#endif
 	struct pci_device *pdev;
 	pciaddr_t base_addr;
 	pciaddr_t size;
@@ -81,6 +85,15 @@ static int pci_device_init(struct atheepmgr *aem, struct pci_device *pdev)
 		fprintf(stderr, "Invalid base address\n");
 		return EINVAL;
 	}
+
+#if defined(__OpenBSD__)
+	ppd->memfd = open("/dev/mem", O_RDWR);
+	if (ppd->memfd < 0) {
+		fprintf(stderr, "Opening /dev/mem failed: %s\n", strerror(errno));
+		return errno;
+	}
+	pci_system_init_dev_mem(ppd->memfd);
+#endif
 
 	ppd->pdev = pdev;
 	ppd->base_addr = pdev->regions[0].base_addr;

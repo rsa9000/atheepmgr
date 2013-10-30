@@ -24,8 +24,18 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdint.h>
+
+#if defined(__OpenBSD__)
+#define __BYTE_ORDER _BYTE_ORDER
+#define __BIG_ENDIAN _BIG_ENDIAN
+#define bswap_16	__swap16
+#define bswap_32	__swap32
+#define le16toh		letoh16
+#define le32toh		letoh32
+#elif defined(__linux__)
 #include <endian.h>
 #include <byteswap.h>
+#endif
 
 #include "eep_common.h"
 
