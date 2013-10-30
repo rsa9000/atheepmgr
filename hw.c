@@ -313,6 +313,36 @@ static bool hw_eeprom_write_9xxx(struct atheepmgr *aem, uint32_t off,
 #undef WAIT_MASK
 }
 
+static bool hw_eeprom_read_5211(struct atheepmgr *aem, uint32_t off, uint16_t *data)
+{
+	static const uint32_t wait_to = AH_WAIT_TIMEOUT;
+	uint32_t to, st;
+
+	REG_WRITE(AR5211_EEPROM_ADDR, off);
+	REG_WRITE(AR5211_EEPROM_CMD, AR5211_EEPROM_CMD_READ);
+
+	for (to = 0; to < wait_to; ++to) {
+		st = REG_READ(AR5211_EEPROM_STATUS);
+		if (st & AR5211_EEPROM_STATUS_READ_COMPLETE) {
+			if (st & AR5211_EEPROM_STATUS_READ_ERROR)
+				return false;
+			break;
+		}
+		usleep(AH_TIME_QUANTUM);
+	}
+	if (wait_to == to)
+		return false;
+
+	*data = REG_READ(AR5211_EEPROM_DATA) & 0xffff;
+
+	return true;
+}
+
+static bool hw_eeprom_write_5211(struct atheepmgr *aem, uint32_t off, uint16_t data)
+{
+	return false;
+}
+
 static void hw_eeprom_lock_gpio(struct atheepmgr *aem, int lock)
 {
 	int val = !!aem->eep_wp_gpio_pol ^ !!lock;
@@ -339,6 +369,12 @@ static const struct eep_ops hw_eep_9xxx = {
 	.lock = hw_eeprom_lock_gpio,
 };
 
+static const struct eep_ops hw_eep_5211 = {
+	.read = hw_eeprom_read_5211,
+	.write = hw_eeprom_write_5211,
+	.lock = hw_eeprom_lock_gpio,
+};
+
 void hw_eeprom_set_ops(struct atheepmgr *aem)
 {
 	if (aem->con->eep) {
@@ -347,6 +383,9 @@ void hw_eeprom_set_ops(struct atheepmgr *aem)
 	} else if (AR_SREV_5416_OR_LATER(aem)) {
 		printf("EEPROM access ops: use AR9xxx ops\n");
 		aem->eep = &hw_eep_9xxx;
+	} else if (AR_SREV_5211_OR_LATER(aem)) {
+		printf("EEPROM access ops: use AR5211 ops\n");
+		aem->eep = &hw_eep_5211;
 	} else {
 		printf("Unable to select EEPROM access ops due to unknown chip\n");
 	}
