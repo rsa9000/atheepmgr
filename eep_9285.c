@@ -60,6 +60,7 @@ static bool eep_9285_fill(struct atheepmgr *aem)
 			return false;
 		}
 	}
+	aem->eep_len = addr;
 
 	/* Copy from buffer to the Init data */
 	for (addr = 0; addr < AR9285_DATA_START_LOC; ++addr)

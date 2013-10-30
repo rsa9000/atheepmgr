@@ -60,6 +60,7 @@ static bool eep_5416_fill(struct atheepmgr *aem)
 			return false;
 		}
 	}
+	aem->eep_len = addr;
 
 	/* Copy from buffer to the Init data */
 	for (addr = 0; addr < AR5416_DATA_START_LOC; ++addr)

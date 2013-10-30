@@ -187,6 +187,7 @@ struct atheepmgr {
 
 	int eep_io_swap;			/* Swap words */
 	uint16_t *eep_buf;			/* Intermediated EEPROM buf */
+	size_t eep_len;			/* Read size of EEPROM data in the buffer */
 
 	int eep_wp_gpio_num;			/* EEPROM WP GPIO number */
 	int eep_wp_gpio_pol;			/* EEPROM WP unlock polarity */

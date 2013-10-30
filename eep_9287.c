@@ -60,6 +60,7 @@ static bool eep_9287_fill_eeprom(struct atheepmgr *aem)
 			return false;
 		}
 	}
+	aem->eep_len = addr;
 
 	/* Copy from buffer to the Init data */
 	for (addr = 0; addr < AR9287_DATA_START_LOC; ++addr)

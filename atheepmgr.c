@@ -140,10 +140,10 @@ static int act_eep_save(struct atheepmgr *aem, int argc, char *argv[])
 {
 	FILE *fp;
 	const uint16_t *buf = aem->eep_buf;
-	int buf_sz = aem->eepmap->eep_buf_sz;
+	int eep_len = aem->eep_len;
 	size_t res;
 
-	if (!buf_sz) {
+	if (!aem->eepmap->eep_buf_sz) {
 		fprintf(stderr, "EEPROM map does not support buffered operation, so the content saving is not possible\n");
 		return -EOPNOTSUPP;
 	}
@@ -160,14 +160,14 @@ static int act_eep_save(struct atheepmgr *aem, int argc, char *argv[])
 		return -errno;
 	}
 
-	res = fwrite(buf, sizeof(buf[0]), buf_sz, fp);
-	if (res != buf_sz)
+	res = fwrite(buf, sizeof(buf[0]), eep_len, fp);
+	if (res != eep_len)
 		fprintf(stderr, "Unable to save whole EEPROM contents: %s\n",
 			strerror(errno));
 
 	fclose(fp);
 
-	return res == buf_sz ? 0 : -EIO;
+	return res == eep_len ? 0 : -EIO;
 }
 
 static const struct eepmap_param {
