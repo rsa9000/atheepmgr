@@ -21,6 +21,7 @@
 static struct atheepmgr __aem;
 
 static const struct eepmap * const eepmaps[] = {
+	&eepmap_5211,
 	&eepmap_5416,
 	&eepmap_9285,
 	&eepmap_9287,
@@ -49,6 +50,8 @@ static int eepmap_detect(struct atheepmgr *aem)
 		aem->eepmap = &eepmap_9285;
 	} else if (AR_SREV_5416_OR_LATER(aem)) {
 		aem->eepmap = &eepmap_5416;
+	} else if (AR_SREV_5211_OR_LATER(aem)) {
+		aem->eepmap = &eepmap_5211;
 	} else {
 		fprintf(stderr, "Unable to determine an EEPROM map suitable for this chip\n");
 		return -ENOENT;
