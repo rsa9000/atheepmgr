@@ -51,6 +51,18 @@ enum {
 
 typedef int bool;
 
+#define AR_SREV_VERSION_5211		0x4
+#define AR_SREV_REVISION_5211		0
+#define AR_SREV_VERSION_5212		0x5
+#define AR_SREV_REVISION_5212		0
+#define AR_SREV_VERSION_5213		0x5
+#define AR_SREV_REVISION_5213		5
+#define AR_SREV_VERSION_5213A		0x5
+#define AR_SREV_REVISION_5213A		9
+#define AR_SREV_VERSION_5413		0xA
+#define AR_SREV_REVISION_5413		4
+#define AR_SREV_VERSION_5414		0xA
+#define AR_SREV_REVISION_5414		5
 #define AR_SREV_VERSION_5418		0xC
 #define AR_SREV_REVISION_5418		0
 #define AR_SREV_VERSION_5416		0xD
@@ -67,6 +79,8 @@ typedef int bool;
 #define AR_SREV_VERSION_9340            0x300
 #define AR_SREV_VERSION_9550            0x400
 
+#define AR_SREV_5211_OR_LATER(_aem) \
+	((_aem)->macVersion >= AR_SREV_VERSION_5211)
 #define AR_SREV_5416_OR_LATER(_aem) \
 	((_aem)->macVersion >= AR_SREV_VERSION_5418)
 #define AR_SREV_9280_20_OR_LATER(_aem) \

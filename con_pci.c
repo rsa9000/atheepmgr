@@ -37,6 +37,9 @@ static int is_supported_chipset(struct pci_device *pdev)
 		uint16_t dev_id;
 		const char *name;
 	} devs[] = {
+		{AR5211_DEVID_PCI,  "AR5211 PCI"},
+		{AR5212_DEVID_PCI,  "AR5212/AR5213 PCI"},
+		{AR5413_DEVID_PCI,  "AR5413/AR5414 PCI"},
 		{AR5416_DEVID_PCI,  "AR5416 PCI"},
 		{AR5416_DEVID_PCIE, "AR5416 PCIe"},
 		{AR9160_DEVID_PCI,  "AR9160 PCI"},
