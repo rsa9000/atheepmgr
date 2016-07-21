@@ -360,6 +360,43 @@ static void eep_5211_dump_base(struct atheepmgr *aem)
 #undef PR
 }
 
+static bool eep_5211_update_eeprom(struct atheepmgr *aem, int param,
+				   const void *data)
+{
+	uint16_t *buf = aem->eep_buf;
+	int data_pos, data_len = 0, addr, el;
+	uint16_t sum;
+
+	switch (param) {
+	default:
+		fprintf(stderr, "Internal error: unknown parameter Id\n");
+		return false;
+	}
+
+	/* Store updated data */
+	for (addr = data_pos; addr < (data_pos + data_len); ++addr) {
+		if (!EEP_WRITE(addr, buf[addr])) {
+			fprintf(stderr, "Unable to write EEPROM data at 0x%04x\n",
+				addr);
+			return false;
+		}
+	}
+
+	/* Update checksum if need it */
+	if (data_pos > AR5211_EEP_INFO_BASE) {
+		el = aem->eep_len - AR5211_EEP_INFO_BASE;
+		buf[AR5211_EEP_CSUM] = 0xffff;
+		sum = eep_calc_csum(&buf[AR5211_EEP_INFO_BASE], el);
+		buf[AR5211_EEP_CSUM] = sum;
+		if (!EEP_WRITE(AR5211_EEP_CSUM, sum)) {
+			fprintf(stderr, "Unable to update EEPROM checksum\n");
+			return false;
+		}
+	}
+
+	return true;
+}
+
 const struct eepmap eepmap_5211 = {
 	.name = "5211",
 	.desc = "Legacy .11abg chips EEPROM map (AR5211/AR5212/AR5414/etc.)",
@@ -371,4 +408,6 @@ const struct eepmap eepmap_5211 = {
 		[EEP_SECT_INIT] = eep_5211_dump_init_data,
 		[EEP_SECT_BASE] = eep_5211_dump_base,
 	},
+	.update_eeprom = eep_5211_update_eeprom,
+	.params_mask = 0,
 };
