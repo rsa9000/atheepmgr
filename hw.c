@@ -411,7 +411,26 @@ static bool hw_eeprom_read_5211(struct atheepmgr *aem, uint32_t off, uint16_t *d
 
 static bool hw_eeprom_write_5211(struct atheepmgr *aem, uint32_t off, uint16_t data)
 {
-	return false;
+	static const uint32_t wait_to = AH_WAIT_TIMEOUT;
+	uint32_t to, st;
+
+	REG_WRITE(AR5211_EEPROM_ADDR, off);
+	REG_WRITE(AR5211_EEPROM_DATA, data);
+	REG_WRITE(AR5211_EEPROM_CMD, AR5211_EEPROM_CMD_WRITE);
+
+	for (to = 0; to < wait_to; ++to) {
+		st = REG_READ(AR5211_EEPROM_STATUS);
+		if (st & AR5211_EEPROM_STATUS_WRITE_COMPLETE) {
+			if (st & AR5211_EEPROM_STATUS_WRITE_ERROR)
+				return false;
+			break;
+		}
+		usleep(AH_TIME_QUANTUM);
+	}
+	if (wait_to == to)
+		return false;
+
+	return true;
 }
 
 static void hw_eeprom_lock_gpio(struct atheepmgr *aem, int lock)
