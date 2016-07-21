@@ -313,6 +313,77 @@ static bool hw_eeprom_write_9xxx(struct atheepmgr *aem, uint32_t off,
 #undef WAIT_MASK
 }
 
+static int hw_gpio_input_get_ar5xxx(struct atheepmgr *aem, unsigned gpio)
+{
+	if (gpio >= aem->gpio_num)
+		return 0;
+
+	return !!(REG_READ(AR5XXX_GPIO_IN) & BIT(gpio));
+}
+
+static int hw_gpio_output_get_ar5xxx(struct atheepmgr *aem, unsigned gpio)
+{
+	if (gpio >= aem->gpio_num)
+		return 0;
+
+	return !!(REG_READ(AR5XXX_GPIO_OUT) & BIT(gpio));
+}
+
+static void hw_gpio_output_set_ar5xxx(struct atheepmgr *aem, unsigned gpio,
+				      int val)
+{
+	REG_RMW(AR5XXX_GPIO_OUT, !!val << gpio, 1 << gpio);
+}
+
+static int hw_gpio_dir_get_ar5xxx(struct atheepmgr *aem, unsigned gpio)
+{
+	unsigned sh = gpio * 2;
+
+	if (gpio >= aem->gpio_num)
+		return 0;
+
+	return (REG_READ(AR5XXX_GPIO_CTRL) >> sh) & AR5XXX_GPIO_CTRL_DRV;
+}
+
+static void hw_gpio_dir_set_out_ar5xxx(struct atheepmgr *aem, unsigned gpio)
+{
+	unsigned sh = gpio * 2;
+
+	if (gpio >= aem->gpio_num)
+		return;
+
+	REG_RMW(AR5XXX_GPIO_CTRL,
+		AR5XXX_GPIO_CTRL_DRV_ALL << sh,
+		AR5XXX_GPIO_CTRL_DRV << sh);
+}
+
+static const char *hw_gpio_dir_get_str_ar5xxx(struct atheepmgr *aem,
+					      unsigned gpio)
+{
+	int dir = hw_gpio_dir_get_ar5xxx(aem, gpio);
+
+	switch (dir) {
+	case AR5XXX_GPIO_CTRL_DRV_NO:
+		return "In";
+	case AR5XXX_GPIO_CTRL_DRV_LOW:
+		return "Low";
+	case AR5XXX_GPIO_CTRL_DRV_HI:
+		return "Hi";
+	case AR5XXX_GPIO_CTRL_DRV_ALL:
+		return "Out";
+	}
+
+	return "Unk";
+}
+
+static const struct gpio_ops gpio_ops_ar5xxx = {
+	.input_get = hw_gpio_input_get_ar5xxx,
+	.output_get = hw_gpio_output_get_ar5xxx,
+	.output_set = hw_gpio_output_set_ar5xxx,
+	.dir_set_out = hw_gpio_dir_set_out_ar5xxx,
+	.dir_get_str = hw_gpio_dir_get_str_ar5xxx,
+};
+
 static bool hw_eeprom_read_5211(struct atheepmgr *aem, uint32_t off, uint16_t *data)
 {
 	static const uint32_t wait_to = AH_WAIT_TIMEOUT;
@@ -436,6 +507,9 @@ int hw_init(struct atheepmgr *aem)
 			aem->gpio_num = 10;
 		else
 			aem->gpio_num = 14;
+	} else if (AR_SREV_5211_OR_LATER(aem)) {
+		aem->gpio = &gpio_ops_ar5xxx;
+		aem->gpio_num = 6;
 	} else {
 		fprintf(stderr, "Unable to configure chip GPIO support\n");
 	}
