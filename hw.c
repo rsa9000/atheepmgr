@@ -518,6 +518,9 @@ int hw_init(struct atheepmgr *aem)
 		if (AR_SREV_5416_OR_LATER(aem)) {
 			aem->eep_wp_gpio_num = 3;
 			aem->eep_wp_gpio_pol = 0;
+		} else if (AR_SREV_5211_OR_LATER(aem)) {
+			aem->eep_wp_gpio_num = 4;
+			aem->eep_wp_gpio_pol = 0;
 		} else {
 			fprintf(stderr, "Unable to determine EEPROM unlocking GPIO, the feature will be disabled\n");
 			aem->eep_wp_gpio_num = EEP_WP_GPIO_NONE;
