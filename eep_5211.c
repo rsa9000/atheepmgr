@@ -210,6 +210,7 @@ static bool eep_5211_check(struct atheepmgr *aem)
 	struct ar5211_init_eep_data *ini = &emp->ini;
 	struct ar5211_eeprom *eep = &emp->eep;
 	struct ar5211_base_eep_hdr *base = &eep->base;
+	uint16_t sum;
 
 	if (ini->magic != AR5211_EEPROM_MAGIC_VAL) {
 		fprintf(stderr, "Invalid EEPROM Magic 0x%04x, expected 0x%04x\n",
@@ -221,6 +222,14 @@ static bool eep_5211_check(struct atheepmgr *aem)
 		fprintf(stderr, "Bad EEPROM version 0x%04x (%d.%d)\n",
 			base->version, MS(base->version, AR5211_EEP_VER_MAJ),
 			MS(base->version, AR5211_EEP_VER_MIN));
+		return false;
+	}
+
+	/* Checksum calculated only for "info" section (initial part should be skipped) */
+	sum = eep_calc_csum((uint16_t *)aem->eep_buf + AR5211_EEP_INFO_BASE,
+			    aem->eep_len - AR5211_EEP_INFO_BASE);
+	if (sum != 0xffff) {
+		fprintf(stderr, "Bad EEPROM checksum 0x%04x\n", sum);
 		return false;
 	}
 
