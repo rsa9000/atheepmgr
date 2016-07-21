@@ -364,10 +364,18 @@ static bool eep_5211_update_eeprom(struct atheepmgr *aem, int param,
 				   const void *data)
 {
 	uint16_t *buf = aem->eep_buf;
-	int data_pos, data_len = 0, addr, el;
+	int data_pos, data_len = 0, addr, el, i;
 	uint16_t sum;
 
 	switch (param) {
+	case EEP_UPDATE_MAC:
+		data_pos = AR5211_EEP_MAC;
+		data_len = 6 / sizeof(uint16_t);
+		for (i = 0; i < 6; ++i) {
+			((uint8_t *)(buf + AR5211_EEP_MAC))[5 - i] =
+							((uint8_t *)data)[i];
+		}
+		break;
 	default:
 		fprintf(stderr, "Internal error: unknown parameter Id\n");
 		return false;
@@ -409,5 +417,5 @@ const struct eepmap eepmap_5211 = {
 		[EEP_SECT_BASE] = eep_5211_dump_base,
 	},
 	.update_eeprom = eep_5211_update_eeprom,
-	.params_mask = 0,
+	.params_mask = BIT(EEP_UPDATE_MAC),
 };
