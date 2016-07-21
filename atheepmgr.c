@@ -277,9 +277,11 @@ static int act_gpio_dump(struct atheepmgr *aem, int argc, char *argv[])
 	FOR_EACH_GPIO("Direction")
 		printf(" %-3s", aem->gpio->dir_get_str(aem, i));
 	printf("\n");
-	FOR_EACH_GPIO("Output mux")
-		printf(" %-3s", aem->gpio->out_mux_get_str(aem, i));
-	printf("\n");
+	if (aem->gpio->out_mux_get_str) {
+		FOR_EACH_GPIO("Output mux")
+			printf(" %-3s", aem->gpio->out_mux_get_str(aem, i));
+		printf("\n");
+	}
 	FOR_EACH_GPIO("Input value")
 		printf(" %c  ", aem->gpio->input_get(aem, i) ? '1' : ' ');
 	printf("\n");
