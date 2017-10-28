@@ -26,12 +26,18 @@
 #include <stdint.h>
 
 #if defined(__OpenBSD__)
+#include <sys/param.h>
+/* OpenBSD only starting from version 5.6 contains le16toh() and le32toh() */
+#if OpenBSD >= 201411
+#include <endian.h>
+#else
+#define le16toh		letoh16
+#define le32toh		letoh32
+#endif
 #define __BYTE_ORDER _BYTE_ORDER
 #define __BIG_ENDIAN _BIG_ENDIAN
 #define bswap_16	__swap16
 #define bswap_32	__swap32
-#define le16toh		letoh16
-#define le32toh		letoh32
 #elif defined(__linux__)
 #include <endian.h>
 #include <byteswap.h>
