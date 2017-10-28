@@ -157,6 +157,39 @@ static void pci_reg_rmw(struct atheepmgr *aem, uint32_t reg, uint32_t set,
 	*((volatile uint32_t *)(ppd->io_map + reg)) = tmp;
 }
 
+static int pci_parse_devarg(const char *str, struct pci_slot_match *slot)
+{
+	int num, len;
+
+	num = sscanf(str, "%x:%x:%x.%u%n", &slot->domain, &slot->bus,
+		     &slot->dev, &slot->func, &len);
+	if (num == 4 && str[len] == '\0')
+		return 0;
+
+	num = sscanf(str, "%x:%x:%x%n", &slot->domain, &slot->bus, &slot->dev,
+		     &len);
+	if (num == 3 && str[len] == '\0') {
+		slot->func = PCI_MATCH_ANY;
+		return 0;
+	}
+
+	num = sscanf(str, "%x:%x.%u%n", &slot->bus, &slot->dev, &slot->func,
+		     &len);
+	if (num == 3 && str[len] == '\0') {
+		slot->domain = 0;
+		return 0;
+	}
+
+	num = sscanf(str, "%x:%x%n", &slot->bus, &slot->dev, &len);
+	if (num == 2 && str[len] == '\0') {
+		slot->domain = 0;
+		slot->func = PCI_MATCH_ANY;
+		return 0;
+	}
+
+	return -1;
+}
+
 static int pci_init(struct atheepmgr *aem, const char *arg_str)
 {
 	struct pci_slot_match slot[2];
@@ -166,13 +199,12 @@ static int pci_init(struct atheepmgr *aem, const char *arg_str)
 
 	memset(slot, 0x00, sizeof(slot));
 
-	ret = sscanf(arg_str, "%x:%x:%x", &slot[0].domain, &slot[0].bus, &slot[0].dev);
-	if (ret != 3) {
-		fprintf(stderr, "Invalid PCI slot specification: %s\n",
+	ret = pci_parse_devarg(arg_str, &slot[0]);
+	if (ret != 0) {
+		fprintf(stderr, "Invalid PCI slot specification -- %s\n",
 			arg_str);
 		return -EINVAL;
 	}
-	slot[0].func = PCI_MATCH_ANY;
 
 	ret = pci_system_init();
 	if (ret) {
@@ -191,14 +223,16 @@ static int pci_init(struct atheepmgr *aem, const char *arg_str)
 	pci_iterator_destroy(iter);
 
 	if (NULL == pdev) {
-		fprintf(stderr, "No PCI device in specified slot\n");
+		fprintf(stderr, "No PCI device in specified slot %s\n",
+			arg_str);
 		ret = ENODEV;
 		goto err;
 	}
 
 	ret = pci_device_probe(pdev);
 	if (ret) {
-		fprintf(stderr, "PCI probe error: %s\n", strerror(ret));
+		fprintf(stderr, "PCI dev %s probe error: %s\n", arg_str,
+			strerror(ret));
 		goto err;
 	}
 

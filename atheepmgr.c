@@ -450,8 +450,11 @@ static void usage(char *name)
 #endif
 #if defined(CONFIG_CON_PCI)
 		"  -P <slot>       Use libpciaccess to interact with card installed\n"
-		"                  in <slot>. Slot consist of 3 parts devided by colon:\n"
-		"                  <slot> = <domain>:<bus>:<dev> as displayed by lspci.\n"
+		"                  in <slot>. Slot should be specified in form:\n"
+		"                  [<domain>:]<bus>:<device>[.<func>] as displayed\n"
+		"                  by lspci(8) utility. If <domain> is omitted\n"
+		"                  then domain 0 will be used. If <func> is omitted\n"
+		"                  then first available function will be used.\n"
 #endif
 		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
 		"                  for connectors, without direct HW access.\n"
