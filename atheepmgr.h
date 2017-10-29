@@ -38,6 +38,12 @@
 #define __BIG_ENDIAN _BIG_ENDIAN
 #define bswap_16	__swap16
 #define bswap_32	__swap32
+#elif defined(__FreeBSD__)
+#include <sys/endian.h>
+#define __BYTE_ORDER _BYTE_ORDER
+#define __BIG_ENDIAN _BIG_ENDIAN
+#define bswap_16	bswap16
+#define bswap_32	bswap32
 #elif defined(__linux__)
 #include <endian.h>
 #include <byteswap.h>
