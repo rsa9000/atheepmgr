@@ -47,6 +47,20 @@
 #elif defined(__linux__)
 #include <endian.h>
 #include <byteswap.h>
+/* Some old C libraries (e.g. uClibc prior to 0.9.32) do not have this */
+#ifndef le16toh
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define le16toh(x)	(x)
+#define htole16(x)	(x)
+#define le32toh(x)	(x)
+#define htole32(x)	(x)
+#else
+#define le16toh(x)	bswap_16(x)
+#define htole16(x)	bswap_16(x)
+#define le32toh(x)	bswap_32(x)
+#define htole32(x)	bswap_32(x)
+#endif
+#endif
 #endif
 
 #include "eep_common.h"
