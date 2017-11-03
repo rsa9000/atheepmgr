@@ -17,6 +17,18 @@
 #ifndef EEP_5211_H
 #define EEP_5211_H
 
+/* Frequency pack/unpack macros for EEPROM version prior to 3.3 */
+#define FREQ2FBIN_30_2G(f)	((f) - 2400)
+#define FREQ2FBIN_30_5G(f)	((f) <= 5720 ? ((f)-5100)/10 : ((f)-5720)/5+62)
+#define FREQ2FBIN_30(f, is_2g)	(is_2g ? FREQ2FBIN_30_2G(f):FREQ2FBIN_30_5G(f))
+#define FBIN2FREQ_30_2G(b)	((b) + 2400)
+#define FBIN2FREQ_30_5G(b)	((b) <= 62 ? 5100+10*(b) : 5720+5*((b)-62))
+#define FBIN2FREQ_30(b, is_2g)	(is_2g ? FBIN2FREQ_30_2G(b):FBIN2FREQ_30_5G(b))
+
+/* Re-encoding fbin of v3.0 to fbin of v3.3 via frequency */
+#define FBIN_30_TO_33(b, is_2g)				\
+		(!(b) ? 0 : FREQ2FBIN(FBIN2FREQ_30(b, is_2g), is_2g))
+
 #define AR5211_EEPROM_MAGIC_VAL		0x5aa5
 
 /* This max value is almost arbitrary and it selection is based on my
@@ -28,6 +40,11 @@
 #define AR5211_EEP_VER_3_3		0x3003
 #define AR5211_EEP_VER_4_0		0x4000
 #define AR5211_EEP_VER_5_0		0x5000
+
+#define AR5211_NUM_CTLS_30		16
+#define AR5211_NUM_CTLS_33		32
+#define AR5211_NUM_CTLS_MAX		AR5211_NUM_CTLS_33
+#define AR5211_NUM_BAND_EDGES		8
 
 /**
  * NB: the EEPROM layout for legacy chips is not byte-aligned, so there are
@@ -136,6 +153,13 @@
 #define AR5211_EEP_RD_FLAGS		0xffc0
 #define AR5211_EEP_RD_FLAGS_S		6
 
+#define AR5211_EEP_CTL_INDEX_30		(AR5211_EEP_INFO_BASE + 0x24)
+#define AR5211_EEP_CTL_INDEX_33		(AR5211_EEP_INFO_BASE + 0x68)
+
+#define AR5211_EEP_TGTPWR_BASE_30	(AR5211_EEP_INFO_BASE + 0x95)
+#define AR5211_EEP_TGTPWR_BASE_33	(AR5211_EEP_INFO_BASE + 0xe5)
+#define AR5211_EEP_CTL_DATA		0x001a
+
 struct ar5211_pci_eep_data {
 	uint16_t dev_id;
 	uint16_t ven_id;
@@ -205,9 +229,16 @@ struct ar5211_base_eep_hdr {
 	uint8_t max_qcu;
 };
 
+struct ar5211_ctl_edge {
+	uint8_t fbin;
+	uint8_t pwr;
+};
+
 struct ar5211_eeprom {
 	struct ar5211_base_eep_hdr base;
 	uint8_t cust_data[AR5211_EEP_CUST_DATA_SZ * 2];
+	uint8_t ctl_index[AR5211_NUM_CTLS_MAX];
+	struct ar5211_ctl_edge ctl_data[AR5211_NUM_CTLS_MAX][AR5211_NUM_BAND_EDGES];
 };
 
 #endif	/* EEP_5211_H */

@@ -53,8 +53,8 @@ const char * const eep_ctldomains[] = {
 };
 
 const char * const eep_ctlmodes[] = {
-	   "5GHz OFDM",     "2GHz CCK",    "2GHz OFDM",  "Unknown (3)",
-	 "Unknown (4)",    "2GHz HT20",    "5GHz HT20",    "2GHz HT40",
+	   "5GHz OFDM",     "2GHz CCK",    "2GHz OFDM",   "5GHz Turbo",
+	  "2GHz Turbo",    "2GHz HT20",    "5GHz HT20",    "2GHz HT40",
 	   "5GHz HT40",  "Unknown (9)", "Unknown (10)", "Unknown (11)",
 	"Unknown (12)", "Unknown (13)", "Unknown (14)", "Unknown (15)"
 };

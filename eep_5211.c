@@ -18,6 +18,10 @@
 #include "eep_5211.h"
 
 struct eep_5211_priv {
+	struct eep_5211_param {	/* Cached EEPROM parameters */
+		int tgtpwr_off;	/* Target power info offset */
+		int ctls_num;	/* Max number of CTLs */
+	} param;
 	struct ar5211_init_eep_data ini;
 	struct ar5211_eeprom eep;
 };
@@ -58,6 +62,8 @@ static void eep_5211_fill_headers_30(struct atheepmgr *aem)
 	struct ar5211_base_eep_hdr *base = &eep->base;
 	uint16_t word;
 
+	emp->param.tgtpwr_off = AR5211_EEP_TGTPWR_BASE_30;
+
 	word = EEP_WORD(AR5211_EEP_ANTGAIN_30);
 	base->antgain_2g = MS(word, AR5211_EEP_ANTGAIN_2G);
 	base->antgain_5g = MS(word, AR5211_EEP_ANTGAIN_5G);
@@ -69,6 +75,8 @@ static void eep_5211_fill_headers_33(struct atheepmgr *aem)
 	struct ar5211_eeprom *eep = &emp->eep;
 	struct ar5211_base_eep_hdr *base = &eep->base;
 	uint16_t word;
+
+	emp->param.tgtpwr_off = AR5211_EEP_TGTPWR_BASE_33;
 
 	word = EEP_WORD(AR5211_EEP_ANTGAIN_33);
 	base->antgain_2g = MS(word, AR5211_EEP_ANTGAIN_2G);
@@ -84,6 +92,7 @@ static void eep_5211_fill_headers_33(struct atheepmgr *aem)
 		word = EEP_WORD(AR5211_EEP_MISC1);
 		base->tgtpwr_off = MS(word, AR5211_EEP_TGTPWR_OFF);
 		base->exists_32khz = !!(word & AR5211_EEP_32KHZ);
+		emp->param.tgtpwr_off = base->tgtpwr_off;
 
 		word = EEP_WORD(AR5211_EEP_SRC_INFO0);
 		base->ear_file_ver = MS(word, AR5211_EEP_EAR_FILE_VER);
@@ -148,8 +157,85 @@ static void eep_5211_fill_headers(struct atheepmgr *aem)
 	}
 }
 
+static void eep_5211_fill_ctl_index(struct atheepmgr *aem,
+				    int off)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	uint16_t word;
+	int i;
+
+	for (i = 0; i < emp->param.ctls_num; i += 2) {
+		word = EEP_WORD(off + i / 2);
+		eep->ctl_index[i + 0] = word >> 8;
+		eep->ctl_index[i + 1] = word & 0xff;
+	}
+}
+
+static void eep_5211_fill_ctl_data_30(struct atheepmgr *aem)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	int off = emp->param.tgtpwr_off + AR5211_EEP_CTL_DATA;
+	int i, j, havebits, is_2g;
+	uint32_t str;
+
+	for (i = 0; i < emp->param.ctls_num; ++i) {
+		havebits = 0;	/* Reset buffer */
+
+		for (j = 0; j < AR5211_NUM_BAND_EDGES; ++j) {
+			if (havebits < 7) {
+				str = (str << 16) | EEP_WORD(off++);
+				havebits += 16;
+			}
+			havebits -= 7;
+			eep->ctl_data[i][j].fbin = (str >> havebits) & 0x7f;
+		}
+
+		for (j = 0; j < AR5211_NUM_BAND_EDGES; ++j) {
+			if (havebits < 6) {
+				str = (str << 16) | EEP_WORD(off++);
+				havebits += 16;
+			}
+			havebits -= 6;
+			eep->ctl_data[i][j].pwr = (str >> havebits) & 0x3f;
+		}
+
+		/* Convert edge frequency codes to modern binary format */
+		is_2g = eep_ctlmodes[eep->ctl_index[i] & 0xf][0] == '2';
+		for (j = 0; j < AR5211_NUM_BAND_EDGES; ++j)
+			eep->ctl_data[i][j].fbin =
+				FBIN_30_TO_33(eep->ctl_data[i][j].fbin, is_2g);
+	}
+}
+
+static void eep_5211_fill_ctl_data_33(struct atheepmgr *aem)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	int off = emp->param.tgtpwr_off + AR5211_EEP_CTL_DATA;
+	uint16_t word;
+	int i, j;
+
+	for (i = 0; i < emp->param.ctls_num; ++i) {
+		for (j = 0; j < AR5211_NUM_BAND_EDGES; j += 2) {
+			word = EEP_WORD(off++);
+			eep->ctl_data[i][j + 0].fbin = word >> 8;
+			eep->ctl_data[i][j + 1].fbin = word & 0xff;
+		}
+		for (j = 0; j < AR5211_NUM_BAND_EDGES; j += 2) {
+			word = EEP_WORD(off++);
+			eep->ctl_data[i][j + 0].pwr = word >> 8;
+			eep->ctl_data[i][j + 1].pwr = word & 0xff;
+		}
+	}
+}
+
 static bool eep_5211_fill(struct atheepmgr *aem)
 {
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	struct ar5211_base_eep_hdr *base = &eep->base;
 	uint16_t endloc_up, endloc_lo;
 	uint16_t magic;
 	int len = 0, addr;
@@ -197,9 +283,21 @@ static bool eep_5211_fill(struct atheepmgr *aem)
 
 	aem->eep_len = addr;
 
+	memset(&emp->param, 0x00, sizeof(emp->param));
+
 	eep_5211_fill_init_data(aem);
 
 	eep_5211_fill_headers(aem);
+
+	if (base->version >= AR5211_EEP_VER_3_3) {
+		emp->param.ctls_num = AR5211_NUM_CTLS_33;
+		eep_5211_fill_ctl_index(aem, AR5211_EEP_CTL_INDEX_33);
+		eep_5211_fill_ctl_data_33(aem);
+	} else if (base->version >= AR5211_EEP_VER_3_0) {
+		emp->param.ctls_num = AR5211_NUM_CTLS_30;
+		eep_5211_fill_ctl_index(aem, AR5211_EEP_CTL_INDEX_30);
+		eep_5211_fill_ctl_data_30(aem);
+	}
 
 	return true;
 }
@@ -360,6 +458,60 @@ static void eep_5211_dump_base(struct atheepmgr *aem)
 #undef PR
 }
 
+static void eep_5211_dump_ctl_edges(const struct ar5211_ctl_edge *edges,
+				    int is_2g)
+{
+	int i, open;
+
+	printf("           Edges, MHz:");
+	for (i = 0, open = 1; i < AR5211_NUM_BAND_EDGES && edges[i].fbin; ++i) {
+		printf(" %c%4u%c",
+		       !CTL_EDGE_FLAGS(edges[i].pwr) && open ? '[' : ' ',
+		       FBIN2FREQ(edges[i].fbin, is_2g),
+		       !CTL_EDGE_FLAGS(edges[i].pwr) && !open ? ']' : ' ');
+		if (!CTL_EDGE_FLAGS(edges[i].pwr))
+			open = !open;
+	}
+	printf("\n");
+	printf("      MaxTxPower, dBm:");
+	for (i = 0; i < AR5211_NUM_BAND_EDGES && edges[i].fbin; ++i)
+		printf("  %4.1f ", (double)CTL_EDGE_POWER(edges[i].pwr) / 2);
+	printf("\n");
+}
+
+static void eep_5211_dump_ctl(const uint8_t *index,
+			      const struct ar5211_ctl_edge *data,
+			      int maxctl)
+{
+	int i;
+	uint8_t ctl;
+
+	for (i = 0; i < maxctl; ++i) {
+		if (!index[i])
+			break;
+		ctl = index[i];
+		printf("    %s %s:\n", eep_ctldomains[ctl >> 4],
+		       eep_ctlmodes[ctl & 0xf]);
+
+		eep_5211_dump_ctl_edges(data + i * AR5211_NUM_BAND_EDGES,
+					eep_ctlmodes[ctl & 0xf][0]=='2'/*:)*/);
+
+		printf("\n");
+	}
+}
+
+static void eep_5211_dump_power(struct atheepmgr *aem)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+
+	EEP_PRINT_SECT_NAME("EEPROM Power Info");
+
+	EEP_PRINT_SUBSECT_NAME("CTL data");
+	eep_5211_dump_ctl(eep->ctl_index, &eep->ctl_data[0][0],
+			  emp->param.ctls_num);
+}
+
 static bool eep_5211_update_eeprom(struct atheepmgr *aem, int param,
 				   const void *data)
 {
@@ -415,6 +567,7 @@ const struct eepmap eepmap_5211 = {
 	.dump = {
 		[EEP_SECT_INIT] = eep_5211_dump_init_data,
 		[EEP_SECT_BASE] = eep_5211_dump_base,
+		[EEP_SECT_POWER] = eep_5211_dump_power,
 	},
 	.update_eeprom = eep_5211_update_eeprom,
 	.params_mask = BIT(EEP_UPDATE_MAC),
