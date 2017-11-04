@@ -19,6 +19,7 @@ HAVE_LIBPCIACCESS=$(shell pkg-config pciaccess && echo y || echo n)
 
 CONFIG_CON_PCI?=$(HAVE_LIBPCIACCESS)
 CONFIG_CON_MEM?=y
+CONFIG_I_KNOW_WHAT_I_AM_DOING?=n
 
 ifeq ($(CONFIG_CON_PCI),y)
 DEFS+=-DCONFIG_CON_PCI
@@ -29,6 +30,9 @@ endif
 ifeq ($(CONFIG_CON_MEM),y)
 DEFS+=-DCONFIG_CON_MEM
 OBJ+=con_mem.o
+endif
+ifeq ($(CONFIG_I_KNOW_WHAT_I_AM_DOING),y)
+DEFS+=-DCONFIG_I_KNOW_WHAT_I_AM_DOING
 endif
 
 CC?=gcc

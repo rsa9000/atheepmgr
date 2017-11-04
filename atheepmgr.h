@@ -183,6 +183,7 @@ enum eepmap_section_id {
 
 enum eepmap_param_id {
 	EEP_UPDATE_MAC,			/* Update device MAC address */
+	EEP_ERASE_CTL,			/* Erase CTL (Conformance Test Limit) */
 	__EEP_PARAM_MAX
 };
 

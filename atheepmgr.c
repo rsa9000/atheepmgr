@@ -184,6 +184,13 @@ static const struct eepmap_param {
 		.name = "mac",
 		.arg = "<addr>",
 		.desc = "Update device MAC address",
+#ifdef CONFIG_I_KNOW_WHAT_I_AM_DOING
+	}, {
+		.id = EEP_ERASE_CTL,
+		.name = "erasectl",
+		.arg = NULL,
+		.desc = "Erase CTL (Conformance Test Limit) data",
+#endif
 	}, {
 		.name = NULL,
 	}

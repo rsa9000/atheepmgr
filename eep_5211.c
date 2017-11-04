@@ -515,6 +515,11 @@ static void eep_5211_dump_power(struct atheepmgr *aem)
 static bool eep_5211_update_eeprom(struct atheepmgr *aem, int param,
 				   const void *data)
 {
+#ifdef CONFIG_I_KNOW_WHAT_I_AM_DOING
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	struct ar5211_base_eep_hdr *base = &eep->base;
+#endif
 	uint16_t *buf = aem->eep_buf;
 	int data_pos, data_len = 0, addr, el, i;
 	uint16_t sum;
@@ -528,6 +533,16 @@ static bool eep_5211_update_eeprom(struct atheepmgr *aem, int param,
 							((uint8_t *)data)[i];
 		}
 		break;
+#ifdef CONFIG_I_KNOW_WHAT_I_AM_DOING
+	case EEP_ERASE_CTL:
+		/* It is enough to erase the CTL index only */
+		data_pos = base->version >= AR5211_EEP_VER_3_3 ?
+			   AR5211_EEP_CTL_INDEX_33 : AR5211_EEP_CTL_INDEX_30;
+		data_len = emp->param.ctls_num / 2;
+		for (addr = data_pos; addr < (data_pos + data_len); ++addr)
+			buf[addr] = 0x0000;
+		break;
+#endif
 	default:
 		fprintf(stderr, "Internal error: unknown parameter Id\n");
 		return false;
@@ -570,5 +585,9 @@ const struct eepmap eepmap_5211 = {
 		[EEP_SECT_POWER] = eep_5211_dump_power,
 	},
 	.update_eeprom = eep_5211_update_eeprom,
-	.params_mask = BIT(EEP_UPDATE_MAC),
+	.params_mask = BIT(EEP_UPDATE_MAC)
+#ifdef CONFIG_I_KNOW_WHAT_I_AM_DOING
+		| BIT(EEP_ERASE_CTL)
+#endif
+	,
 };
