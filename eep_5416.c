@@ -119,6 +119,9 @@ static bool eep_5416_check(struct atheepmgr *aem)
 		word = bswap_16(eep->baseEepHeader.deviceCap);
 		eep->baseEepHeader.deviceCap = word;
 
+		integer = bswap_32(eep->baseEepHeader.binBuildNumber);
+		eep->baseEepHeader.binBuildNumber = integer;
+
 		integer = bswap_32(eep->modalHeader5G.antCtrlCommon);
 		eep->modalHeader5G.antCtrlCommon = integer;
 
