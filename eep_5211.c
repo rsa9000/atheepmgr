@@ -28,6 +28,33 @@ struct eep_5211_priv {
 
 #define EEP_WORD(__off)		le16toh(aem->eep_buf[__off])
 
+/* EEPROM as a bitstream processing context */
+struct eep_bit_stream {
+	int eep_off;	/* EEPROM offset, words */
+	int havebits;	/* Ammount of bits in the buffer */
+	uint32_t buf;	/* Buffer */
+};
+
+static uint8_t ebs_get_hi_bits(struct atheepmgr *aem,
+			       struct eep_bit_stream *ebs, int bnum)
+{
+	uint8_t res;
+
+	if (ebs->havebits < bnum) {
+		ebs->buf = (ebs->buf << 16) | EEP_WORD(ebs->eep_off++);
+		ebs->havebits += 16;
+	}
+
+	ebs->havebits -= bnum;
+
+	res = (ebs->buf >> ebs->havebits) & ~(~0 << bnum);
+	ebs->buf &= ~(~0 << ebs->havebits);
+
+	return res;
+}
+
+#define EEP_GET_MSB(__bnum)	ebs_get_hi_bits(aem, ebs, __bnum)
+
 static void eep_5211_fill_init_data(struct atheepmgr *aem)
 {
 	struct eep_5211_priv *emp = aem->eepmap_priv;
@@ -177,29 +204,17 @@ static void eep_5211_fill_ctl_data_30(struct atheepmgr *aem)
 	struct eep_5211_priv *emp = aem->eepmap_priv;
 	struct ar5211_eeprom *eep = &emp->eep;
 	int off = emp->param.tgtpwr_off + AR5211_EEP_CTL_DATA;
-	int i, j, havebits, is_2g;
-	uint32_t str;
+	struct eep_bit_stream __ebs = {.eep_off = off}, *ebs = &__ebs;
+	int i, j, is_2g;
 
 	for (i = 0; i < emp->param.ctls_num; ++i) {
-		havebits = 0;	/* Reset buffer */
+		ebs->havebits = 0;	/* Reset buffer contents */
 
-		for (j = 0; j < AR5211_NUM_BAND_EDGES; ++j) {
-			if (havebits < 7) {
-				str = (str << 16) | EEP_WORD(off++);
-				havebits += 16;
-			}
-			havebits -= 7;
-			eep->ctl_data[i][j].fbin = (str >> havebits) & 0x7f;
-		}
+		for (j = 0; j < AR5211_NUM_BAND_EDGES; ++j)
+			eep->ctl_data[i][j].fbin = EEP_GET_MSB(7);
 
-		for (j = 0; j < AR5211_NUM_BAND_EDGES; ++j) {
-			if (havebits < 6) {
-				str = (str << 16) | EEP_WORD(off++);
-				havebits += 16;
-			}
-			havebits -= 6;
-			eep->ctl_data[i][j].pwr = (str >> havebits) & 0x3f;
-		}
+		for (j = 0; j < AR5211_NUM_BAND_EDGES; ++j)
+			eep->ctl_data[i][j].pwr = EEP_GET_MSB(6);
 
 		/* Convert edge frequency codes to modern binary format */
 		is_2g = eep_ctlmodes[eep->ctl_index[i] & 0xf][0] == '2';
