@@ -230,7 +230,6 @@ struct ar5211_base_eep_hdr {
 	int ff_dis:1;
 	int burst_dis:1;
 	int clip_en:1;
-	uint8_t turbo5_maxpwr;
 	uint8_t devtype;
 	uint8_t antgain_2g;
 	uint8_t antgain_5g;

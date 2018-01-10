@@ -421,6 +421,7 @@ static void eep_5211_fill_headers(struct atheepmgr *aem)
 	struct eep_5211_priv *emp = aem->eepmap_priv;
 	struct ar5211_eeprom *eep = &emp->eep;
 	struct ar5211_base_eep_hdr *base = &eep->base;
+	struct ar5211_modal_eep_hdr *modal_a = &eep->modal_a;
 	uint16_t word;
 
 	word = EEP_WORD(AR5211_EEP_MAC + 0);
@@ -442,7 +443,7 @@ static void eep_5211_fill_headers(struct atheepmgr *aem)
 	base->bmode_en = !!(word & AR5211_EEP_BMODE);
 	base->gmode_en = !!(word & AR5211_EEP_GMODE);
 	base->turbo2_dis = !!(word & AR5211_EEP_TURBO2_DIS);
-	base->turbo5_maxpwr = MS(word, AR5211_EEP_TURBO5_MAXPWR);
+	modal_a->turbo_maxtxpwr_2w = MS(word, AR5211_EEP_TURBO5_MAXPWR);
 	base->devtype = MS(word, AR5211_EEP_DEVTYPE);
 	base->rfkill_en = !!(word & AR5211_EEP_RFKILL_EN);
 	base->turbo5_dis = !!(word & AR5211_EEP_TURBO5_DIS);
@@ -723,7 +724,6 @@ static void eep_5211_dump_base(struct atheepmgr *aem)
 		PR("XR 5GHz status", "%s", base->xr5_dis ? "disabled" : "enabled");
 		PR("XR 2GHz status", "%s", base->xr2_dis ? "disabled" : "enabled");
 	}
-	PR("Turbo 5G 2W pow, dBm", "%3.1f", (double)base->turbo5_maxpwr / 2);
 	PR("5GHz ant gain, dBm", "%3.1f", (double)base->antgain_5g / 2);
 	PR("2GHz ant gain, dBm", "%3.1f", (double)base->antgain_2g / 2);
 	if (base->version >= AR5211_EEP_VER_4_0) {
@@ -856,8 +856,11 @@ static void eep_5211_dump_modal(struct atheepmgr *aem)
 		PR_FLOAT(G, "Ch14 filt CCK delta, dBm",
 			 ch14_filter_cck_delta / 10.0);
 
+	snprintf(tok, sizeof(tok), "Turbo maxtxpwr 2W, dBm");
 	if (eep->base.version >= AR5211_EEP_VER_4_0)
-		PR_FLOAT(G, "Turbo maxtxpwr 2W, dBm", turbo_maxtxpwr_2w / 2.0);
+		PR_FLOAT(AG, tok, turbo_maxtxpwr_2w / 2.0);
+	else
+		PR_FLOAT(A, tok, turbo_maxtxpwr_2w / 2.0);
 
 	if (eep->base.version >= AR5211_EEP_VER_5_0) {
 		PR_DEC(AG, "Turbo sw settling time", turbo_sw_settle_time);
