@@ -37,8 +37,13 @@
 #define AR5211_SIZE_DEF			0x0400		/* 2KB EEPROM */
 
 #define AR5211_EEP_VER_3_0		0x3000
+#define AR5211_EEP_VER_3_1		0x3001
 #define AR5211_EEP_VER_3_3		0x3003
+#define AR5211_EEP_VER_3_4		0x3004
 #define AR5211_EEP_VER_4_0		0x4000
+#define AR5211_EEP_VER_4_1		0x4001
+#define AR5211_EEP_VER_4_2		0x4002
+#define AR5211_EEP_VER_4_6		0x4006
 #define AR5211_EEP_VER_5_0		0x5000
 
 #define AR5211_NUM_CTLS_30		16
@@ -153,8 +158,19 @@
 #define AR5211_EEP_RD_FLAGS		0xffc0
 #define AR5211_EEP_RD_FLAGS_S		6
 
+#define AR5211_EEP_MODAL_A_30		(AR5211_EEP_INFO_BASE + 0x05)
+#define AR5211_EEP_MODAL_A_33		(AR5211_EEP_INFO_BASE + 0x14)
+
+#define AR5211_EEP_MODAL_B_30		(AR5211_EEP_INFO_BASE + 0x10)
+#define AR5211_EEP_MODAL_B_33		(AR5211_EEP_INFO_BASE + 0x32)
+
+#define AR5211_EEP_MODAL_G_30		(AR5211_EEP_INFO_BASE + 0x1a)
+#define AR5211_EEP_MODAL_G_33		(AR5211_EEP_INFO_BASE + 0x4d)
+
 #define AR5211_EEP_CTL_INDEX_30		(AR5211_EEP_INFO_BASE + 0x24)
 #define AR5211_EEP_CTL_INDEX_33		(AR5211_EEP_INFO_BASE + 0x68)
+
+#define AR5211_EEP_MODAL_EXT_31		(AR5211_EEP_INFO_BASE + 0x2c)
 
 #define AR5211_EEP_TGTPWR_BASE_30	(AR5211_EEP_INFO_BASE + 0x95)
 #define AR5211_EEP_TGTPWR_BASE_33	(AR5211_EEP_INFO_BASE + 0xe5)
@@ -229,6 +245,43 @@ struct ar5211_base_eep_hdr {
 	uint8_t max_qcu;
 };
 
+struct ar5211_modal_eep_hdr {
+	uint8_t sw_settle_time;
+	uint8_t txrx_atten;
+	uint8_t ant_ctrl[11];
+	int8_t adc_desired_size;
+	uint8_t pa_ob[4];
+	uint8_t pa_db[4];
+	uint8_t pa_ob_2ghz;
+	uint8_t pa_db_2ghz;
+	uint8_t tx_end_to_xlna_on;
+	uint8_t tx_end_to_xpa_off;
+	uint8_t tx_frame_to_xpa_on;
+	uint8_t thresh62;
+	int8_t nfthresh;
+	int8_t pga_desired_size;
+	int fixed_bias:1;
+	int xpd:1;
+	uint8_t xlna_gain;
+	uint8_t xpd_gain;
+	uint8_t false_detect_backoff;
+	uint8_t iq_cal_i;
+	uint8_t iq_cal_q;
+	uint8_t pd_gain_init;
+	uint8_t cck_ofdm_pwr_delta;		/* .11g only */
+	uint8_t cck_ofdm_gain_delta;		/* .11g only */
+	uint8_t ch14_filter_cck_delta;		/* .11g only */
+	uint8_t cal_piers[3];			/* .11b & .11g only */
+	uint8_t rxtx_margin;
+	uint8_t turbo_maxtxpwr_2w;
+	uint8_t turbo_sw_settle_time;
+	uint8_t turbo_txrx_atten;
+	uint8_t turbo_rxtx_margin;
+	int8_t turbo_adc_desired_size;
+	int8_t turbo_pga_desired_size;
+	uint8_t xr_tgt_pwr;
+};
+
 struct ar5211_ctl_edge {
 	uint8_t fbin;
 	uint8_t pwr;
@@ -237,6 +290,9 @@ struct ar5211_ctl_edge {
 struct ar5211_eeprom {
 	struct ar5211_base_eep_hdr base;
 	uint8_t cust_data[AR5211_EEP_CUST_DATA_SZ * 2];
+	struct ar5211_modal_eep_hdr modal_a;
+	struct ar5211_modal_eep_hdr modal_b;
+	struct ar5211_modal_eep_hdr modal_g;
 	uint8_t ctl_index[AR5211_NUM_CTLS_MAX];
 	struct ar5211_ctl_edge ctl_data[AR5211_NUM_CTLS_MAX][AR5211_NUM_BAND_EDGES];
 };

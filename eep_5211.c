@@ -35,6 +35,31 @@ struct eep_bit_stream {
 	uint32_t buf;	/* Buffer */
 };
 
+/**
+ * EEPROM parameter fields can occupy an arbitrary number of bits. To simplify
+ * the code, we use a function, which reads EEPROM in a word-by-word manner,
+ * stores data which was read in the buffer, and returns an arbitrary number
+ * of bits in each call.
+ *
+ * Some EEPROM fields begin in one word, cross the word boundary and continue
+ * in the next one. There are two ways to store bits of such fields:
+ * 1. the LSB(s) of the field are stored in the MSB(s) of the current word, and
+ *    the MSB(s) of the field are stored in the LSB(s) of the next word of
+ *    EEPROM;
+ * 2. the MSB(s) of the field are stored in the LSB(s) of the current word, and
+ *    the LSB(s) of the field are stored in the MSB(s) of the next word of
+ *    EEPROM.
+ *
+ * Since both approaches are actively used, we need two types of the bits
+ * fetching functions:
+ * 1. function of the first type appends the next read EEPROM word to the buffer
+ *    to the right (places the new word as LSB of the buffer) and returns
+ *    requested number of MSBs of the buffer;
+ * 2. function of the second type appends the next read EEPROM word to the buffer
+ *    to the left (places the new word as MSB of the buffer) and returns
+ *    requested number of MSBs of the buffer.
+ */
+
 static uint8_t ebs_get_hi_bits(struct atheepmgr *aem,
 			       struct eep_bit_stream *ebs, int bnum)
 {
@@ -53,7 +78,25 @@ static uint8_t ebs_get_hi_bits(struct atheepmgr *aem,
 	return res;
 }
 
+static uint8_t ebs_get_lo_bits(struct atheepmgr *aem,
+			       struct eep_bit_stream *ebs, int bnum)
+{
+	uint8_t res;
+
+	if (ebs->havebits < bnum) {
+		ebs->buf |= EEP_WORD(ebs->eep_off++) << ebs->havebits;
+		ebs->havebits += 16;
+	}
+
+	res = ebs->buf & ~(~0 << bnum);
+	ebs->buf >>= bnum;
+	ebs->havebits -= bnum;
+
+	return res;
+}
+
 #define EEP_GET_MSB(__bnum)	ebs_get_hi_bits(aem, ebs, __bnum)
+#define EEP_GET_LSB(__bnum)	ebs_get_lo_bits(aem, ebs, __bnum)
 
 static void eep_5211_fill_init_data(struct atheepmgr *aem)
 {
@@ -146,6 +189,233 @@ static void eep_5211_fill_headers_33(struct atheepmgr *aem)
 	}
 }
 
+static void eep_5211_parse_modal_cmn1(struct atheepmgr *aem,
+				      struct eep_bit_stream *ebs,
+				      struct ar5211_modal_eep_hdr *modal)
+{
+	int i;
+
+	EEP_GET_MSB(1);		/* Take away unused bit */
+	modal->sw_settle_time = EEP_GET_MSB(7);
+	modal->txrx_atten = EEP_GET_MSB(6);
+
+	for (i = 0; i < ARRAY_SIZE(modal->ant_ctrl); ++i)
+		modal->ant_ctrl[i] = EEP_GET_MSB(6);
+
+	modal->adc_desired_size = EEP_GET_MSB(8);
+}
+
+static void eep_5211_parse_modal_cmn2(struct atheepmgr *aem,
+				      struct eep_bit_stream *ebs,
+				      struct ar5211_modal_eep_hdr *modal)
+{
+	modal->tx_end_to_xlna_on = EEP_GET_MSB(8);
+	modal->thresh62 = EEP_GET_MSB(8);
+	modal->tx_end_to_xpa_off = EEP_GET_MSB(8);
+	modal->tx_frame_to_xpa_on = EEP_GET_MSB(8);
+	modal->pga_desired_size = EEP_GET_MSB(8);
+	modal->nfthresh = EEP_GET_MSB(8);
+	EEP_GET_MSB(2);		/* Skip unused bits */
+	modal->fixed_bias = EEP_GET_MSB(1);	/* A & G only */
+	modal->xlna_gain = EEP_GET_MSB(8);
+	modal->xpd_gain = EEP_GET_MSB(4);
+	modal->xpd = EEP_GET_MSB(1);
+}
+
+static void eep_5211_parse_modal_a(struct atheepmgr *aem, int off)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	struct ar5211_modal_eep_hdr *modal = &eep->modal_a;
+	struct eep_bit_stream __ebs = {.eep_off = off, .havebits = 0};
+	struct eep_bit_stream *ebs = &__ebs;
+	int i;
+
+	eep_5211_parse_modal_cmn1(aem, ebs, modal);
+
+	for (i = 0; i < 4; ++i) {
+		modal->pa_ob[3 - i] = EEP_GET_MSB(3);
+		modal->pa_db[3 - i] = EEP_GET_MSB(3);
+	}
+
+	eep_5211_parse_modal_cmn2(aem, ebs, modal);
+
+	if (eep->base.version < AR5211_EEP_VER_3_3)
+		return;
+
+	/* Here we change the bits fetching direction */
+
+	modal->xr_tgt_pwr = EEP_GET_LSB(6);
+	modal->false_detect_backoff = EEP_GET_LSB(7);
+
+	if (eep->base.version < AR5211_EEP_VER_3_4)
+		return;
+
+	modal->pd_gain_init = EEP_GET_LSB(6);
+
+	if (eep->base.version < AR5211_EEP_VER_4_0)
+		return;
+
+	modal->iq_cal_q = EEP_GET_LSB(5);
+	modal->iq_cal_i = EEP_GET_LSB(6);
+	EEP_GET_LSB(2);		/* Skip unused bits */
+
+	if (eep->base.version < AR5211_EEP_VER_4_1)
+		return;
+
+	modal->rxtx_margin = EEP_GET_LSB(6);
+
+	if (eep->base.version < AR5211_EEP_VER_5_0)
+		return;
+
+	modal->turbo_sw_settle_time = EEP_GET_LSB(7);
+	modal->turbo_txrx_atten = EEP_GET_LSB(6);
+	modal->turbo_rxtx_margin = EEP_GET_LSB(6);
+	modal->turbo_adc_desired_size = EEP_GET_LSB(8);
+	modal->turbo_pga_desired_size = EEP_GET_LSB(8);
+}
+
+static void eep_5211_parse_modal_b(struct atheepmgr *aem, int off)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	struct ar5211_modal_eep_hdr *modal = &eep->modal_b;
+	struct eep_bit_stream __ebs = {.eep_off = off, .havebits = 0};
+	struct eep_bit_stream *ebs = &__ebs;
+
+	eep_5211_parse_modal_cmn1(aem, ebs, modal);
+
+	modal->pa_ob[0] = EEP_GET_MSB(4) & 0x07;
+	modal->pa_db[0] = EEP_GET_MSB(4) & 0x07;
+
+	eep_5211_parse_modal_cmn2(aem, ebs, modal);
+
+	if (eep->base.version < AR5211_EEP_VER_3_3)
+		return;
+
+	/* Here we change the bits fetching direction */
+
+	modal->pa_ob_2ghz = EEP_GET_LSB(3);
+	modal->pa_db_2ghz = EEP_GET_LSB(3);
+	modal->false_detect_backoff = EEP_GET_LSB(7);
+
+	if (eep->base.version < AR5211_EEP_VER_3_4)
+		return;
+
+	modal->pd_gain_init = EEP_GET_LSB(6);
+	EEP_GET_LSB(13);	/* Skip unused bits */
+
+	if (eep->base.version < AR5211_EEP_VER_4_0)
+		return;
+
+	modal->cal_piers[0] = EEP_GET_LSB(8);
+	modal->cal_piers[1] = EEP_GET_LSB(8);
+	modal->cal_piers[2] = EEP_GET_LSB(8);
+
+	if (eep->base.version < AR5211_EEP_VER_4_1)
+		return;
+
+	modal->rxtx_margin = EEP_GET_LSB(6);
+}
+
+static void eep_5211_parse_modal_g(struct atheepmgr *aem, int off)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	struct ar5211_modal_eep_hdr *modal = &eep->modal_g;
+	struct eep_bit_stream __ebs = {.eep_off = off, .havebits = 0};
+	struct eep_bit_stream *ebs = &__ebs;
+	uint8_t ch14_filter_cck_delta, rxtx_margin;
+
+	eep_5211_parse_modal_cmn1(aem, ebs, modal);
+
+	modal->pa_ob[0] = EEP_GET_MSB(4) & 0x07;
+	modal->pa_db[0] = EEP_GET_MSB(4) & 0x07;
+
+	eep_5211_parse_modal_cmn2(aem, ebs, modal);
+
+	if (eep->base.version < AR5211_EEP_VER_3_3)
+		return;
+
+	/* Here we change the bits fetching direction */
+
+	modal->pa_ob_2ghz = EEP_GET_LSB(3);
+	modal->pa_db_2ghz = EEP_GET_LSB(3);
+	modal->false_detect_backoff = EEP_GET_LSB(7);
+
+	if (eep->base.version < AR5211_EEP_VER_3_4)
+		return;
+
+	modal->pd_gain_init = EEP_GET_LSB(6);
+	modal->cck_ofdm_pwr_delta = EEP_GET_LSB(8);
+
+	if (eep->base.version < AR5211_EEP_VER_4_0)
+		return;
+
+	ch14_filter_cck_delta = EEP_GET_LSB(5);
+
+	modal->cal_piers[0] = EEP_GET_LSB(8);
+	modal->cal_piers[1] = EEP_GET_LSB(8);
+
+	modal->turbo_maxtxpwr_2w = EEP_GET_LSB(7);
+	modal->xr_tgt_pwr = EEP_GET_LSB(6);
+	EEP_GET_LSB(3);			/* Skip unused bits */
+
+	modal->cal_piers[2] = EEP_GET_LSB(8);
+	rxtx_margin = EEP_GET_LSB(6);	/* Preserve bits for a while */
+	EEP_GET_LSB(2);			/* Skip unused bits */
+
+	modal->iq_cal_q = EEP_GET_LSB(5);
+	modal->iq_cal_i = EEP_GET_LSB(6);
+	EEP_GET_LSB(5);			/* Skip unused bits */
+
+	if (eep->base.version < AR5211_EEP_VER_4_1)
+		return;
+
+	modal->rxtx_margin = rxtx_margin;
+
+	if (eep->base.version < AR5211_EEP_VER_4_2)
+		return;
+
+	modal->cck_ofdm_gain_delta = EEP_GET_LSB(8);
+
+	if (eep->base.version < AR5211_EEP_VER_4_6)
+		return;
+
+	modal->ch14_filter_cck_delta = ch14_filter_cck_delta;
+
+	if (eep->base.version < AR5211_EEP_VER_5_0)
+		return;
+
+	modal->turbo_sw_settle_time = EEP_GET_LSB(7);
+	modal->turbo_txrx_atten = EEP_GET_LSB(6);
+	modal->turbo_rxtx_margin = EEP_GET_LSB(6);
+	modal->turbo_adc_desired_size = EEP_GET_LSB(8);
+	modal->turbo_pga_desired_size = EEP_GET_LSB(8);
+}
+
+/**
+ * This data is stored after the CTL index information and it acomplishes data
+ * fetched from the B & G modal headers.
+ */
+static void eep_5211_parse_modal_ext_31(struct atheepmgr *aem)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	struct ar5211_modal_eep_hdr *modal_b = &eep->modal_b;
+	struct ar5211_modal_eep_hdr *modal_g = &eep->modal_g;
+	int off = AR5211_EEP_MODAL_EXT_31;
+	uint16_t word;
+
+	word = EEP_WORD(off++);
+	modal_b->pa_ob_2ghz = (word & 0x07) >> 0;
+	modal_b->pa_db_2ghz = (word & 0x38) >> 3;
+
+	word = EEP_WORD(off++);
+	modal_g->pa_ob_2ghz = (word & 0x07) >> 0;
+	modal_g->pa_db_2ghz = (word & 0x38) >> 3;
+}
+
 static void eep_5211_fill_headers(struct atheepmgr *aem)
 {
 	struct eep_5211_priv *emp = aem->eepmap_priv;
@@ -179,8 +449,16 @@ static void eep_5211_fill_headers(struct atheepmgr *aem)
 
 	if (base->version >= AR5211_EEP_VER_3_3) {
 		eep_5211_fill_headers_33(aem);
+		eep_5211_parse_modal_a(aem, AR5211_EEP_MODAL_A_33);
+		eep_5211_parse_modal_b(aem, AR5211_EEP_MODAL_B_33);
+		eep_5211_parse_modal_g(aem, AR5211_EEP_MODAL_G_33);
 	} else if (base->version >= AR5211_EEP_VER_3_0) {
 		eep_5211_fill_headers_30(aem);
+		eep_5211_parse_modal_a(aem, AR5211_EEP_MODAL_A_30);
+		eep_5211_parse_modal_b(aem, AR5211_EEP_MODAL_B_30);
+		eep_5211_parse_modal_g(aem, AR5211_EEP_MODAL_G_30);
+		if (base->version >= AR5211_EEP_VER_3_1)
+			eep_5211_parse_modal_ext_31(aem);
 	}
 }
 
@@ -473,6 +751,146 @@ static void eep_5211_dump_base(struct atheepmgr *aem)
 #undef PR
 }
 
+static void eep_5211_dump_modal(struct atheepmgr *aem)
+{
+#define _MODE_A		0x01
+#define _MODE_B		0x02
+#define _MODE_G		0x04
+#define _MODE_AG	(_MODE_A | _MODE_G)
+#define _MODE_BG	(_MODE_B | _MODE_G)
+#define _MODE_ABG	(_MODE_A | _MODE_B | _MODE_G)
+#define _PR_BEGIN(_token)					\
+		printf("%-24s:", _token);			\
+		curpos = 0;
+#define _PR_END()						\
+		printf("\n");
+#define _PR_VAL(_fpos, _modes, _mode, _fmt, ...)		\
+	if (_modes & _mode) {					\
+		curpos += printf("%*s", _fpos - curpos, "");	\
+		curpos += printf(_fmt, ## __VA_ARGS__);		\
+	}
+#define _PR_FIELD(_modes, _token, _fmt, _field)			\
+	do {							\
+		_PR_BEGIN(_token);				\
+		_PR_VAL(6, _modes, _MODE_A, _fmt, eep->modal_a._field);\
+		_PR_VAL(20, _modes, _MODE_B, _fmt, eep->modal_b._field);\
+		_PR_VAL(34, _modes, _MODE_G, _fmt, eep->modal_g._field);\
+		_PR_END();					\
+	} while (0)
+#define PR_DEC(_modes, _token, _field)				\
+		_PR_FIELD(_MODE_ ## _modes, _token, "% d", _field)
+#define PR_HEX(_modes, _token, _field)				\
+		_PR_FIELD(_MODE_ ## _modes, _token, " 0x%02X", _field)
+#define PR_FLOAT(_modes, _token, _field)			\
+		_PR_FIELD(_MODE_ ## _modes, _token, "% 3.1f", _field)
+#define PR_STR(_modes, _token, _field)				\
+		_PR_FIELD(_MODE_ ## _modes, _token, " %s", _field)
+
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	char tok[0x20];
+	int i, curpos;
+
+	EEP_PRINT_SECT_NAME("EEPROM Modal Header");
+
+	printf("%24s %7s%-7s%7s%-7s%7s%s\n\n", "", "", ".11a", "", ".11b", "", ".11g");
+
+	PR_DEC(ABG, "Switch settling time", sw_settle_time);
+	PR_DEC(ABG, "Tx/Rx attenuation", txrx_atten);
+	for (i = 0; i < ARRAY_SIZE(eep->modal_a.ant_ctrl); ++i) {
+		snprintf(tok, sizeof(tok), "Ant control #%-2u", i);
+		PR_HEX(ABG, tok, ant_ctrl[i]);
+	}
+	PR_FLOAT(ABG, "ADC desired size, dBm", adc_desired_size / 2.0);
+
+	if (eep->base.version >= AR5211_EEP_VER_4_0) {
+		PR_DEC(AG, "I/Q calibration I", iq_cal_i);
+		PR_DEC(AG, "I/Q calibration Q", iq_cal_q);
+	}
+	if (eep->base.version >= AR5211_EEP_VER_4_1)
+		PR_DEC(ABG, "Rx/Tx margin, dB", rxtx_margin);
+
+	PR_DEC(ABG, "Thresh62", thresh62);
+	PR_DEC(ABG, "NF threshold, dBm", nfthresh);
+	PR_DEC(ABG, "xLNA gain, dB", xlna_gain);
+	if (eep->base.version >= AR5211_EEP_VER_3_3)
+		PR_DEC(ABG, "FalseDetect backoff", false_detect_backoff);
+
+	_PR_BEGIN("PA output bias");
+	_PR_VAL(6, _MODE_ABG, _MODE_A, "{%d, %d, %d, %d}",
+		eep->modal_a.pa_ob[0], eep->modal_a.pa_ob[1],
+		eep->modal_a.pa_ob[2], eep->modal_a.pa_ob[3]);
+	_PR_VAL(20, _MODE_ABG, _MODE_B, "{%d}", eep->modal_b.pa_ob[0]);
+	_PR_VAL(34, _MODE_ABG, _MODE_G, "{%d}", eep->modal_g.pa_ob[0]);
+	_PR_END();
+	_PR_BEGIN("PA drive bias");
+	_PR_VAL(6, _MODE_ABG, _MODE_A, "{%d, %d, %d, %d}",
+		eep->modal_a.pa_db[0], eep->modal_a.pa_db[1],
+		eep->modal_a.pa_db[2], eep->modal_a.pa_db[3]);
+	_PR_VAL(20, _MODE_ABG, _MODE_B, "{%d}", eep->modal_b.pa_db[0]);
+	_PR_VAL(34, _MODE_ABG, _MODE_G, "{%d}", eep->modal_g.pa_db[0]);
+	_PR_END();
+	if (eep->base.version >= AR5211_EEP_VER_4_0)
+		PR_STR(AG, "Fixed bias", fixed_bias ? "fixed" : "auto");
+	if (eep->base.version >= AR5211_EEP_VER_3_1) {
+		PR_DEC(BG, "2.4 GHz PA output bias", pa_ob_2ghz);
+		PR_DEC(BG, "2.4 GHz PA drive bias", pa_db_2ghz);
+	}
+
+	PR_DEC(ABG, "Tx End to xLNA On", tx_end_to_xlna_on);
+	PR_DEC(ABG, "Tx End to xPA Off", tx_end_to_xpa_off);
+	PR_DEC(ABG, "Tx Frame to xPA On", tx_frame_to_xpa_on);
+
+	PR_FLOAT(ABG, "PGA desired size, dBm", pga_desired_size / 2.0);
+	PR_HEX(ABG, "xPD gain", xpd_gain);
+	PR_STR(ABG, "xPD type", xpd ? "external" : "internal");
+	if (eep->base.version >= AR5211_EEP_VER_3_4)
+		PR_HEX(ABG, "xPD initial gain", pd_gain_init);
+
+	if (eep->base.version >= AR5211_EEP_VER_3_4)
+		PR_FLOAT(G, "CCK/OFDM pwr delta, dBm",
+			 cck_ofdm_pwr_delta / 10.0);
+	if (eep->base.version >= AR5211_EEP_VER_4_2)
+		PR_DEC(G, "CCK/OFDM gain delta, dB", cck_ofdm_gain_delta);
+	if (eep->base.version >= AR5211_EEP_VER_4_6)
+		PR_FLOAT(G, "Ch14 filt CCK delta, dBm",
+			 ch14_filter_cck_delta / 10.0);
+
+	if (eep->base.version >= AR5211_EEP_VER_4_0)
+		PR_FLOAT(G, "Turbo maxtxpwr 2W, dBm", turbo_maxtxpwr_2w / 2.0);
+
+	if (eep->base.version >= AR5211_EEP_VER_5_0) {
+		PR_DEC(AG, "Turbo sw settling time", turbo_sw_settle_time);
+		PR_DEC(AG, "Turbo Tx/Rx attenuation", turbo_txrx_atten);
+		PR_DEC(AG, "Turbo Rx/Tx margin, dB", turbo_rxtx_margin);
+		PR_FLOAT(AG, "Turbo ADC des. size, dBm",
+			 turbo_adc_desired_size / 2.0);
+		PR_FLOAT(AG, "Turbo PGA des. size, dBm",
+			 turbo_pga_desired_size / 2.0);
+	}
+
+	snprintf(tok, sizeof(tok), "XR target power, dBm");
+	if (eep->base.version >= AR5211_EEP_VER_4_0)
+		PR_FLOAT(AG, tok, xr_tgt_pwr / 2.0);
+	else if (eep->base.version >= AR5211_EEP_VER_3_3)
+		PR_FLOAT(A, tok, xr_tgt_pwr / 2.0);
+
+#undef PR_STR
+#undef PR_FLT
+#undef PR_DEC
+#undef PR_HEX
+#undef _PR_FIELD
+#undef _PR_VAL
+#undef _PR_END
+#undef _PR_BEGIN
+#undef _MODE_A
+#undef _MODE_B
+#undef _MODE_G
+#undef _MODE_AG
+#undef _MODE_BG
+#undef _MODE_ABG
+}
+
 static void eep_5211_dump_ctl_edges(const struct ar5211_ctl_edge *edges,
 				    int is_2g)
 {
@@ -597,6 +1015,7 @@ const struct eepmap eepmap_5211 = {
 	.dump = {
 		[EEP_SECT_INIT] = eep_5211_dump_init_data,
 		[EEP_SECT_BASE] = eep_5211_dump_base,
+		[EEP_SECT_MODAL] = eep_5211_dump_modal,
 		[EEP_SECT_POWER] = eep_5211_dump_power,
 	},
 	.update_eeprom = eep_5211_update_eeprom,
