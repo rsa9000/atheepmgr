@@ -19,6 +19,7 @@
 
 struct eep_5211_priv {
 	struct eep_5211_param {	/* Cached EEPROM parameters */
+		int eepmap;	/* EEPROM map type */
 		int tgtpwr_off;	/* Target power info offset */
 		int ctls_num;	/* Max number of CTLs */
 	} param;
@@ -158,6 +159,7 @@ static void eep_5211_fill_headers_33(struct atheepmgr *aem)
 		base->xr2_dis = !!(word & AR5211_EEP_XR2_DIS);
 		base->xr5_dis = !!(word & AR5211_EEP_XR5_DIS);
 		base->eepmap = MS(word, AR5211_EEP_EEPMAP);
+		emp->param.eepmap = base->eepmap;
 
 		word = EEP_WORD(AR5211_EEP_MISC1);
 		base->tgtpwr_off = MS(word, AR5211_EEP_TGTPWR_OFF);
