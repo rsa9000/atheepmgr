@@ -46,6 +46,12 @@
 #define AR5211_EEP_VER_4_6		0x4006
 #define AR5211_EEP_VER_5_0		0x5000
 
+#define AR5211_NUM_PDCAL_PIERS_A	10
+#define AR5211_NUM_PDCAL_PIERS_B	4
+#define AR5211_NUM_PDCAL_PIERS_G	4
+#define AR5211_MAX_PDCAL_GAINS		4
+#define AR5211_MAX_PDCAL_ICEPTS		11
+
 #define AR5211_NUM_CTLS_30		16
 #define AR5211_NUM_CTLS_33		32
 #define AR5211_NUM_CTLS_MAX		AR5211_NUM_CTLS_33
@@ -172,6 +178,9 @@
 
 #define AR5211_EEP_MODAL_EXT_31		(AR5211_EEP_INFO_BASE + 0x2c)
 
+#define AR5211_EEP_PDCAL_BASE_30	(AR5211_EEP_INFO_BASE + 0x40)
+#define AR5211_EEP_PDCAL_BASE_33	(AR5211_EEP_INFO_BASE + 0x90)
+
 #define AR5211_EEP_TGTPWR_BASE_30	(AR5211_EEP_INFO_BASE + 0x95)
 #define AR5211_EEP_TGTPWR_BASE_33	(AR5211_EEP_INFO_BASE + 0xe5)
 #define AR5211_EEP_CTL_DATA		0x001a
@@ -281,6 +290,11 @@ struct ar5211_modal_eep_hdr {
 	uint8_t xr_tgt_pwr;
 };
 
+struct ar5211_pier_pdcal {
+	int16_t pwr[AR5211_MAX_PDCAL_GAINS][AR5211_MAX_PDCAL_ICEPTS];
+	uint8_t vpd[AR5211_MAX_PDCAL_GAINS][AR5211_MAX_PDCAL_ICEPTS];
+};
+
 struct ar5211_ctl_edge {
 	uint8_t fbin;
 	uint8_t pwr;
@@ -292,6 +306,12 @@ struct ar5211_eeprom {
 	struct ar5211_modal_eep_hdr modal_a;
 	struct ar5211_modal_eep_hdr modal_b;
 	struct ar5211_modal_eep_hdr modal_g;
+	uint8_t pdcal_piers_a[AR5211_NUM_PDCAL_PIERS_A];
+	struct ar5211_pier_pdcal pdcal_data_a[AR5211_NUM_PDCAL_PIERS_A];
+	uint8_t pdcal_piers_b[AR5211_NUM_PDCAL_PIERS_B];
+	struct ar5211_pier_pdcal pdcal_data_b[AR5211_NUM_PDCAL_PIERS_B];
+	uint8_t pdcal_piers_g[AR5211_NUM_PDCAL_PIERS_G];
+	struct ar5211_pier_pdcal pdcal_data_g[AR5211_NUM_PDCAL_PIERS_G];
 	uint8_t ctl_index[AR5211_NUM_CTLS_MAX];
 	struct ar5211_ctl_edge ctl_data[AR5211_NUM_CTLS_MAX][AR5211_NUM_BAND_EDGES];
 };

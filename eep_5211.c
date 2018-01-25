@@ -20,7 +20,15 @@
 struct eep_5211_priv {
 	struct eep_5211_param {	/* Cached EEPROM parameters */
 		int eepmap;	/* EEPROM map type */
+		int pdcal_off;	/* PD calibration info offset */
 		int tgtpwr_off;	/* Target power info offset */
+		struct eep_5211_pdcal_param {
+			const uint8_t *piers;
+			int npiers;
+			int8_t gains[AR5211_MAX_PDCAL_GAINS];/* dB */
+			int ngains;
+			int nicepts[AR5211_MAX_PDCAL_GAINS];
+		} pdcal_a, pdcal_b, pdcal_g;	/* PD calibration params */
 		int ctls_num;	/* Max number of CTLs */
 	} param;
 	struct ar5211_init_eep_data ini;
@@ -133,6 +141,7 @@ static void eep_5211_fill_headers_30(struct atheepmgr *aem)
 	struct ar5211_base_eep_hdr *base = &eep->base;
 	uint16_t word;
 
+	emp->param.pdcal_off = AR5211_EEP_PDCAL_BASE_30;
 	emp->param.tgtpwr_off = AR5211_EEP_TGTPWR_BASE_30;
 
 	word = EEP_WORD(AR5211_EEP_ANTGAIN_30);
@@ -147,6 +156,7 @@ static void eep_5211_fill_headers_33(struct atheepmgr *aem)
 	struct ar5211_base_eep_hdr *base = &eep->base;
 	uint16_t word;
 
+	emp->param.pdcal_off = AR5211_EEP_PDCAL_BASE_33;
 	emp->param.tgtpwr_off = AR5211_EEP_TGTPWR_BASE_33;
 
 	word = EEP_WORD(AR5211_EEP_ANTGAIN_33);
@@ -177,6 +187,7 @@ static void eep_5211_fill_headers_33(struct atheepmgr *aem)
 	if (base->version >= AR5211_EEP_VER_5_0) {
 		word = EEP_WORD(AR5211_EEP_MISC4);
 		base->cal_off = MS(word, AR5211_EEP_CAL_OFF);
+		emp->param.pdcal_off = base->cal_off;
 
 		word = EEP_WORD(AR5211_EEP_CAPABILITIES);
 		base->comp_dis = !!(word & AR5211_EEP_COMP_DIS);
@@ -465,6 +476,22 @@ static void eep_5211_fill_headers(struct atheepmgr *aem)
 	}
 }
 
+static void eep_5211_parse_pdcal(struct atheepmgr *aem)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct eep_bit_stream __ebs, *ebs = &__ebs;
+
+	memset(ebs, 0x00, sizeof(*ebs));
+	ebs->eep_off = emp->param.pdcal_off;
+
+	if (emp->param.eepmap == 2)
+		printf("EEPROM map2 PD calibration parsing not yet supported\n");
+	else if (emp->param.eepmap == 1)
+		printf("EEPROM map1 PD calibration parsing not yet supported\n");
+	else if (emp->param.eepmap == 0)
+		printf("EEPROM map0 PD calibration parsing not yet supported\n");
+}
+
 static void eep_5211_fill_ctl_index(struct atheepmgr *aem,
 				    int off)
 {
@@ -584,6 +611,8 @@ static bool eep_5211_fill(struct atheepmgr *aem)
 	eep_5211_fill_init_data(aem);
 
 	eep_5211_fill_headers(aem);
+
+	eep_5211_parse_pdcal(aem);
 
 	if (base->version >= AR5211_EEP_VER_3_3) {
 		emp->param.ctls_num = AR5211_NUM_CTLS_33;
@@ -896,6 +925,77 @@ static void eep_5211_dump_modal(struct atheepmgr *aem)
 #undef _MODE_ABG
 }
 
+static void eep_5211_dump_pdcal_pier(const int8_t *gains, int ngains,
+				     const struct ar5211_pier_pdcal *pdcal,
+				     const int *nicepts)
+{
+	struct {
+		int16_t pwr;
+		uint8_t vpd[AR5211_MAX_PDCAL_GAINS];
+	} merged[AR5211_MAX_PDCAL_ICEPTS * AR5211_MAX_PDCAL_GAINS];
+	int gii[AR5211_MAX_PDCAL_GAINS];	/* Array of indexes for merge */
+	int gain, pwr, npwr;			/* Indexes */
+	int16_t pwrmin;
+
+	/* Merge calibration per-gain power lists to filter duplicates */
+	memset(merged, 0xff, sizeof(merged));
+	memset(gii, 0x00, sizeof(gii));
+	for (pwr = 0; pwr < ARRAY_SIZE(merged); ++pwr) {
+		pwrmin = INT16_MAX;
+		for (gain = 0; gain < ngains; ++gain) {
+			if (gii[gain] >= nicepts[gain])
+				continue;
+			if (pdcal->pwr[gain][gii[gain]] < pwrmin)
+				pwrmin = pdcal->pwr[gain][gii[gain]];
+		}
+		if (pwrmin == INT16_MAX)
+			break;
+		merged[pwr].pwr = pwrmin;
+		for (gain = 0; gain < ngains; ++gain) {
+			if (gii[gain] >= nicepts[gain] ||
+			    pdcal->pwr[gain][gii[gain]] != pwrmin)
+				continue;
+			merged[pwr].vpd[gain] = pdcal->vpd[gain][gii[gain]];
+			gii[gain]++;
+		}
+	}
+	npwr = pwr;
+
+	/* Print merged data */
+	printf("     Tx Power, dBm:");
+	for (pwr = 0; pwr < npwr; ++pwr)
+		printf(" %5.2f", merged[pwr].pwr / 4.0);
+	printf("\n");
+	printf("    ---------------");
+	for (pwr = 0; pwr < npwr; ++pwr)
+		printf(" -----");
+	printf("\n");
+	for (gain = 0; gain < ngains; ++gain) {
+		printf("   % 3d dB gain VPD:", gains[gain]);
+		for (pwr = 0; pwr < npwr; ++pwr) {
+			if (merged[pwr].vpd[gain] == 0xff)
+				printf("      ");
+			else
+				printf("   %3u", merged[pwr].vpd[gain]);
+		}
+		printf("\n");
+	}
+}
+
+static void eep_5211_dump_pdcal(const struct eep_5211_pdcal_param *pdcp,
+				const struct ar5211_pier_pdcal *pdcal,
+				int is_2g)
+{
+	int pier;
+
+	for (pier = 0; pier < pdcp->npiers; ++pier) {
+		printf("  %4u MHz:\n", FBIN2FREQ(pdcp->piers[pier], is_2g));
+		eep_5211_dump_pdcal_pier(pdcp->gains, pdcp->ngains,
+					 &pdcal[pier], pdcp->nicepts);
+		printf("\n");
+	}
+}
+
 static void eep_5211_dump_ctl_edges(const struct ar5211_ctl_edge *edges,
 				    int is_2g)
 {
@@ -940,10 +1040,20 @@ static void eep_5211_dump_ctl(const uint8_t *index,
 
 static void eep_5211_dump_power(struct atheepmgr *aem)
 {
+#define PR_PD_CAL(__suf, __mode, __is_2g)				\
+		EEP_PRINT_SUBSECT_NAME("Mode 802.11" __suf " per-freq PD cal. data");\
+		eep_5211_dump_pdcal(&emp->param.pdcal_ ## __mode,	\
+				    eep->pdcal_data_ ## __mode, __is_2g);\
+		printf("\n");
+
 	struct eep_5211_priv *emp = aem->eepmap_priv;
 	struct ar5211_eeprom *eep = &emp->eep;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
+
+	PR_PD_CAL("a", a, 0);
+	PR_PD_CAL("b", b, 1);
+	PR_PD_CAL("g", g, 1);
 
 	EEP_PRINT_SUBSECT_NAME("CTL data");
 	eep_5211_dump_ctl(eep->ctl_index, &eep->ctl_data[0][0],
