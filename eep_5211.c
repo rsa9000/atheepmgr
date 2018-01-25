@@ -492,6 +492,29 @@ static void eep_5211_decode_xpd_gain(uint8_t eep_val,
 	pdcp->ngains = 1;
 }
 
+/* Use for map1 & map2 PD calibration data */
+static void eep_5211_parse_xpd_gain(uint8_t eep_val, const int8_t *map,
+				    struct eep_5211_pdcal_param *pdcp)
+{
+	int i, j;
+
+	for (i = 0, j = 0; i < AR5211_MAX_PDCAL_GAINS; ++i) {
+		if (!(eep_val & (1 << i)))
+			continue;
+		pdcp->gains[j++] = map[i];
+	}
+	pdcp->ngains = j;
+}
+
+static void eep_5211_count_pdcal_piers(const uint8_t *piers, int *npiers,
+				       int maxpiers)
+{
+	int i = 0;
+
+	while (piers[i] && ++i < maxpiers);
+	*npiers = i;
+}
+
 static void eep_5211_parse_pdcal_piers_30(struct atheepmgr *aem,
 					  struct eep_bit_stream *ebs,
 					  uint8_t *piers, int *npiers,
@@ -518,6 +541,21 @@ static void eep_5211_parse_pdcal_piers_33(struct atheepmgr *aem,
 
 	do {
 		piers[i] = EEP_GET_MSB(8);
+	} while (piers[i] && ++i < maxpiers);
+	*npiers = i;
+	for (++i; i < maxpiers; ++i)
+		EEP_GET_LSB(8);		/* Read leftover */
+}
+
+static void eep_5211_parse_pdcal_piers_40(struct atheepmgr *aem,
+					  struct eep_bit_stream *ebs,
+					  uint8_t *piers, int *npiers,
+					  int maxpiers)
+{
+	int i = 0;
+
+	do {
+		piers[i] = EEP_GET_LSB(8);
 	} while (piers[i] && ++i < maxpiers);
 	*npiers = i;
 	for (++i; i < maxpiers; ++i)
@@ -608,6 +646,92 @@ static void eep_5211_parse_pdcal_map0(struct atheepmgr *aem,
 	eep_5211_parse_pdcal_data_map0(aem, ebs, pdcp, eep->pdcal_data_g);
 }
 
+static void eep_5211_parse_pdcal_data_map1(struct atheepmgr *aem,
+					   struct eep_bit_stream *ebs,
+					   struct eep_5211_pdcal_param *pdcp,
+					   struct ar5211_pier_pdcal *pdcal)
+{
+	static const uint8_t hi_xpd_gain_vpd[3] = {20, 35, 63};	/* Fixed */
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	int i, j;
+	uint8_t vpd_d[4];	/* VPD deltas */
+
+	/**
+	 * NB: storage format always contains data for 2 xPD gains, even if
+	 * only one is in use. So parse data for both gains and dumping code
+	 * will ignore data for higher gain if only one gain is in use.
+	 */
+	for (i = 0; i < pdcp->npiers; ++i) {
+		pdcp->nicepts[0] = 4;
+		for (j = 0; j < pdcp->nicepts[0]; ++j)
+			pdcal[i].pwr[0][j] = (int8_t)EEP_GET_LSB(8);
+
+		for (j = 1; j < 4; ++j)
+			vpd_d[j] = EEP_GET_LSB(5);
+		EEP_GET_LSB(1);			/* Skip unused bit */
+
+		pdcp->nicepts[1] = 3;
+		for (j = 0; j < pdcp->nicepts[1]; ++j)
+			pdcal[i].pwr[1][j] = (int8_t)EEP_GET_LSB(8);
+
+		if (eep->base.version < AR5211_EEP_VER_4_3) {
+			pdcal[i].vpd[0][0] = 1;	/* Fixed VPD value */
+			EEP_GET_LSB(8);		/* Skip max power value */
+		} else {
+			pdcal[i].vpd[0][0] = EEP_GET_LSB(6);
+			EEP_GET_LSB(2);		/* Skip unused bits */
+		}
+		for (j = 1; j < 4; ++j)
+			pdcal[i].vpd[0][j] = pdcal[i].vpd[0][j - 1] + vpd_d[j];
+
+		for (j = 0; j < ARRAY_SIZE(hi_xpd_gain_vpd); ++j)
+			pdcal[i].vpd[1][j] = hi_xpd_gain_vpd[j];
+	}
+}
+
+static void eep_5211_parse_pdcal_map1(struct atheepmgr *aem,
+				      struct eep_bit_stream *ebs)
+{
+	static const int8_t gains_map[] = {0, 6, 12, 18};
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	struct eep_5211_pdcal_param *pdcp;
+
+	if (eep->base.amode_en) {
+		pdcp = &emp->param.pdcal_a;
+		eep_5211_parse_pdcal_piers_40(aem, ebs, eep->pdcal_piers_a,
+					      &pdcp->npiers,
+					      AR5211_NUM_PDCAL_PIERS_A);
+		pdcp->piers = eep->pdcal_piers_a;
+		eep_5211_parse_xpd_gain(eep->modal_a.xpd_gain, gains_map, pdcp);
+		eep_5211_parse_pdcal_data_map1(aem, ebs, pdcp,
+					       eep->pdcal_data_a);
+	}
+
+	if (eep->base.bmode_en) {
+		pdcp = &emp->param.pdcal_b;
+		eep_5211_count_pdcal_piers(eep->modal_b.cal_piers,
+					   &pdcp->npiers,
+					   ARRAY_SIZE(eep->modal_b.cal_piers));
+		pdcp->piers = eep->modal_b.cal_piers;
+		eep_5211_parse_xpd_gain(eep->modal_b.xpd_gain, gains_map, pdcp);
+		eep_5211_parse_pdcal_data_map1(aem, ebs, pdcp,
+					       eep->pdcal_data_b);
+	}
+
+	if (eep->base.gmode_en) {
+		pdcp = &emp->param.pdcal_g;
+		eep_5211_count_pdcal_piers(eep->modal_g.cal_piers,
+					   &pdcp->npiers,
+					   ARRAY_SIZE(eep->modal_g.cal_piers));
+		pdcp->piers = eep->modal_g.cal_piers;
+		eep_5211_parse_xpd_gain(eep->modal_g.xpd_gain, gains_map, pdcp);
+		eep_5211_parse_pdcal_data_map1(aem, ebs, pdcp,
+					       eep->pdcal_data_g);
+	}
+}
+
 static void eep_5211_parse_pdcal(struct atheepmgr *aem)
 {
 	struct eep_5211_priv *emp = aem->eepmap_priv;
@@ -619,7 +743,7 @@ static void eep_5211_parse_pdcal(struct atheepmgr *aem)
 	if (emp->param.eepmap == 2)
 		printf("EEPROM map2 PD calibration parsing not yet supported\n");
 	else if (emp->param.eepmap == 1)
-		printf("EEPROM map1 PD calibration parsing not yet supported\n");
+		eep_5211_parse_pdcal_map1(aem, ebs);
 	else if (emp->param.eepmap == 0)
 		eep_5211_parse_pdcal_map0(aem, ebs);
 }
