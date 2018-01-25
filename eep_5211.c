@@ -476,6 +476,138 @@ static void eep_5211_fill_headers(struct atheepmgr *aem)
 	}
 }
 
+/* Used only for map0 PD calibration data */
+static void eep_5211_decode_xpd_gain(uint8_t eep_val,
+				     struct eep_5211_pdcal_param *pdcp)
+{
+	static const int8_t gains[] = {-1, -1, -1, -1, -1, -1, -1, 18, -1, -1,
+				       -1, 12, -1,  6,  0, -1, -1, -1, -1, -1};
+
+	if (eep_val < ARRAY_SIZE(gains) && gains[eep_val] != -1) {
+		pdcp->gains[0] = gains[eep_val];
+	} else {
+		printf("Unknown xPD gain code 0x%02x, use 6 dB\n", eep_val);
+		pdcp->gains[0] = 6;
+	}
+	pdcp->ngains = 1;
+}
+
+static void eep_5211_parse_pdcal_piers_30(struct atheepmgr *aem,
+					  struct eep_bit_stream *ebs,
+					  uint8_t *piers, int *npiers,
+					  int maxpiers)
+{
+	int i = 0;
+
+	do {
+		piers[i] = EEP_GET_MSB(7);
+		piers[i] = FBIN_30_TO_33(piers[i], 0);
+	} while (piers[i] && ++i < maxpiers);
+	*npiers = i;
+	for (++i; i < maxpiers; ++i)
+		EEP_GET_LSB(8);		/* Read leftover */
+	EEP_GET_MSB(10);	/* Skip unused bits */
+}
+
+static void eep_5211_parse_pdcal_piers_33(struct atheepmgr *aem,
+					  struct eep_bit_stream *ebs,
+					  uint8_t *piers, int *npiers,
+					  int maxpiers)
+{
+	int i = 0;
+
+	do {
+		piers[i] = EEP_GET_MSB(8);
+	} while (piers[i] && ++i < maxpiers);
+	*npiers = i;
+	for (++i; i < maxpiers; ++i)
+		EEP_GET_LSB(8);		/* Read leftover */
+}
+
+/**
+ * Map 0 format does not store VPD value of each point, instead it stores
+ * min and max VPD values and output tx power levels measured at predefined
+ * VPD values, which are expressed as percents. E.g.:
+ *   VPD0 = VPDmin + 0.00 * (VPDmax - VPDmin) // 0%
+ *   VPD1 = VPDmin + 0.10 * (VPDmax - VPDmin) // 10%
+ *   VPD2 = VPDmin + 0.20 * (VPDmax - VPDmin) // 20%
+ *   ...
+ *   VPD11 = VPDmin + 1.00 * (VPDmax - VPDmin) // 100%
+ */
+static void eep_5211_parse_pdcal_data_map0(struct atheepmgr *aem,
+					   struct eep_bit_stream *ebs,
+					   struct eep_5211_pdcal_param *pdcp,
+					   struct ar5211_pier_pdcal *pdcal)
+{
+#define ICEPTS_NUM	11
+	static const unsigned int icepts_vpd_percent[2][ICEPTS_NUM] = {
+		{0,  5, 10, 20, 30, 50, 70, 85, 90, 95, 100},	/*  < v3.0 */
+		{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}	/* >= v3.2 */
+	};
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	const unsigned int *vp;
+	unsigned int vpd_min, vpd_max;
+	int16_t *pwr;
+	uint8_t *vpd;
+	int i, j;
+
+	vp = eep->base.version < AR5211_EEP_VER_3_2 ? icepts_vpd_percent[0] :
+						      icepts_vpd_percent[1];
+
+	for (i = 0; i < pdcp->npiers; ++i) {
+		pwr = pdcal[i].pwr[0];
+		vpd = pdcal[i].vpd[0];
+		vpd_max = EEP_GET_MSB(6);
+		vpd_min = EEP_GET_MSB(6);
+		for (j = 0; j < ICEPTS_NUM; ++j) {
+			pwr[j] = EEP_GET_MSB(6) * 2;	/* 0.5 dB -> 0.25 dB */
+			vpd[j] = vpd_min + vp[j] * (vpd_max - vpd_min) / 100;
+		}
+		pdcp->nicepts[0] = j;
+		EEP_GET_MSB(2);				/* Skip unused bits */
+	}
+
+#undef ICEPTS_NUM
+}
+
+static void eep_5211_parse_pdcal_map0(struct atheepmgr *aem,
+				      struct eep_bit_stream *ebs)
+{
+#define F2B(__freq)	FREQ2FBIN(__freq, 1)
+	static const uint8_t piers_b[] = {F2B(2412), F2B(2447), F2B(2484)};
+	static const uint8_t piers_g[] = {F2B(2312), F2B(2412), F2B(2484)};
+#undef F2B
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	struct eep_5211_pdcal_param *pdcp;
+
+	pdcp = &emp->param.pdcal_a;
+	if (eep->base.version >= AR5211_EEP_VER_3_3)
+		eep_5211_parse_pdcal_piers_33(aem, ebs, eep->pdcal_piers_a,
+					      &pdcp->npiers,
+					      AR5211_NUM_PDCAL_PIERS_A);
+	else
+		eep_5211_parse_pdcal_piers_30(aem, ebs, eep->pdcal_piers_a,
+					      &pdcp->npiers,
+					      AR5211_NUM_PDCAL_PIERS_A);
+	pdcp->piers = eep->pdcal_piers_a;
+	eep_5211_decode_xpd_gain(eep->modal_a.xpd_gain, pdcp);
+	eep_5211_parse_pdcal_data_map0(aem, ebs, pdcp, eep->pdcal_data_a);
+
+	pdcp = &emp->param.pdcal_b;
+	pdcp->piers = piers_b;		/* Fixed piers */
+	pdcp->npiers = ARRAY_SIZE(piers_b);
+	eep_5211_decode_xpd_gain(eep->modal_b.xpd_gain, pdcp);
+	eep_5211_parse_pdcal_data_map0(aem, ebs, pdcp, eep->pdcal_data_b);
+
+	pdcp = &emp->param.pdcal_g;
+	pdcp->piers = piers_g;		/* Fixed piers */
+	pdcp->npiers = ARRAY_SIZE(piers_g);
+	eep_5211_decode_xpd_gain(eep->modal_g.xpd_gain, pdcp);
+	eep_5211_parse_pdcal_data_map0(aem, ebs, pdcp, eep->pdcal_data_g);
+}
+
 static void eep_5211_parse_pdcal(struct atheepmgr *aem)
 {
 	struct eep_5211_priv *emp = aem->eepmap_priv;
@@ -489,7 +621,7 @@ static void eep_5211_parse_pdcal(struct atheepmgr *aem)
 	else if (emp->param.eepmap == 1)
 		printf("EEPROM map1 PD calibration parsing not yet supported\n");
 	else if (emp->param.eepmap == 0)
-		printf("EEPROM map0 PD calibration parsing not yet supported\n");
+		eep_5211_parse_pdcal_map0(aem, ebs);
 }
 
 static void eep_5211_fill_ctl_index(struct atheepmgr *aem,
