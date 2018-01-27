@@ -54,6 +54,11 @@
 #define AR5211_MAX_PDCAL_GAINS		4
 #define AR5211_MAX_PDCAL_ICEPTS		11
 
+#define AR5211_NUM_TGTPWR_RATES		4
+#define AR5211_MAX_TGTPWR_CHANS_A	8
+#define AR5211_MAX_TGTPWR_CHANS_B	2
+#define AR5211_MAX_TGTPWR_CHANS_G	3
+
 #define AR5211_NUM_CTLS_30		16
 #define AR5211_NUM_CTLS_33		32
 #define AR5211_NUM_CTLS_MAX		AR5211_NUM_CTLS_33
@@ -297,6 +302,11 @@ struct ar5211_pier_pdcal {
 	uint8_t vpd[AR5211_MAX_PDCAL_GAINS][AR5211_MAX_PDCAL_ICEPTS];
 };
 
+struct ar5211_chan_tgtpwr {
+	uint8_t chan;
+	uint8_t pwr[AR5211_NUM_TGTPWR_RATES];
+};
+
 struct ar5211_ctl_edge {
 	uint8_t fbin;
 	uint8_t pwr;
@@ -314,6 +324,9 @@ struct ar5211_eeprom {
 	struct ar5211_pier_pdcal pdcal_data_b[AR5211_NUM_PDCAL_PIERS_B];
 	uint8_t pdcal_piers_g[AR5211_NUM_PDCAL_PIERS_G];
 	struct ar5211_pier_pdcal pdcal_data_g[AR5211_NUM_PDCAL_PIERS_G];
+	struct ar5211_chan_tgtpwr tgtpwr_a[AR5211_MAX_TGTPWR_CHANS_A];
+	struct ar5211_chan_tgtpwr tgtpwr_b[AR5211_MAX_TGTPWR_CHANS_B];
+	struct ar5211_chan_tgtpwr tgtpwr_g[AR5211_MAX_TGTPWR_CHANS_G];
 	uint8_t ctl_index[AR5211_NUM_CTLS_MAX];
 	struct ar5211_ctl_edge ctl_data[AR5211_NUM_CTLS_MAX][AR5211_NUM_BAND_EDGES];
 };

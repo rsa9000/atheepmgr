@@ -818,6 +818,46 @@ static void eep_5211_parse_pdcal(struct atheepmgr *aem)
 		eep_5211_parse_pdcal_map0(aem, ebs);
 }
 
+static void eep_5211_parse_tgtpwr_set(struct atheepmgr *aem,
+				      struct eep_bit_stream *ebs,
+				      struct ar5211_chan_tgtpwr *tgtpwr,
+				      int maxchans, int is_2g)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	int i, j;
+
+	for (i = 0; i < maxchans; ++i) {
+		if (eep->base.version < AR5211_EEP_VER_3_3) {
+			tgtpwr[i].chan = EEP_GET_MSB(7);
+			tgtpwr[i].chan = FBIN_30_TO_33(tgtpwr[i].chan, is_2g);
+		} else {
+			tgtpwr[i].chan = EEP_GET_MSB(8);
+		}
+		for (j = 0; j < AR5211_NUM_TGTPWR_RATES; ++j)
+			tgtpwr[i].pwr[j] = EEP_GET_MSB(6);
+		if (eep->base.version < AR5211_EEP_VER_3_3)
+			EEP_GET_MSB(1);		/* Skip unused bit */
+	}
+}
+
+static void eep_5211_parse_tgtpwr(struct atheepmgr *aem)
+{
+	struct eep_5211_priv *emp = aem->eepmap_priv;
+	struct ar5211_eeprom *eep = &emp->eep;
+	struct eep_bit_stream __ebs, *ebs = &__ebs;
+
+	memset(ebs, 0x00, sizeof(*ebs));
+	ebs->eep_off = emp->param.tgtpwr_off;
+
+	eep_5211_parse_tgtpwr_set(aem, ebs, eep->tgtpwr_a,
+				  ARRAY_SIZE(eep->tgtpwr_a), 0);
+	eep_5211_parse_tgtpwr_set(aem, ebs, eep->tgtpwr_b,
+				  ARRAY_SIZE(eep->tgtpwr_b), 1);
+	eep_5211_parse_tgtpwr_set(aem, ebs, eep->tgtpwr_g,
+				  ARRAY_SIZE(eep->tgtpwr_g), 1);
+}
+
 static void eep_5211_fill_ctl_index(struct atheepmgr *aem,
 				    int off)
 {
@@ -939,6 +979,7 @@ static bool eep_5211_fill(struct atheepmgr *aem)
 	eep_5211_fill_headers(aem);
 
 	eep_5211_parse_pdcal(aem);
+	eep_5211_parse_tgtpwr(aem);
 
 	if (base->version >= AR5211_EEP_VER_3_3) {
 		emp->param.ctls_num = AR5211_NUM_CTLS_33;
@@ -1322,6 +1363,37 @@ static void eep_5211_dump_pdcal(const struct eep_5211_pdcal_param *pdcp,
 	}
 }
 
+static void eep_5211_dump_tgtpwr(const struct ar5211_chan_tgtpwr *tgtpwr,
+				 int maxchans, const char * const rates[],
+				 int is_2g)
+{
+#define MARGIN		"    "
+
+	int nchans, i, j;
+
+	printf(MARGIN "%10s, MHz:", "Freq");
+	for (j = 0; j < maxchans; ++j) {
+		if (!tgtpwr[j].chan)
+			break;
+		printf("  %4u", FBIN2FREQ(tgtpwr[j].chan, is_2g));
+	}
+	nchans = j;
+	printf("\n");
+	printf(MARGIN "----------------");
+	for (j = 0; j < nchans; ++j)
+		printf("  ----");
+	printf("\n");
+
+	for (i = 0; i < AR5211_NUM_TGTPWR_RATES; ++i) {
+		printf(MARGIN "%10s, dBm:", rates[i]);
+		for (j = 0; j < nchans; ++j)
+			printf("  %4.1f", tgtpwr[j].pwr[i] / 2.0);
+		printf("\n");
+	}
+
+#undef MARGIN
+}
+
 static void eep_5211_dump_ctl_edges(const struct ar5211_ctl_edge *edges,
 				    int is_2g)
 {
@@ -1371,6 +1443,12 @@ static void eep_5211_dump_power(struct atheepmgr *aem)
 		eep_5211_dump_pdcal(&emp->param.pdcal_ ## __mode,	\
 				    eep->pdcal_data_ ## __mode, __is_2g);\
 		printf("\n");
+#define PR_TGT_PWR(__suf, __mode, __rates, __is_2g)			\
+		EEP_PRINT_SUBSECT_NAME("Mode 802.11" __suf " per-rate target power");\
+		eep_5211_dump_tgtpwr(eep->tgtpwr_ ## __mode,		\
+				     ARRAY_SIZE(eep->tgtpwr_ ## __mode),\
+				     __rates, __is_2g);			\
+		printf("\n");
 
 	struct eep_5211_priv *emp = aem->eepmap_priv;
 	struct ar5211_eeprom *eep = &emp->eep;
@@ -1380,6 +1458,10 @@ static void eep_5211_dump_power(struct atheepmgr *aem)
 	PR_PD_CAL("a", a, 0);
 	PR_PD_CAL("b", b, 1);
 	PR_PD_CAL("g", g, 1);
+
+	PR_TGT_PWR("a", a, eep_rates_ofdm, 0);
+	PR_TGT_PWR("b", b, eep_rates_cck, 1);
+	PR_TGT_PWR("g", g, eep_rates_ofdm, 1);
 
 	EEP_PRINT_SUBSECT_NAME("CTL data");
 	eep_5211_dump_ctl(eep->ctl_index, &eep->ctl_data[0][0],
