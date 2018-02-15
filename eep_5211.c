@@ -957,8 +957,9 @@ static bool eep_5211_fill(struct atheepmgr *aem)
 	}
 
 	if (!len) {
-		printf("EEPROM length not configured, use default (%d words, %d bytes)\n",
-		       AR5211_SIZE_DEF, AR5211_SIZE_DEF * 2);
+		if (aem->verbose)
+			printf("EEPROM length not configured, use default (%d words, %d bytes)\n",
+			       AR5211_SIZE_DEF, AR5211_SIZE_DEF * 2);
 		len = AR5211_SIZE_DEF;
 	}
 

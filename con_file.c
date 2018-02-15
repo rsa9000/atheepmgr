@@ -133,8 +133,10 @@ static int file_init(struct atheepmgr *aem, const char *arg_str)
 	if (fpd->ic_sz < 0x0800)	/* Do not emulate too small IC */
 		fpd->ic_sz = 0x0800;
 
-	printf("confile: file data length is 0x%04lx (%ld) bytes, emulate 0x%04x bytes (%u KB, %u kbit) EEPROM IC\n",
-	       len, len, fpd->ic_sz, fpd->ic_sz / 1024, fpd->ic_sz * 8 / 1024);
+	if (aem->verbose)
+		printf("confile: file data length is 0x%04lx (%ld) bytes, emulate 0x%04x bytes (%u KB, %u kbit) EEPROM IC\n",
+		       len, len, fpd->ic_sz, fpd->ic_sz / 1024,
+		       fpd->ic_sz * 8 / 1024);
 
 	return 0;
 

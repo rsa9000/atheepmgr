@@ -2937,10 +2937,8 @@ static uint16_t ar9300_comp_cksum(uint8_t *data, int dsize)
 	return checksum;
 }
 
-static bool ar9300_uncompress_block(uint8_t *mptr,
-				    int mdataSize,
-				    uint8_t *block,
-				    int size)
+static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *mptr,
+				    int mdataSize, uint8_t *block, int size)
 {
 	int it;
 	int spot;
@@ -2957,8 +2955,9 @@ static bool ar9300_uncompress_block(uint8_t *mptr,
 		length &= 0xff;
 
 		if (length > 0 && spot >= 0 && spot+length <= mdataSize) {
-			printf("Restore at %d: spot=%d offset=%d length=%d\n",
-				it, spot, offset, length);
+			if (aem->verbose)
+				printf("Restore at %d: spot=%d offset=%d length=%d\n",
+				       it, spot, offset, length);
 			memcpy(&mptr[spot], &block[it+2], length);
 			spot += length;
 		} else if (length > 0) {
@@ -2971,10 +2970,8 @@ static bool ar9300_uncompress_block(uint8_t *mptr,
 	return true;
 }
 
-static int ar9300_compress_decision(int it,
-				    int code,
-				    int reference,
-				    uint8_t *mptr,
+static int ar9300_compress_decision(struct atheepmgr *aem, int it, int code,
+				    int reference, uint8_t *mptr,
 				    uint8_t *word, int length, int mdata_size)
 {
 	struct ar9300_eeprom *eep = NULL;
@@ -2988,8 +2985,9 @@ static int ar9300_compress_decision(int it,
 			return -1;
 		}
 		memcpy(mptr, word + COMP_HDR_LEN, length);
-		printf("restored eeprom %d: uncompressed, length %d\n",
-			it, length);
+		if (aem->verbose)
+			printf("restored eeprom %d: uncompressed, length %d\n",
+			       it, length);
 		break;
 	case _CompressBlock:
 		if (reference != 0) {
@@ -3002,9 +3000,10 @@ static int ar9300_compress_decision(int it,
 			}
 			memcpy(mptr, eep, mdata_size);
 		}
-		printf("restore eeprom %d: block, reference %d, length %d\n",
-			it, reference, length);
-		ar9300_uncompress_block(mptr, mdata_size,
+		if (aem->verbose)
+			printf("Restore eeprom %d: block, reference %d, length %d\n",
+			       it, reference, length);
+		ar9300_uncompress_block(aem, mptr, mdata_size,
 					(word + COMP_HDR_LEN), length);
 		break;
 	default:
@@ -3147,12 +3146,15 @@ static int ar9300_eeprom_restore_internal(struct atheepmgr *aem,
 		cptr = AR9300_BASE_ADDR_512;
 	else
 		cptr = AR9300_BASE_ADDR;
-	printf("Trying EEPROM access at Address 0x%04x\n", cptr);
+
+	if (aem->verbose)
+		printf("Trying EEPROM access at Address 0x%04x\n", cptr);
 	if (ar9300_check_eeprom_header(aem, read, cptr))
 		goto found;
 
 	cptr = AR9300_BASE_ADDR_512;
-	printf("Trying EEPROM access at Address 0x%04x\n", cptr);
+	if (aem->verbose)
+		printf("Trying EEPROM access at Address 0x%04x\n", cptr);
 	if (ar9300_check_eeprom_header(aem, read, cptr))
 		goto found;
 
@@ -3162,19 +3164,22 @@ static int ar9300_eeprom_restore_internal(struct atheepmgr *aem,
 
 	read = ar9300_read_otp;
 	cptr = AR9300_BASE_ADDR;
-	printf("Trying OTP access at Address 0x%04x\n", cptr);
+	if (aem->verbose)
+		printf("Trying OTP access at Address 0x%04x\n", cptr);
 	if (ar9300_check_eeprom_header(aem, read, cptr))
 		goto found;
 
 	cptr = AR9300_BASE_ADDR_512;
-	printf("Trying OTP access at Address 0x%04x\n", cptr);
+	if (aem->verbose)
+		printf("Trying OTP access at Address 0x%04x\n", cptr);
 	if (ar9300_check_eeprom_header(aem, read, cptr))
 		goto found;
 
 	goto fail;
 
 found:
-	printf("Found valid EEPROM data\n");
+	if (aem->verbose)
+		printf("Found valid EEPROM data\n");
 
 	for (it = 0; it < MSTATE; it++) {
 		if (!read(aem, cptr, word, COMP_HDR_LEN))
@@ -3185,12 +3190,13 @@ found:
 
 		ar9300_comp_hdr_unpack(word, &code, &reference,
 				       &length, &major, &minor);
-		printf("Found block at %x: code=%d ref=%d length=%d \
-			major=%d minor=%d\n",
-			cptr, code, reference, length, major, minor);
+		if (aem->verbose)
+			printf("Found block at %x: code=%d ref=%d length=%d major=%d minor=%d\n",
+			       cptr, code, reference, length, major, minor);
 		if ((!AR_SREV_9485(aem) && length >= 1024) ||
 		    (AR_SREV_9485(aem) && length > EEPROM_DATA_LEN_9485)) {
-			printf("Skipping bad header\n");
+			if (aem->verbose)
+				printf("Skipping bad header\n");
 			cptr -= COMP_HDR_LEN;
 			continue;
 		}
@@ -3200,12 +3206,12 @@ found:
 		checksum = ar9300_comp_cksum(&word[COMP_HDR_LEN], length);
 		ptr = &word[COMP_HDR_LEN + osize];
 		mchecksum = ptr[0] | (ptr[1] << 8);
-		printf("checksum %x %x\n", checksum, mchecksum);
 		if (checksum == mchecksum) {
-			ar9300_compress_decision(it, code, reference, mptr,
+			ar9300_compress_decision(aem, it, code, reference, mptr,
 						 word, length, mdata_size);
-		} else {
-			printf("skipping block with bad checksum\n");
+		} else if (aem->verbose) {
+			printf("Skipping block with bad checksum (got 0x%04x, expect 0x%04x)\n",
+			       checksum, mchecksum);
 		}
 		cptr -= (COMP_HDR_LEN + osize + COMP_CKSUM_LEN);
 	}

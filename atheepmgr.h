@@ -201,6 +201,8 @@ struct eepmap {
 };
 
 struct atheepmgr {
+	int verbose;
+
 	int host_is_be;				/* Is host big-endian? */
 
 	const struct connector *con;

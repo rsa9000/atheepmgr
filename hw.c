@@ -93,11 +93,17 @@ static void hw_read_revisions(struct atheepmgr *aem)
 		aem->macVersion = (val & AR_SREV_VERSION2) >> AR_SREV_TYPE2_S;
 		aem->macRev = MS(val, AR_SREV_REVISION2);
 
+		if (!aem->verbose)
+			return;
+
 		printf("Atheros AR%s MAC/BB Rev:%x (SREV: 0x%08x)\n",
 		       mac_bb_name2(aem->macVersion), aem->macRev, val);
 	} else {
 		aem->macVersion = MS(val, AR_SREV_VERSION);
 		aem->macRev = val & AR_SREV_REVISION;
+
+		if (!aem->verbose)
+			return;
 
 		printf("Atheros AR%s MAC/BB (SREV: 0x%08x)\n",
 		       mac_bb_name(aem->macVersion, aem->macRev), val);
@@ -468,13 +474,16 @@ static const struct eep_ops hw_eep_5211 = {
 void hw_eeprom_set_ops(struct atheepmgr *aem)
 {
 	if (aem->con->eep) {
-		printf("EEPROM access ops: use connector's ops\n");
+		if (aem->verbose)
+			printf("EEPROM access ops: use connector's ops\n");
 		aem->eep = aem->con->eep;
 	} else if (AR_SREV_5416_OR_LATER(aem)) {
-		printf("EEPROM access ops: use AR9xxx ops\n");
+		if (aem->verbose)
+			printf("EEPROM access ops: use AR9xxx ops\n");
 		aem->eep = &hw_eep_9xxx;
 	} else if (AR_SREV_5211_OR_LATER(aem)) {
-		printf("EEPROM access ops: use AR5211 ops\n");
+		if (aem->verbose)
+			printf("EEPROM access ops: use AR5211 ops\n");
 		aem->eep = &hw_eep_5211;
 	} else {
 		printf("Unable to select EEPROM access ops due to unknown chip\n");

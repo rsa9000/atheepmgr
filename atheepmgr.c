@@ -57,7 +57,8 @@ static int eepmap_detect(struct atheepmgr *aem)
 		return -ENOENT;
 	}
 
-	printf("Detected EEPROM map: %s\n", aem->eepmap->name);
+	if (aem->verbose)
+		printf("Detected EEPROM map: %s\n", aem->eepmap->name);
 
 	return 0;
 }
@@ -404,7 +405,7 @@ static const struct action {
 #define CON_USAGE	"-F <eepdump>"
 #endif
 
-static const char *optstr = CON_OPTSTR "ht:";
+static const char *optstr = CON_OPTSTR "ht:v";
 
 static void usage_eepmap(const struct eepmap *eepmap)
 {
@@ -465,6 +466,7 @@ static void usage(char *name)
 #endif
 		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
 		"                  for connectors, without direct HW access.\n"
+		"  -v              Be verbose.\n"
 		"  -h              Print this cruft.\n"
 		"  <action>        Optional argument, which specifies the <action> that should be\n"
 		"                  performed (see actions list below). If no action is specified,\n"
@@ -555,6 +557,9 @@ int main(int argc, char *argv[])
 					optarg);
 				goto exit;
 			}
+			break;
+		case 'v':
+			aem->verbose++;
 			break;
 		case 'h':
 			usage(argv[0]);

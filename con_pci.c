@@ -31,7 +31,7 @@ struct pci_priv {
 	void *io_map;
 };
 
-static int is_supported_chipset(struct pci_device *pdev)
+static int is_supported_chipset(struct atheepmgr *aem, struct pci_device *pdev)
 {
 	static const struct {
 		uint16_t dev_id;
@@ -67,8 +67,9 @@ static int is_supported_chipset(struct pci_device *pdev)
 	if (i == ARRAY_SIZE(devs))
 		goto not_supported;
 
-	printf("Found Device: %04x:%04x (%s)\n", pdev->vendor_id,
-		pdev->device_id, devs[i].name);
+	if (aem->verbose)
+		printf("Found Device: %04x:%04x (%s)\n", pdev->vendor_id,
+			pdev->device_id, devs[i].name);
 
 	return 1;
 
@@ -103,9 +104,10 @@ static int pci_device_init(struct atheepmgr *aem, struct pci_device *pdev)
 	ppd->size = pdev->regions[0].size;
 	pdev->user_data = (intptr_t)aem;
 
-	printf("Try to map %08lx-%08lx I/O region to the process memory\n",
-	       (unsigned long)ppd->base_addr,
-	       (unsigned long)(ppd->base_addr + ppd->size - 1));
+	if (aem->verbose)
+		printf("Try to map %08lx-%08lx I/O region to the process memory\n",
+		       (unsigned long)ppd->base_addr,
+		       (unsigned long)(ppd->base_addr + ppd->size - 1));
 
 	err = pci_device_map_range(pdev, ppd->base_addr, ppd->size,
 				   PCI_DEV_MAP_FLAG_WRITABLE, &ppd->io_map);
@@ -114,7 +116,8 @@ static int pci_device_init(struct atheepmgr *aem, struct pci_device *pdev)
 		return err;
 	}
 
-	printf("Mapped IO region at: %p\n", ppd->io_map);
+	if (aem->verbose)
+		printf("Mapped IO region at: %p\n", ppd->io_map);
 
 	return 0;
 }
@@ -124,7 +127,8 @@ static void pci_device_cleanup(struct atheepmgr *aem)
 	struct pci_priv *ppd = aem->con_priv;
 	int err;
 
-	printf("Freeing Mapped IO region at: %p\n", ppd->io_map);
+	if (aem->verbose)
+		printf("Freeing Mapped IO region at: %p\n", ppd->io_map);
 
 	err = pci_device_unmap_range(ppd->pdev, ppd->io_map, ppd->size);
 	if (err)
@@ -236,7 +240,7 @@ static int pci_init(struct atheepmgr *aem, const char *arg_str)
 		goto err;
 	}
 
-	if (!is_supported_chipset(pdev)) {
+	if (!is_supported_chipset(aem, pdev)) {
 		ret = ENOTSUP;
 		goto err;
 	}
