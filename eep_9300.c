@@ -2802,14 +2802,12 @@ static struct ar9300_eeprom *ar9300_eep_templates[] = {
 
 static struct ar9300_eeprom *ar9300_eeprom_struct_find_by_id(int id)
 {
-#define N_LOOP (sizeof(ar9300_eep_templates) / sizeof(ar9300_eep_templates[0]))
 	int it;
 
-	for (it = 0; it < N_LOOP; it++)
+	for (it = 0; it < ARRAY_SIZE(ar9300_eep_templates); it++)
 		if (ar9300_eep_templates[it]->templateVersion == id)
 			return ar9300_eep_templates[it];
 	return NULL;
-#undef N_LOOP
 }
 
 static bool ar9300_eeprom_read_byte(struct atheepmgr *aem, int address,
@@ -3038,13 +3036,11 @@ void ar9300_fill_regdmn(void)
 	struct ar9300_eeprom *eep;
 	int it;
 
-#define N_LOOP (sizeof(ar9300_eep_templates) / sizeof(ar9300_eep_templates[0]))
-	for (it = 0; it < N_LOOP; it++) {
+	for (it = 0; it < ARRAY_SIZE(ar9300_eep_templates); it++) {
 		eep = ar9300_eep_templates[it];
 		eep->baseEepHeader.regDmn[0] = 0;
 		eep->baseEepHeader.regDmn[1] = htole16(0x1f);
 	}
-#undef N_LOOP
 }
 
 void ar9300_fill_antctrl_template(bool is_2g)
@@ -3053,8 +3049,7 @@ void ar9300_fill_antctrl_template(bool is_2g)
 	struct ar9300_modal_eep_hdr *pModal;
 	int it;
 
-#define N_LOOP (sizeof(ar9300_eep_templates) / sizeof(ar9300_eep_templates[0]))
-	for (it = 0; it < N_LOOP; it++) {
+	for (it = 0; it < ARRAY_SIZE(ar9300_eep_templates); it++) {
 		eep = ar9300_eep_templates[it];
 		pModal = (is_2g) ? &eep->modalHeader2G : &eep->modalHeader5G;
 		if (is_2g && ((eep->templateVersion == 5) ||
@@ -3071,7 +3066,6 @@ void ar9300_fill_antctrl_template(bool is_2g)
 		pModal->antCtrlChain[1] = htole16(0x150);
 		pModal->antCtrlChain[2] = htole16(0x150);
 	}
-#undef N_LOOP
 }
 
 void ar9300_fill_antctlcmn_template(bool is_2g)
@@ -3080,8 +3074,7 @@ void ar9300_fill_antctlcmn_template(bool is_2g)
 	struct ar9300_modal_eep_hdr *pModal;
 	int it;
 
-#define N_LOOP (sizeof(ar9300_eep_templates) / sizeof(ar9300_eep_templates[0]))
-	for (it = 0; it < N_LOOP; it++) {
+	for (it = 0; it < ARRAY_SIZE(ar9300_eep_templates); it++) {
 		eep = ar9300_eep_templates[it];
 		pModal = (is_2g) ? &eep->modalHeader2G : &eep->modalHeader5G;
 
@@ -3105,7 +3098,6 @@ void ar9300_fill_antctlcmn_template(bool is_2g)
 			}
 		}
 	}
-#undef N_LOOP
 }
 /*
  * Read the configuration data from the eeprom.
