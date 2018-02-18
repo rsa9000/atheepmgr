@@ -17,6 +17,15 @@
 #include "atheepmgr.h"
 #include "eep_9300.h"
 
+/* Uncompressed EEPROM block header */
+struct eep_9300_blk_hdr {
+	int comp;	/* Compression type */
+	int ref;	/* Reference EEPROM data */
+	int len;	/* Block length */
+	int maj;
+	int min;
+};
+
 struct eep_9300_priv {
 	struct ar9300_eeprom eep;
 };
@@ -2907,8 +2916,7 @@ static bool ar9300_read_otp(struct atheepmgr *aem, int address, uint8_t *buffer,
 }
 
 
-static void ar9300_comp_hdr_unpack(uint8_t *best, int *code, int *reference,
-				   int *length, int *major, int *minor)
+static void ar9300_comp_hdr_unpack(uint8_t *best, struct eep_9300_blk_hdr *blkh)
 {
 	unsigned long value[4];
 
@@ -2916,11 +2924,11 @@ static void ar9300_comp_hdr_unpack(uint8_t *best, int *code, int *reference,
 	value[1] = best[1];
 	value[2] = best[2];
 	value[3] = best[3];
-	*code = ((value[0] >> 5) & 0x0007);
-	*reference = (value[0] & 0x001f) | ((value[1] >> 2) & 0x0020);
-	*length = ((value[1] << 4) & 0x07f0) | ((value[2] >> 4) & 0x000f);
-	*major = (value[2] & 0x000f);
-	*minor = (value[3] & 0x00ff);
+	blkh->comp = ((value[0] >> 5) & 0x0007);
+	blkh->ref = (value[0] & 0x001f) | ((value[1] >> 2) & 0x0020);
+	blkh->len = ((value[1] << 4) & 0x07f0) | ((value[2] >> 4) & 0x000f);
+	blkh->maj = (value[2] & 0x000f);
+	blkh->min = (value[3] & 0x00ff);
 }
 
 static uint16_t ar9300_comp_cksum(uint8_t *data, int dsize)
@@ -2968,44 +2976,45 @@ static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *mptr,
 	return true;
 }
 
-static int ar9300_compress_decision(struct atheepmgr *aem, int it, int code,
-				    int reference, uint8_t *mptr,
-				    uint8_t *word, int length, int mdata_size)
+static int ar9300_compress_decision(struct atheepmgr *aem, int it,
+				    struct eep_9300_blk_hdr *blkh,
+				    uint8_t *mptr, uint8_t *word,
+				    int mdata_size)
 {
 	struct ar9300_eeprom *eep = NULL;
 
-	switch (code) {
+	switch (blkh->comp) {
 	case _CompressNone:
-		if (length != mdata_size) {
+		if (blkh->len != mdata_size) {
 			fprintf(stderr,
 				"EEPROM structure size mismatch memory=%d eeprom=%d\n",
-				mdata_size, length);
+				mdata_size, blkh->len);
 			return -1;
 		}
-		memcpy(mptr, word + COMP_HDR_LEN, length);
+		memcpy(mptr, word + COMP_HDR_LEN, blkh->len);
 		if (aem->verbose)
 			printf("restored eeprom %d: uncompressed, length %d\n",
-			       it, length);
+			       it, blkh->len);
 		break;
 	case _CompressBlock:
-		if (reference != 0) {
-			eep = ar9300_eeprom_struct_find_by_id(reference);
+		if (blkh->ref != 0) {
+			eep = ar9300_eeprom_struct_find_by_id(blkh->ref);
 			if (eep == NULL) {
 				fprintf(stderr,
 					"can't find reference eeprom struct %d\n",
-					reference);
+					blkh->ref);
 				return -1;
 			}
 			memcpy(mptr, eep, mdata_size);
 		}
 		if (aem->verbose)
 			printf("Restore eeprom %d: block, reference %d, length %d\n",
-			       it, reference, length);
+			       it, blkh->ref, blkh->len);
 		ar9300_uncompress_block(aem, mptr, mdata_size,
-					(word + COMP_HDR_LEN), length);
+					(word + COMP_HDR_LEN), blkh->len);
 		break;
 	default:
-		fprintf(stderr, "unknown compression code %d\n", code);
+		fprintf(stderr, "unknown compression code %d\n", blkh->comp);
 		return -1;
 	}
 	return 0;
@@ -3111,10 +3120,9 @@ static int ar9300_eeprom_restore_internal(struct atheepmgr *aem,
 {
 #define MDEFAULT 15
 #define MSTATE 100
+	struct eep_9300_blk_hdr blkh;
 	int cptr;
 	uint8_t *word, *ptr;
-	int code;
-	int reference, length, major, minor;
 	int osize;
 	int it;
 	uint16_t checksum, mchecksum;
@@ -3180,27 +3188,27 @@ found:
 		if (!ar9300_check_header(word))
 			break;
 
-		ar9300_comp_hdr_unpack(word, &code, &reference,
-				       &length, &major, &minor);
+		ar9300_comp_hdr_unpack(word, &blkh);
 		if (aem->verbose)
-			printf("Found block at %x: code=%d ref=%d length=%d major=%d minor=%d\n",
-			       cptr, code, reference, length, major, minor);
-		if ((!AR_SREV_9485(aem) && length >= 1024) ||
-		    (AR_SREV_9485(aem) && length > EEPROM_DATA_LEN_9485)) {
+			printf("Found block at %x: comp=%d ref=%d length=%d major=%d minor=%d\n",
+			       cptr, blkh.comp, blkh.ref, blkh.len, blkh.maj,
+			       blkh.min);
+		if ((!AR_SREV_9485(aem) && blkh.len >= 1024) ||
+		    (AR_SREV_9485(aem) && blkh.len > EEPROM_DATA_LEN_9485)) {
 			if (aem->verbose)
 				printf("Skipping bad header\n");
 			cptr -= COMP_HDR_LEN;
 			continue;
 		}
 
-		osize = length;
+		osize = blkh.len;
 		read(aem, cptr, word, COMP_HDR_LEN + osize + COMP_CKSUM_LEN);
-		checksum = ar9300_comp_cksum(&word[COMP_HDR_LEN], length);
+		checksum = ar9300_comp_cksum(&word[COMP_HDR_LEN], blkh.len);
 		ptr = &word[COMP_HDR_LEN + osize];
 		mchecksum = ptr[0] | (ptr[1] << 8);
 		if (checksum == mchecksum) {
-			ar9300_compress_decision(aem, it, code, reference, mptr,
-						 word, length, mdata_size);
+			ar9300_compress_decision(aem, it, &blkh, mptr, word,
+						 mdata_size);
 		} else if (aem->verbose) {
 			printf("Skipping block with bad checksum (got 0x%04x, expect 0x%04x)\n",
 			       checksum, mchecksum);
