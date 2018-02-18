@@ -3112,15 +3112,11 @@ void ar9300_fill_antctlcmn_template(bool is_2g)
 		}
 	}
 }
+
 /*
- * Read the configuration data from the eeprom.
- * The data can be put in any specified memory buffer.
- *
- * Returns -1 on error.
- * Returns address of next memory location on success.
+ * Read the configuration data from the eeprom uncompress it if necessary.
  */
-static int ar9300_eeprom_restore_internal(struct atheepmgr *aem,
-					  uint8_t *mptr, int mdata_size)
+static bool eep_9300_fill(struct atheepmgr *aem)
 {
 #define MDEFAULT 15
 #define MSTATE 100
@@ -3135,15 +3131,17 @@ static int ar9300_eeprom_restore_internal(struct atheepmgr *aem,
 	int res;
 
 	word = calloc(1, 2048);
-	if (!word)
-		return -ENOMEM;
+	if (!word) {
+		fprintf(stderr, "Unable to allocate temporary buffer\n");
+		return false;
+	}
 
 	ar9300_fill_regdmn();
 	for (it = 1; it >= 0; it--) {
 		ar9300_fill_antctlcmn_template(it);
 		ar9300_fill_antctrl_template(it);
 	}
-	memcpy(mptr, &ar9300_default, mdata_size);
+	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
 
 	read = ar9300_read_eeprom;
 	if (AR_SREV_9485(aem))
@@ -3213,8 +3211,9 @@ found:
 		ptr = &word[COMP_HDR_LEN + osize];
 		mchecksum = ptr[0] | (ptr[1] << 8);
 		if (checksum == mchecksum) {
-			res = ar9300_compress_decision(aem, it, &blkh, mptr,
-						       word, mdata_size);
+			res = ar9300_compress_decision(aem, it, &blkh,
+						       (uint8_t *)&emp->eep,
+						       word, sizeof(emp->eep));
 			if (res == 0)
 				emp->valid_blocks++;
 		} else if (aem->verbose) {
@@ -3225,28 +3224,11 @@ found:
 	}
 
 	free(word);
-	return cptr;
+	return true;
 
 fail:
 	free(word);
-	return -1;
-}
-
-/*
- * Restore the configuration structure by reading the eeprom.
- * This function destroys any existing in-memory structure
- * content.
- */
-static bool eep_9300_fill(struct atheepmgr *aem)
-{
-	struct eep_9300_priv *emp = aem->eepmap_priv;
-	uint8_t *mptr = (uint8_t *)&emp->eep;
-
-	if (ar9300_eeprom_restore_internal(aem, mptr,
-			sizeof(struct ar9300_eeprom)) < 0)
-		return false;
-
-	return true;
+	return false;
 }
 
 static int eep_9300_check(struct atheepmgr *aem)
