@@ -2820,71 +2820,58 @@ static struct ar9300_eeprom *ar9300_eeprom_struct_find_by_id(int id)
 	return NULL;
 }
 
-static bool ar9300_eeprom_read_byte(struct atheepmgr *aem, int address,
-				    uint8_t *buffer)
+/**
+ * Read data from EEPROM and fill internal buffer up to specified ammount of
+ * bytes.
+ */
+static int ar9300_eep2buf(struct atheepmgr *aem, int bytes)
 {
-	uint16_t val;
+	int size = (bytes + 1) / 2;	/* Convert to 16 bits words */
+	uint16_t *buf = aem->eep_buf;
+	int addr;
 
-	if (!EEP_READ(address / 2, &val))
-		return false;
+	for (addr = aem->eep_len; addr < size; ++addr) {
+		if (!EEP_READ(addr, &buf[addr])) {
+			fprintf(stderr, "Unable to read EEPROM to buffer\n");
+			return -1;
+		}
+	}
 
-	*buffer = (val >> (8 * (address % 2))) & 0xff;
-	return true;
+	if (addr > aem->eep_len)
+		aem->eep_len = addr;
+
+	return 0;
 }
 
-static bool ar9300_eeprom_read_word(struct atheepmgr *aem, int address,
-				    uint8_t *buffer)
-{
-	uint16_t val;
-
-	if (!EEP_READ(address / 2, &val))
-		return false;
-
-	buffer[0] = val >> 8;
-	buffer[1] = val & 0xff;
-	return true;
-}
-
-static bool ar9300_read_eeprom(struct atheepmgr *aem, int address,
-			       uint8_t *buffer, int count)
+/**
+ * Extract bytestream of specified length from the internal buffer as specified
+ * offset.
+ *
+ * NB: we are reading the bytes in reverse order for a stream of 16-bit words.
+ * E.g. first two bytes of the output stream extracted from word with specified
+ * address, second two bytes of the output stream extraced from buffered word
+ * with lower address, and so on.
+ */
+static bool ar9300_buf2bstr(struct atheepmgr *aem, int addr,
+			    uint8_t *buffer, int count)
 {
 	int i;
 
-	if ((address < 0) || ((address + count) / 2 > AR9300_EEPROM_SIZE - 1)) {
-		fprintf(stderr, "eeprom address not in range\n");
+	if ((addr - count) < 0 || addr / 2  >= aem->eep_len) {
+		fprintf(stderr, "Requested address not in range\n");
 		return false;
 	}
 
 	/*
-	 * Since we're reading the bytes in reverse order from a little-endian
+	 * We're reading the bytes in reverse order from a little-endian
 	 * word stream, an even address means we only use the lower half of
 	 * the 16-bit word at that address
 	 */
-	if (address % 2 == 0) {
-		if (!ar9300_eeprom_read_byte(aem, address--, buffer++))
-			goto error;
 
-		count--;
-	}
-
-	for (i = 0; i < count / 2; i++) {
-		if (!ar9300_eeprom_read_word(aem, address, buffer))
-			goto error;
-
-		address -= 2;
-		buffer += 2;
-	}
-
-	if (count % 2)
-		if (!ar9300_eeprom_read_byte(aem, address, buffer))
-			goto error;
+	for (i = addr; i > addr - count; --i)
+		buffer[addr - i] = aem->eep_buf[i / 2] >> (8 * (i % 2));
 
 	return true;
-
-error:
-	fprintf(stderr, "unable to read eeprom region at offset %d\n",
-		address);
-	return false;
 }
 
 static bool ar9300_otp_read_word(struct atheepmgr *aem, int addr, uint32_t *data)
@@ -3143,7 +3130,7 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 	}
 	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
 
-	read = ar9300_read_eeprom;
+	read = ar9300_buf2bstr;
 	if (AR_SREV_9485(aem))
 		cptr = AR9300_BASE_ADDR_4K;
 	else if (AR_SREV_9330(aem))
@@ -3153,6 +3140,8 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 
 	if (aem->verbose)
 		printf("Trying EEPROM access at Address 0x%04x\n", cptr);
+	if (ar9300_eep2buf(aem, cptr) != 0)
+		goto fail;
 	if (ar9300_check_eeprom_header(aem, read, cptr))
 		goto found;
 
@@ -3425,6 +3414,7 @@ const struct eepmap eepmap_9300 = {
 	.name = "9300",
 	.desc = "EEPROM map for modern .11n chips (AR93xx/AR64xx/AR95xx/etc.)",
 	.priv_data_sz = sizeof(struct eep_9300_priv),
+	.eep_buf_sz = AR9300_EEPROM_SIZE / sizeof(uint16_t),
 	.fill_eeprom = eep_9300_fill,
 	.check_eeprom = eep_9300_check,
 	.dump = {
