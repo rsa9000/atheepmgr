@@ -27,6 +27,7 @@ struct eep_9300_blk_hdr {
 };
 
 struct eep_9300_priv {
+	int valid_blocks;
 	struct ar9300_eeprom eep;
 };
 
@@ -2982,6 +2983,7 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 				    int mdata_size)
 {
 	struct ar9300_eeprom *eep = NULL;
+	bool res;
 
 	switch (blkh->comp) {
 	case _CompressNone:
@@ -3010,8 +3012,10 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 		if (aem->verbose)
 			printf("Restore eeprom %d: block, reference %d, length %d\n",
 			       it, blkh->ref, blkh->len);
-		ar9300_uncompress_block(aem, mptr, mdata_size,
-					(word + COMP_HDR_LEN), blkh->len);
+		res = ar9300_uncompress_block(aem, mptr, mdata_size,
+					      (word + COMP_HDR_LEN), blkh->len);
+		if (!res)
+			return -1;
 		break;
 	default:
 		fprintf(stderr, "unknown compression code %d\n", blkh->comp);
@@ -3120,6 +3124,7 @@ static int ar9300_eeprom_restore_internal(struct atheepmgr *aem,
 {
 #define MDEFAULT 15
 #define MSTATE 100
+	struct eep_9300_priv *emp = aem->eepmap_priv;
 	struct eep_9300_blk_hdr blkh;
 	int cptr;
 	uint8_t *word, *ptr;
@@ -3127,6 +3132,7 @@ static int ar9300_eeprom_restore_internal(struct atheepmgr *aem,
 	int it;
 	uint16_t checksum, mchecksum;
 	eeprom_read_op read;
+	int res;
 
 	word = calloc(1, 2048);
 	if (!word)
@@ -3207,8 +3213,10 @@ found:
 		ptr = &word[COMP_HDR_LEN + osize];
 		mchecksum = ptr[0] | (ptr[1] << 8);
 		if (checksum == mchecksum) {
-			ar9300_compress_decision(aem, it, &blkh, mptr, word,
-						 mdata_size);
+			res = ar9300_compress_decision(aem, it, &blkh, mptr,
+						       word, mdata_size);
+			if (res == 0)
+				emp->valid_blocks++;
 		} else if (aem->verbose) {
 			printf("Skipping block with bad checksum (got 0x%04x, expect 0x%04x)\n",
 			       checksum, mchecksum);
@@ -3243,7 +3251,9 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 
 static int eep_9300_check(struct atheepmgr *aem)
 {
-	return 1;
+	struct eep_9300_priv *emp = aem->eepmap_priv;
+
+	return emp->valid_blocks ? 1 : 0;
 }
 
 static void eep_9300_dump_base_header(struct atheepmgr *aem)
