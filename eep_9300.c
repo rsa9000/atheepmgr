@@ -2886,23 +2886,36 @@ static bool ar9300_otp_read_word(struct atheepmgr *aem, int addr, uint32_t *data
 	return true;
 }
 
-static bool ar9300_read_otp(struct atheepmgr *aem, int address, uint8_t *buffer,
-			    int count)
+/**
+ * Read data from OTP mem and fill internal buffer up to specified ammount of
+ * bytes.
+ */
+static int ar9300_otp2buf(struct atheepmgr *aem, int bytes)
 {
-	uint32_t data;
-	int i;
+	int size = (bytes + 3) / 4;	/* Convert to 32 bits words */
+	uint16_t *buf = aem->eep_buf;
+	uint32_t word;
+	int addr;
 
-	for (i = 0; i < count; i++) {
-		int offset = 8 * ((address - i) % 4);
-		if (!ar9300_otp_read_word(aem, (address - i) / 4, &data))
-			return false;
-
-		buffer[i] = (data >> offset) & 0xff;
+	for (addr = aem->eep_len / 2; addr < size; ++addr) {
+		if (!ar9300_otp_read_word(aem, addr, &word)) {
+			fprintf(stderr, "Unable to read OTP to buffer\n");
+			return -1;
+		}
+		/**
+		 * Mimic EEPROM when placing 32-bit OTP word to the buffer,
+		 * which is array of 16-bit words. Assume we are on
+		 * little-endian platform.
+		 */
+		buf[addr * 2 + 0] = word & 0xffff;
+		buf[addr * 2 + 1] = word >> 16;
 	}
 
-	return true;
-}
+	if (addr > aem->eep_len / 2)
+		aem->eep_len = addr * 2;
 
+	return 0;
+}
 
 static void ar9300_comp_hdr_unpack(uint8_t *best, struct eep_9300_blk_hdr *blkh)
 {
@@ -3155,10 +3168,14 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 	if (!(aem->con->caps & CON_CAP_HW))
 		goto fail;
 
-	read = ar9300_read_otp;
+	aem->eep_len = 0;	/* Reset internal buffer contents */
+
+	read = ar9300_buf2bstr;
 	cptr = AR9300_BASE_ADDR;
 	if (aem->verbose)
 		printf("Trying OTP access at Address 0x%04x\n", cptr);
+	if (ar9300_otp2buf(aem, cptr) != 0)
+		goto fail;
 	if (ar9300_check_eeprom_header(aem, read, cptr))
 		goto found;
 
