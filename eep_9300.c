@@ -3038,6 +3038,21 @@ static bool ar9300_check_eeprom_header(struct atheepmgr *aem, int base_addr)
 	return ar9300_check_header(header);
 }
 
+static int ar9300_check_block_len(struct atheepmgr *aem, int max_len,
+				  int blk_len)
+{
+	if (aem->con->caps & CON_CAP_HW) {
+		if ((!AR_SREV_9485(aem) && blk_len >= 1024) ||
+		    (AR_SREV_9485(aem) && blk_len > EEPROM_DATA_LEN_9485))
+			return 0;
+	}
+
+	if (COMP_HDR_LEN + blk_len + COMP_CKSUM_LEN > max_len)
+		return 0;
+
+	return 1;
+}
+
 void ar9300_fill_regdmn(void)
 {
 	struct ar9300_eeprom *eep;
@@ -3192,8 +3207,7 @@ found:
 			printf("Found block at %x: comp=%d ref=%d length=%d major=%d minor=%d\n",
 			       cptr, blkh.comp, blkh.ref, blkh.len, blkh.maj,
 			       blkh.min);
-		if ((!AR_SREV_9485(aem) && blkh.len >= 1024) ||
-		    (AR_SREV_9485(aem) && blkh.len > EEPROM_DATA_LEN_9485)) {
+		if (!ar9300_check_block_len(aem, cptr, blkh.len)) {
 			if (aem->verbose)
 				printf("Skipping bad header\n");
 			cptr -= COMP_HDR_LEN;
