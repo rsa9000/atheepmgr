@@ -3029,15 +3029,6 @@ static bool ar9300_check_header(void *data)
 	return !(*word == 0 || *word == ~0);
 }
 
-static bool ar9300_check_eeprom_header(struct atheepmgr *aem, int base_addr)
-{
-	uint8_t header[4] = { 0 };
-
-	ar9300_buf2bstr(aem, base_addr, header, sizeof(header));
-
-	return ar9300_check_header(header);
-}
-
 static int ar9300_check_block_len(struct atheepmgr *aem, int max_len,
 				  int blk_len)
 {
@@ -3051,6 +3042,63 @@ static int ar9300_check_block_len(struct atheepmgr *aem, int max_len,
 		return 0;
 
 	return 1;
+}
+
+static int ar9300_process_blocks(struct atheepmgr *aem, uint8_t *buf,
+				 int cptr)
+{
+#define MSTATE 100
+	struct eep_9300_priv *emp = aem->eepmap_priv;
+	int prev_valid_blocks = emp->valid_blocks;
+	struct eep_9300_blk_hdr blkh;
+	uint16_t checksum, mchecksum;
+	uint8_t *ptr;
+	int it, res;
+
+	for (it = 0; it < MSTATE; it++) {
+		ar9300_buf2bstr(aem, cptr, buf, COMP_HDR_LEN);
+
+		if (!ar9300_check_header(buf))
+			break;
+
+		ar9300_comp_hdr_unpack(buf, &blkh);
+		if (aem->verbose)
+			printf("Found block at %x: comp=%d ref=%d length=%d major=%d minor=%d\n",
+			       cptr, blkh.comp, blkh.ref, blkh.len, blkh.maj,
+			       blkh.min);
+		if (!ar9300_check_block_len(aem, cptr, blkh.len)) {
+			if (aem->verbose)
+				printf("Skipping bad header\n");
+			cptr -= COMP_HDR_LEN;
+			continue;
+		}
+
+		ar9300_buf2bstr(aem, cptr, buf,
+				COMP_HDR_LEN + blkh.len + COMP_CKSUM_LEN);
+
+		checksum = ar9300_comp_cksum(&buf[COMP_HDR_LEN], blkh.len);
+		ptr = &buf[COMP_HDR_LEN + blkh.len];
+		mchecksum = ptr[0] | (ptr[1] << 8);
+		if (checksum != mchecksum) {
+			if (aem->verbose)
+				printf("Skipping block with bad checksum (got 0x%04x, expect 0x%04x)\n",
+				       checksum, mchecksum);
+			cptr -= COMP_HDR_LEN;
+			continue;
+		}
+
+		res = ar9300_compress_decision(aem, it, &blkh,
+					       (uint8_t *)&emp->eep, buf,
+					       sizeof(emp->eep));
+		if (res == 0)
+			emp->valid_blocks++;
+
+		cptr -= COMP_HDR_LEN + blkh.len + COMP_CKSUM_LEN;
+	}
+
+	return prev_valid_blocks == emp->valid_blocks ? -1 : 0;
+
+#undef MSTATE
 }
 
 void ar9300_fill_regdmn(void)
@@ -3127,15 +3175,10 @@ void ar9300_fill_antctlcmn_template(bool is_2g)
  */
 static bool eep_9300_fill(struct atheepmgr *aem)
 {
-#define MDEFAULT 15
-#define MSTATE 100
 	struct eep_9300_priv *emp = aem->eepmap_priv;
-	struct eep_9300_blk_hdr blkh;
 	int cptr;
-	uint8_t *word, *ptr;
+	uint8_t *word;
 	int it;
-	uint16_t checksum, mchecksum;
-	int res;
 
 	word = calloc(1, 2048);
 	if (!word) {
@@ -3161,13 +3204,13 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 		printf("Trying EEPROM access at Address 0x%04x\n", cptr);
 	if (ar9300_eep2buf(aem, cptr) != 0)
 		goto fail;
-	if (ar9300_check_eeprom_header(aem, cptr))
+	if (ar9300_process_blocks(aem, word, cptr) == 0)
 		goto found;
 
 	cptr = AR9300_BASE_ADDR_512;
 	if (aem->verbose)
 		printf("Trying EEPROM access at Address 0x%04x\n", cptr);
-	if (ar9300_check_eeprom_header(aem, cptr))
+	if (ar9300_process_blocks(aem, word, cptr) == 0)
 		goto found;
 
 	/* Avoid OTP touching if no real access to the hardware. */
@@ -3181,62 +3224,19 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 		printf("Trying OTP access at Address 0x%04x\n", cptr);
 	if (ar9300_otp2buf(aem, cptr) != 0)
 		goto fail;
-	if (ar9300_check_eeprom_header(aem, cptr))
+	if (ar9300_process_blocks(aem, word, cptr) == 0)
 		goto found;
 
 	cptr = AR9300_BASE_ADDR_512;
 	if (aem->verbose)
 		printf("Trying OTP access at Address 0x%04x\n", cptr);
-	if (ar9300_check_eeprom_header(aem, cptr))
+	if (ar9300_process_blocks(aem, word, cptr) == 0)
 		goto found;
 
 	goto fail;
 
 found:
-	if (aem->verbose)
-		printf("Found valid EEPROM data\n");
-
-	for (it = 0; it < MSTATE; it++) {
-		ar9300_buf2bstr(aem, cptr, word, COMP_HDR_LEN);
-
-		if (!ar9300_check_header(word))
-			break;
-
-		ar9300_comp_hdr_unpack(word, &blkh);
-		if (aem->verbose)
-			printf("Found block at %x: comp=%d ref=%d length=%d major=%d minor=%d\n",
-			       cptr, blkh.comp, blkh.ref, blkh.len, blkh.maj,
-			       blkh.min);
-		if (!ar9300_check_block_len(aem, cptr, blkh.len)) {
-			if (aem->verbose)
-				printf("Skipping bad header\n");
-			cptr -= COMP_HDR_LEN;
-			continue;
-		}
-
-		ar9300_buf2bstr(aem, cptr, word,
-				COMP_HDR_LEN + blkh.len + COMP_CKSUM_LEN);
-
-		checksum = ar9300_comp_cksum(&word[COMP_HDR_LEN], blkh.len);
-		ptr = &word[COMP_HDR_LEN + blkh.len];
-		mchecksum = ptr[0] | (ptr[1] << 8);
-		if (checksum != mchecksum) {
-			if (aem->verbose)
-				printf("Skipping block with bad checksum (got 0x%04x, expect 0x%04x)\n",
-				       checksum, mchecksum);
-			cptr -= COMP_HDR_LEN;
-			continue;
-		}
-
-		res = ar9300_compress_decision(aem, it, &blkh,
-					       (uint8_t *)&emp->eep, word,
-					       sizeof(emp->eep));
-		if (res == 0)
-			emp->valid_blocks++;
-
-		cptr -= COMP_HDR_LEN + blkh.len + COMP_CKSUM_LEN;
-	}
-
+	aem->eep_len = (cptr + 1) / 2;	/* Set actual EEPROM size */
 	free(word);
 	return true;
 
