@@ -3216,19 +3216,24 @@ found:
 
 		ar9300_buf2bstr(aem, cptr, word,
 				COMP_HDR_LEN + blkh.len + COMP_CKSUM_LEN);
+
 		checksum = ar9300_comp_cksum(&word[COMP_HDR_LEN], blkh.len);
 		ptr = &word[COMP_HDR_LEN + blkh.len];
 		mchecksum = ptr[0] | (ptr[1] << 8);
-		if (checksum == mchecksum) {
-			res = ar9300_compress_decision(aem, it, &blkh,
-						       (uint8_t *)&emp->eep,
-						       word, sizeof(emp->eep));
-			if (res == 0)
-				emp->valid_blocks++;
-		} else if (aem->verbose) {
-			printf("Skipping block with bad checksum (got 0x%04x, expect 0x%04x)\n",
-			       checksum, mchecksum);
+		if (checksum != mchecksum) {
+			if (aem->verbose)
+				printf("Skipping block with bad checksum (got 0x%04x, expect 0x%04x)\n",
+				       checksum, mchecksum);
+			cptr -= COMP_HDR_LEN;
+			continue;
 		}
+
+		res = ar9300_compress_decision(aem, it, &blkh,
+					       (uint8_t *)&emp->eep, word,
+					       sizeof(emp->eep));
+		if (res == 0)
+			emp->valid_blocks++;
+
 		cptr -= COMP_HDR_LEN + blkh.len + COMP_CKSUM_LEN;
 	}
 
