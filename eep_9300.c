@@ -2852,14 +2852,15 @@ static int ar9300_eep2buf(struct atheepmgr *aem, int bytes)
  * address, second two bytes of the output stream extraced from buffered word
  * with lower address, and so on.
  */
-static bool ar9300_buf2bstr(struct atheepmgr *aem, int addr,
+static void ar9300_buf2bstr(struct atheepmgr *aem, int addr,
 			    uint8_t *buffer, int count)
 {
 	int i;
 
 	if ((addr - count) < 0 || addr / 2  >= aem->eep_len) {
 		fprintf(stderr, "Requested address not in range\n");
-		return false;
+		memset(buffer, 0x00, count);
+		return;
 	}
 
 	/*
@@ -2870,8 +2871,6 @@ static bool ar9300_buf2bstr(struct atheepmgr *aem, int addr,
 
 	for (i = addr; i > addr - count; --i)
 		buffer[addr - i] = aem->eep_buf[i / 2] >> (8 * (i % 2));
-
-	return true;
 }
 
 static bool ar9300_otp_read_word(struct atheepmgr *aem, int addr, uint32_t *data)
@@ -3024,22 +3023,17 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 	return 0;
 }
 
-typedef bool (*eeprom_read_op)(struct atheepmgr *aem, int address,
-			       uint8_t *buffer, int count);
-
 static bool ar9300_check_header(void *data)
 {
 	uint32_t *word = data;
 	return !(*word == 0 || *word == ~0);
 }
 
-static bool ar9300_check_eeprom_header(struct atheepmgr *aem, eeprom_read_op read,
-				       int base_addr)
+static bool ar9300_check_eeprom_header(struct atheepmgr *aem, int base_addr)
 {
 	uint8_t header[4] = { 0 };
 
-	if (!read(aem, base_addr, header, 4))
-		return false;
+	ar9300_buf2bstr(aem, base_addr, header, sizeof(header));
 
 	return ar9300_check_header(header);
 }
@@ -3124,10 +3118,8 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 	struct eep_9300_blk_hdr blkh;
 	int cptr;
 	uint8_t *word, *ptr;
-	int osize;
 	int it;
 	uint16_t checksum, mchecksum;
-	eeprom_read_op read;
 	int res;
 
 	word = calloc(1, 2048);
@@ -3143,7 +3135,6 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 	}
 	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
 
-	read = ar9300_buf2bstr;
 	if (AR_SREV_9485(aem))
 		cptr = AR9300_BASE_ADDR_4K;
 	else if (AR_SREV_9330(aem))
@@ -3155,13 +3146,13 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 		printf("Trying EEPROM access at Address 0x%04x\n", cptr);
 	if (ar9300_eep2buf(aem, cptr) != 0)
 		goto fail;
-	if (ar9300_check_eeprom_header(aem, read, cptr))
+	if (ar9300_check_eeprom_header(aem, cptr))
 		goto found;
 
 	cptr = AR9300_BASE_ADDR_512;
 	if (aem->verbose)
 		printf("Trying EEPROM access at Address 0x%04x\n", cptr);
-	if (ar9300_check_eeprom_header(aem, read, cptr))
+	if (ar9300_check_eeprom_header(aem, cptr))
 		goto found;
 
 	/* Avoid OTP touching if no real access to the hardware. */
@@ -3170,19 +3161,18 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 
 	aem->eep_len = 0;	/* Reset internal buffer contents */
 
-	read = ar9300_buf2bstr;
 	cptr = AR9300_BASE_ADDR;
 	if (aem->verbose)
 		printf("Trying OTP access at Address 0x%04x\n", cptr);
 	if (ar9300_otp2buf(aem, cptr) != 0)
 		goto fail;
-	if (ar9300_check_eeprom_header(aem, read, cptr))
+	if (ar9300_check_eeprom_header(aem, cptr))
 		goto found;
 
 	cptr = AR9300_BASE_ADDR_512;
 	if (aem->verbose)
 		printf("Trying OTP access at Address 0x%04x\n", cptr);
-	if (ar9300_check_eeprom_header(aem, read, cptr))
+	if (ar9300_check_eeprom_header(aem, cptr))
 		goto found;
 
 	goto fail;
@@ -3192,8 +3182,7 @@ found:
 		printf("Found valid EEPROM data\n");
 
 	for (it = 0; it < MSTATE; it++) {
-		if (!read(aem, cptr, word, COMP_HDR_LEN))
-			goto fail;
+		ar9300_buf2bstr(aem, cptr, word, COMP_HDR_LEN);
 
 		if (!ar9300_check_header(word))
 			break;
@@ -3211,10 +3200,10 @@ found:
 			continue;
 		}
 
-		osize = blkh.len;
-		read(aem, cptr, word, COMP_HDR_LEN + osize + COMP_CKSUM_LEN);
+		ar9300_buf2bstr(aem, cptr, word,
+				COMP_HDR_LEN + blkh.len + COMP_CKSUM_LEN);
 		checksum = ar9300_comp_cksum(&word[COMP_HDR_LEN], blkh.len);
-		ptr = &word[COMP_HDR_LEN + osize];
+		ptr = &word[COMP_HDR_LEN + blkh.len];
 		mchecksum = ptr[0] | (ptr[1] << 8);
 		if (checksum == mchecksum) {
 			res = ar9300_compress_decision(aem, it, &blkh,
@@ -3226,7 +3215,7 @@ found:
 			printf("Skipping block with bad checksum (got 0x%04x, expect 0x%04x)\n",
 			       checksum, mchecksum);
 		}
-		cptr -= (COMP_HDR_LEN + osize + COMP_CKSUM_LEN);
+		cptr -= COMP_HDR_LEN + blkh.len + COMP_CKSUM_LEN;
 	}
 
 	free(word);
