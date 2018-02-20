@@ -2873,6 +2873,22 @@ static void ar9300_buf2bstr(struct atheepmgr *aem, int addr,
 		buffer[addr - i] = aem->eep_buf[i / 2] >> (8 * (i % 2));
 }
 
+/**
+ * Since the AR93xx EEPROM layout does not contain any predefined value
+ * (like a magic number), we can not determine at the EEPROM contents
+ * loading stage whether to do the byte-swaping or not.
+ *
+ * So, this routine is used to byte-swap a data that are already loaded
+ * to the buffer.
+ */
+static void ar9300_buf_byteswap(struct atheepmgr *aem)
+{
+	int i;
+
+	for (i = 0; i < aem->eep_len; ++i)
+		aem->eep_buf[i] = bswap_16(aem->eep_buf[i]);
+}
+
 static bool ar9300_otp_read_word(struct atheepmgr *aem, int addr, uint32_t *data)
 {
 	REG_READ(AR9300_OTP_BASE + (4 * addr));
@@ -3179,6 +3195,7 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 	int cptr;
 	uint8_t *word;
 	int it;
+	int bswap = aem->eep_io_swap;
 
 	word = calloc(1, 2048);
 	if (!word) {
@@ -3193,6 +3210,7 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 	}
 	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
 
+parse_eeprom:
 	if (AR_SREV_9485(aem))
 		cptr = AR9300_BASE_ADDR_4K;
 	else if (AR_SREV_9330(aem))
@@ -3212,6 +3230,14 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 		printf("Trying EEPROM access at Address 0x%04x\n", cptr);
 	if (ar9300_process_blocks(aem, word, cptr) == 0)
 		goto found;
+
+	if (aem->eep_io_swap == bswap) {
+		if (aem->verbose)
+			printf("Try to byteswap EEPROM contents\n");
+		aem->eep_io_swap = !aem->eep_io_swap;
+		ar9300_buf_byteswap(aem);
+		goto parse_eeprom;	/* Reparse EEPROM contents */
+	}
 
 	/* Avoid OTP touching if no real access to the hardware. */
 	if (!(aem->con->caps & CON_CAP_HW))
