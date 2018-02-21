@@ -3060,6 +3060,22 @@ static int ar9300_check_block_len(struct atheepmgr *aem, int max_len,
 	return 1;
 }
 
+static int ar9300_check_eeprom_data(const struct ar9300_eeprom *eep)
+{
+	uint8_t txm, rxm;
+
+	txm = eep->baseEepHeader.txrxMask >> 4;
+	rxm = eep->baseEepHeader.txrxMask & 0x0f;
+	if (txm == 0x00 || txm == 0xf || rxm == 0x0 || rxm == 0xf)
+		return 0;
+
+	if (!(eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11A) &&
+	    !(eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11G))
+		return 0;
+
+	return 1;
+}
+
 static int ar9300_process_blocks(struct atheepmgr *aem, uint8_t *buf,
 				 int cptr)
 {
@@ -3211,6 +3227,17 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
 
 parse_eeprom:
+	if (ar9300_eep2buf(aem, sizeof(struct ar9300_eeprom)) != 0)
+		goto fail;
+	if (ar9300_check_eeprom_data((struct ar9300_eeprom *)aem->eep_buf)) {
+		if (aem->verbose)
+			printf("Found valid uncompressed EEPROM data\n");
+		cptr = sizeof(emp->eep);
+		memcpy(&emp->eep, aem->eep_buf, sizeof(emp->eep));
+		emp->valid_blocks++;
+		goto found;
+	}
+
 	if (AR_SREV_9485(aem))
 		cptr = AR9300_BASE_ADDR_4K;
 	else if (AR_SREV_9330(aem))
