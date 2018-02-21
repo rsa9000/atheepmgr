@@ -3488,6 +3488,14 @@ static void eep_9300_dump_modal_header(struct atheepmgr *aem)
 #undef PR
 }
 
+static void eep_9300_dump_power_info(struct atheepmgr *aem)
+{
+	struct eep_9300_priv *emp = aem->eepmap_priv;
+	struct ar9300_eeprom *eep = &emp->eep;
+
+	EEP_PRINT_SECT_NAME("EEPROM Power Info");
+}
+
 const struct eepmap eepmap_9300 = {
 	.name = "9300",
 	.desc = "EEPROM map for modern .11n chips (AR93xx/AR64xx/AR95xx/etc.)",
@@ -3498,5 +3506,6 @@ const struct eepmap eepmap_9300 = {
 	.dump = {
 		[EEP_SECT_BASE] = eep_9300_dump_base_header,
 		[EEP_SECT_MODAL] = eep_9300_dump_modal_header,
+		[EEP_SECT_POWER] = eep_9300_dump_power_info,
 	},
 };
