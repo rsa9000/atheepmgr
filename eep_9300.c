@@ -3314,8 +3314,8 @@ static void eep_9300_dump_base_header(struct atheepmgr *aem)
 	EEP_PRINT_SECT_NAME("EEPROM Base Header");
 
 	printf("%-30s : %2d\n", "Version", eep->eepromVersion);
-	printf("%-30s : 0x%04X\n", "RegDomain1", pBase->regDmn[0]);
-	printf("%-30s : 0x%04X\n", "RegDomain2", pBase->regDmn[1]);
+	printf("%-30s : 0x%04X\n", "RegDomain1", le16toh(pBase->regDmn[0]));
+	printf("%-30s : 0x%04X\n", "RegDomain2", le16toh(pBase->regDmn[1]));
 	printf("%-30s : %02X:%02X:%02X:%02X:%02X:%02X\n", "MacAddress",
 			eep->macAddr[0], eep->macAddr[1], eep->macAddr[2],
 			eep->macAddr[3], eep->macAddr[4], eep->macAddr[5]);
@@ -3370,7 +3370,7 @@ static void eep_9300_dump_base_header(struct atheepmgr *aem)
 	printf("%-30s : %d\n", "Rx Band Select Gpio", pBase->rxBandSelectGpio);
 	printf("%-30s : %d\n", "Tx Gain", pBase->txrxgain >> 4);
 	printf("%-30s : %d\n", "Rx Gain", pBase->txrxgain & 0xf);
-	printf("%-30s : %d\n", "SW Reg", pBase->swreg);
+	printf("%-30s : %d\n", "SW Reg", le32toh(pBase->swreg));
 
 	printf("\n");
 }
