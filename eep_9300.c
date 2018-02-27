@@ -3488,12 +3488,72 @@ static void eep_9300_dump_modal_header(struct atheepmgr *aem)
 #undef PR
 }
 
+static void eep_9300_dump_pwr_cal(const uint8_t *piers, int maxpiers,
+				  const struct ar9300_cal_data_per_freq_op_loop *data,
+				  int is_2g, int chainmask)
+{
+	const struct ar9300_cal_data_per_freq_op_loop *d;
+	int i, j;
+
+	printf("               ");
+	for (j = 0; j < AR9300_MAX_CHAINS; ++j) {
+		if (!(chainmask & (1 << j)))
+			continue;
+		printf(".------------- Chain %d ----------.", j);
+	}
+	printf("\n");
+	printf("               ");
+	for (j = 0; j < AR9300_MAX_CHAINS; ++j) {
+		if (!(chainmask & (1 << j)))
+			continue;
+		printf("|       Tx       :       Rx      |");
+	}
+	printf("\n");
+
+	printf("    Freq, MHz  ");
+	for (j = 0; j < AR9300_MAX_CHAINS; ++j) {
+		if (!(chainmask & (1 << j)))
+			continue;
+		printf(" RefPwr Volt Temp    NF  Pwr Temp ");
+	}
+	printf("\n");
+
+	for (i = 0; i < maxpiers; ++i) {
+		printf("         %4u  ", FBIN2FREQ(piers[i], is_2g));
+		for (j = 0; j < AR9300_MAX_CHAINS; ++j) {
+			if (!(chainmask & (1 << j)))
+				continue;
+			d = &data[j * maxpiers + i];
+			printf("   %4d %4u %4u  %4d %4d %4u ", d->refPower,
+			       d->voltMeas, d->tempMeas,
+			       d->rxNoisefloorCal, d->rxNoisefloorPower,
+			       d->rxTempMeas);
+		}
+		printf("\n");
+	}
+}
+
 static void eep_9300_dump_power_info(struct atheepmgr *aem)
 {
+#define PR_PWR_CAL(__pref, __band, __is_2g)				\
+	do {								\
+		EEP_PRINT_SUBSECT_NAME(__pref " per-freq power cal. data");\
+		eep_9300_dump_pwr_cal(eep->calFreqPier ## __band,	\
+				      ARRAY_SIZE(eep->calFreqPier ## __band),\
+				      &(eep->calPierData ## __band)[0][0],\
+				      __is_2g,				\
+				      eep->baseEepHeader.txrxMask >> 4);\
+		printf("\n");						\
+	} while (0);
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	struct ar9300_eeprom *eep = &emp->eep;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
+
+	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11G)
+		PR_PWR_CAL("2 GHz", 2G, 1);
+	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11A)
+		PR_PWR_CAL("5 GHz", 5G, 0);
 }
 
 const struct eepmap eepmap_9300 = {
