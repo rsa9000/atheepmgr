@@ -3533,6 +3533,44 @@ static void eep_9300_dump_pwr_cal(const uint8_t *piers, int maxpiers,
 	}
 }
 
+static void eep_9300_dump_tgt_pwr(const uint8_t *freqs, int nfreqs,
+				  const uint8_t *tgtpwr, int nrates,
+				  const char * const rates[], int is_2g)
+{
+#define MARGIN		"    "
+	int i, j;
+
+	printf(MARGIN "%18s, MHz:", "Freq");
+	for (j = 0; j < nfreqs; ++j)
+		printf("  %4u", FBIN2FREQ(freqs[j], is_2g));
+	printf("\n");
+	printf(MARGIN "------------------------");
+	for (j = 0; j < nfreqs; ++j)
+		printf("  ----");
+	printf("\n");
+
+	for (i = 0; i < nrates; ++i) {
+		printf(MARGIN "%18s, dBm:", rates[i]);
+		for (j = 0; j < nfreqs; ++j)
+			printf("  %4.1f", (double)tgtpwr[j * nrates + i] / 2);
+		printf("\n");
+	}
+}
+
+static const char * const eep_9300_rates_cck[4] = {
+	"1-5 mbps (L)", "5 mbps (S)", "11 mbps (L)", "11 mbps (S)"
+};
+
+static const char * const eep_9300_rates_ofdm[4] = {
+	"6-24 mbps", "36 mbps", "48 mbps", "54 mbps"
+};
+
+static const char * const eep_9300_rates_ht[14] = {
+	"MCS 0,8,16", "MCS 1-3,9-11,17-19", "MCS 4", "MCS 5", "MCS 6", "MCS 7",
+	"MCS 12", "MCS 13", "MCS 14", "MCS 15", "MCS 20", "MCS 21", "MCS 22",
+	"MCS 23"
+};
+
 static void eep_9300_dump_power_info(struct atheepmgr *aem)
 {
 #define PR_PWR_CAL(__pref, __band, __is_2g)				\
@@ -3545,6 +3583,16 @@ static void eep_9300_dump_power_info(struct atheepmgr *aem)
 				      eep->baseEepHeader.txrxMask >> 4);\
 		printf("\n");						\
 	} while (0);
+#define PR_TARGET_POWER(__pref, __mod, __rates, __is_2g)		\
+	do {								\
+		EEP_PRINT_SUBSECT_NAME(__pref " per-rate target power");\
+		eep_9300_dump_tgt_pwr(eep->calTarget_freqbin_ ## __mod,\
+				      ARRAY_SIZE(eep->calTarget_freqbin_ ## __mod),\
+				      (void *)(eep->calTargetPower ## __mod),\
+				      ARRAY_SIZE((eep->calTargetPower ## __mod)[0].tPow2x),\
+				      __rates, __is_2g);		\
+		printf("\n");						\
+	} while (0);
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	struct ar9300_eeprom *eep = &emp->eep;
 
@@ -3554,6 +3602,18 @@ static void eep_9300_dump_power_info(struct atheepmgr *aem)
 		PR_PWR_CAL("2 GHz", 2G, 1);
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11A)
 		PR_PWR_CAL("5 GHz", 5G, 0);
+
+	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11G) {
+		PR_TARGET_POWER("2 GHz CCK", Cck, eep_9300_rates_cck, 1);
+		PR_TARGET_POWER("2 GHz OFDM", 2G, eep_9300_rates_ofdm, 1);
+		PR_TARGET_POWER("2 GHz HT20", 2GHT20, eep_9300_rates_ht, 1);
+		PR_TARGET_POWER("2 GHz HT40", 2GHT40, eep_9300_rates_ht, 1);
+	}
+	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11A) {
+		PR_TARGET_POWER("5 GHz OFDM", 5G, eep_9300_rates_ofdm, 0);
+		PR_TARGET_POWER("5 GHz HT20", 5GHT20, eep_9300_rates_ht, 0);
+		PR_TARGET_POWER("5 GHz HT40", 5GHT40, eep_9300_rates_ht, 0);
+	}
 }
 
 const struct eepmap eepmap_9300 = {
