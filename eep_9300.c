@@ -34,17 +34,34 @@ struct eep_9300_priv {
 #define COMP_HDR_LEN 4
 #define COMP_CKSUM_LEN 2
 
+/**
+ * NB: there are no portable way to force endian for static values, so create
+ * the custom one.
+ */
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define LE16(__val)		((((uint16_t)(__val) & 0x00ff) << 8) | \
+				 (((uint16_t)(__val) & 0xff00) >> 8))
+#define LE32(__val)		((((uint32_t)(__val) & 0x000000ff) << 24) | \
+				 (((uint32_t)(__val) & 0x0000ff00) <<  8) | \
+				 (((uint32_t)(__val) & 0x00ff0000) >>  8) | \
+				 (((uint32_t)(__val) & 0xff000000) >> 24))
+#else
+#define LE16(__val)		((uint16_t)(__val))
+#define LE32(__val)		((uint32_t)(__val))
+#endif
+
 #define CTL(_tpower, _flag) ((_tpower) | ((_flag) << 6))
 
 #define EEPROM_DATA_LEN_9485	1088
 
-static struct ar9300_eeprom ar9300_default = {
+static const struct ar9300_eeprom ar9300_default = {
 	.eepromVersion = 2,
 	.templateVersion = 2,
 	.macAddr = {0, 2, 3, 4, 5, 6},
 	.custData = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		     0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	.baseEepHeader = {
+		.regDmn = {LE16(0x0000), LE16(0x001f)},
 		.txrxMask =  0x77, /* 4 bits tx and 4 bits rx */
 		.opCapFlags = {
 			.opFlags = AR5416_OPFLAGS_11G | AR5416_OPFLAGS_11A,
@@ -75,6 +92,9 @@ static struct ar9300_eeprom ar9300_default = {
 	 },
 	.modalHeader2G = {
 	/* ar9300_modal_eep_header  2g */
+		.antCtrlCommon = LE32(0x00000110),
+		.antCtrlCommon2 = LE32(0x00022222),
+		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
 		/*
 		 * xatten1DB[AR9300_MAX_CHAINS];  3 xatten1_db
 		 * for ar9280 (0xa20c/b20c 5:0)
@@ -278,6 +298,8 @@ static struct ar9300_eeprom ar9300_default = {
 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
 	 },
 	.modalHeader5G = {
+		.antCtrlCommon = LE32(0x00000110),
+		.antCtrlCommon2 = LE32(0x00022222),
 		 /* xatten1DB 3 xatten1_db for AR9280 (0xa20c/b20c 5:0) */
 		.xatten1DB = {0, 0, 0},
 
@@ -591,12 +613,13 @@ static struct ar9300_eeprom ar9300_default = {
 	 }
 };
 
-static struct ar9300_eeprom ar9300_x113 = {
+static const struct ar9300_eeprom ar9300_x113 = {
 	.eepromVersion = 2,
 	.templateVersion = 6,
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"x113-023-f0000"},
 	.baseEepHeader = {
+		.regDmn = {LE16(0x0000), LE16(0x001f)},
 		.txrxMask =  0x77, /* 4 bits tx and 4 bits rx */
 		.opCapFlags = {
 			.opFlags = AR5416_OPFLAGS_11A,
@@ -627,6 +650,9 @@ static struct ar9300_eeprom ar9300_x113 = {
 	 },
 	.modalHeader2G = {
 	/* ar9300_modal_eep_header  2g */
+		.antCtrlCommon = LE32(0x00000110),
+		.antCtrlCommon2 = LE32(0x00044444),
+		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
 		/*
 		 * xatten1DB[AR9300_MAX_CHAINS];  3 xatten1_db
 		 * for ar9280 (0xa20c/b20c 5:0)
@@ -830,6 +856,9 @@ static struct ar9300_eeprom ar9300_x113 = {
 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
 	 },
 	.modalHeader5G = {
+		.antCtrlCommon = LE32(0x00000220),
+		.antCtrlCommon2 = LE32(0x00011111),
+		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
 		/* 4 idle,t1,t2,b (4 bits per setting) */
 		.xatten1DB = {0, 0, 0},
 
@@ -1144,12 +1173,13 @@ static struct ar9300_eeprom ar9300_x113 = {
 };
 
 
-static struct ar9300_eeprom ar9300_h112 = {
+static const struct ar9300_eeprom ar9300_h112 = {
 	.eepromVersion = 2,
 	.templateVersion = 3,
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"h112-241-f0000"},
 	.baseEepHeader = {
+		.regDmn = {LE16(0x0000), LE16(0x001f)},
 		.txrxMask =  0x77, /* 4 bits tx and 4 bits rx */
 		.opCapFlags = {
 			.opFlags = AR5416_OPFLAGS_11G | AR5416_OPFLAGS_11A,
@@ -1180,6 +1210,9 @@ static struct ar9300_eeprom ar9300_h112 = {
 	},
 	.modalHeader2G = {
 		/* ar9300_modal_eep_header  2g */
+		.antCtrlCommon = LE32(0x00000110),
+		.antCtrlCommon2 = LE32(0x00044444),
+		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
 		/*
 		 * xatten1DB[AR9300_MAX_CHAINS];  3 xatten1_db
 		 * for ar9280 (0xa20c/b20c 5:0)
@@ -1383,6 +1416,9 @@ static struct ar9300_eeprom ar9300_h112 = {
 		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
 	},
 	.modalHeader5G = {
+		.antCtrlCommon = LE32(0x00000220),
+		.antCtrlCommon2 = LE32(0x00044444),
+		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
 		/* xatten1DB 3 xatten1_db for AR9280 (0xa20c/b20c 5:0) */
 		.xatten1DB = {0, 0, 0},
 
@@ -1697,12 +1733,13 @@ static struct ar9300_eeprom ar9300_h112 = {
 };
 
 
-static struct ar9300_eeprom ar9300_x112 = {
+static const struct ar9300_eeprom ar9300_x112 = {
 	.eepromVersion = 2,
 	.templateVersion = 5,
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"x112-041-f0000"},
 	.baseEepHeader = {
+		.regDmn = {LE16(0x0000), LE16(0x001f)},
 		.txrxMask =  0x77, /* 4 bits tx and 4 bits rx */
 		.opCapFlags = {
 			.opFlags = AR5416_OPFLAGS_11G | AR5416_OPFLAGS_11A,
@@ -1733,6 +1770,9 @@ static struct ar9300_eeprom ar9300_x112 = {
 	},
 	.modalHeader2G = {
 		/* ar9300_modal_eep_header  2g */
+		.antCtrlCommon = LE32(0x00000110),
+		.antCtrlCommon2 = LE32(0x00022222),
+		.antCtrlChain = {LE16(0x0010), LE16(0x0010), LE16(0x0010)},
 		/*
 		 * xatten1DB[AR9300_max_chains];  3 xatten1_db
 		 * for ar9280 (0xa20c/b20c 5:0)
@@ -1936,6 +1976,8 @@ static struct ar9300_eeprom ar9300_x112 = {
 		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
 	},
 	.modalHeader5G = {
+		.antCtrlCommon = LE32(0x00000110),
+		.antCtrlCommon2 = LE32(0x00022222),
 		/* xatten1DB 3 xatten1_db for ar9280 (0xa20c/b20c 5:0) */
 		.xatten1DB = {0x13, 0x19, 0x17},
 
@@ -2249,12 +2291,13 @@ static struct ar9300_eeprom ar9300_x112 = {
 	}
 };
 
-static struct ar9300_eeprom ar9300_h116 = {
+static const struct ar9300_eeprom ar9300_h116 = {
 	.eepromVersion = 2,
 	.templateVersion = 4,
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"h116-041-f0000"},
 	.baseEepHeader = {
+		.regDmn = {LE16(0x0000), LE16(0x001f)},
 		.txrxMask =  0x33, /* 4 bits tx and 4 bits rx */
 		.opCapFlags = {
 			.opFlags = AR5416_OPFLAGS_11G | AR5416_OPFLAGS_11A,
@@ -2285,6 +2328,9 @@ static struct ar9300_eeprom ar9300_h116 = {
 	 },
 	.modalHeader2G = {
 	/* ar9300_modal_eep_header  2g */
+		.antCtrlCommon = LE32(0x00000110),
+		.antCtrlCommon2 = LE32(0x00044444),
+		.antCtrlChain = {LE16(0x0010), LE16(0x0010), LE16(0x0010)},
 		/*
 		 * xatten1DB[AR9300_MAX_CHAINS];  3 xatten1_db
 		 * for ar9280 (0xa20c/b20c 5:0)
@@ -2488,6 +2534,9 @@ static struct ar9300_eeprom ar9300_h116 = {
 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
 	 },
 	.modalHeader5G = {
+		.antCtrlCommon = LE32(0x00000220),
+		.antCtrlCommon2 = LE32(0x00044444),
+		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
 		 /* xatten1DB 3 xatten1_db for AR9280 (0xa20c/b20c 5:0) */
 		.xatten1DB = {0x19, 0x19, 0x19},
 
@@ -2802,7 +2851,7 @@ static struct ar9300_eeprom ar9300_h116 = {
 };
 
 
-static struct ar9300_eeprom *ar9300_eep_templates[] = {
+static const struct ar9300_eeprom * const ar9300_eep_templates[] = {
 	&ar9300_default,
 	&ar9300_x112,
 	&ar9300_h116,
@@ -2810,7 +2859,7 @@ static struct ar9300_eeprom *ar9300_eep_templates[] = {
 	&ar9300_x113,
 };
 
-static struct ar9300_eeprom *ar9300_eeprom_struct_find_by_id(int id)
+static const struct ar9300_eeprom *ar9300_eeprom_struct_find_by_id(int id)
 {
 	int it;
 
@@ -2997,7 +3046,7 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 				    uint8_t *mptr, uint8_t *word,
 				    int mdata_size)
 {
-	struct ar9300_eeprom *eep = NULL;
+	const struct ar9300_eeprom *eep = NULL;
 	bool res;
 
 	switch (blkh->comp) {
@@ -3133,75 +3182,6 @@ static int ar9300_process_blocks(struct atheepmgr *aem, uint8_t *buf,
 #undef MSTATE
 }
 
-void ar9300_fill_regdmn(void)
-{
-	struct ar9300_eeprom *eep;
-	int it;
-
-	for (it = 0; it < ARRAY_SIZE(ar9300_eep_templates); it++) {
-		eep = ar9300_eep_templates[it];
-		eep->baseEepHeader.regDmn[0] = 0;
-		eep->baseEepHeader.regDmn[1] = htole16(0x1f);
-	}
-}
-
-void ar9300_fill_antctrl_template(bool is_2g)
-{
-	struct ar9300_eeprom *eep;
-	struct ar9300_modal_eep_hdr *pModal;
-	int it;
-
-	for (it = 0; it < ARRAY_SIZE(ar9300_eep_templates); it++) {
-		eep = ar9300_eep_templates[it];
-		pModal = (is_2g) ? &eep->modalHeader2G : &eep->modalHeader5G;
-		if (is_2g && ((eep->templateVersion == 5) ||
-			      (eep->templateVersion == 4))) {
-			pModal->antCtrlChain[0] = htole16(0x10);
-			pModal->antCtrlChain[1] = htole16(0x10);
-			pModal->antCtrlChain[2] = htole16(0x10);
-			continue;
-		} else if (!is_2g && ((eep->templateVersion == 2) ||
-				      (eep->templateVersion == 5)))
-			continue;
-
-		pModal->antCtrlChain[0] = htole16(0x150);
-		pModal->antCtrlChain[1] = htole16(0x150);
-		pModal->antCtrlChain[2] = htole16(0x150);
-	}
-}
-
-void ar9300_fill_antctlcmn_template(bool is_2g)
-{
-	struct ar9300_eeprom *eep;
-	struct ar9300_modal_eep_hdr *pModal;
-	int it;
-
-	for (it = 0; it < ARRAY_SIZE(ar9300_eep_templates); it++) {
-		eep = ar9300_eep_templates[it];
-		pModal = (is_2g) ? &eep->modalHeader2G : &eep->modalHeader5G;
-
-		if (is_2g) {
-			pModal->antCtrlCommon = htole32(0x110);
-			if ((eep->templateVersion == 2) ||
-			    (eep->templateVersion == 5))
-				pModal->antCtrlCommon2 = htole32(0x22222);
-			else
-				pModal->antCtrlCommon2 = htole32(0x44444);
-		} else {
-			if ((eep->templateVersion == 2) ||
-			    (eep->templateVersion == 5)) {
-				pModal->antCtrlCommon = htole32(0x110);
-				pModal->antCtrlCommon2 = htole32(0x22222);
-			} else {
-				pModal->antCtrlCommon = htole32(0x220);
-				pModal->antCtrlCommon2 =
-					(eep->templateVersion == 6) ?
-					htole32(0x11111) : htole32(0x44444);
-			}
-		}
-	}
-}
-
 /*
  * Read the configuration data from the eeprom uncompress it if necessary.
  */
@@ -3210,7 +3190,6 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	int cptr;
 	uint8_t *word;
-	int it;
 	int bswap = aem->eep_io_swap;
 
 	word = calloc(1, 2048);
@@ -3219,11 +3198,6 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 		return false;
 	}
 
-	ar9300_fill_regdmn();
-	for (it = 1; it >= 0; it--) {
-		ar9300_fill_antctlcmn_template(it);
-		ar9300_fill_antctrl_template(it);
-	}
 	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
 
 parse_eeprom:
