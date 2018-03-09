@@ -1,7 +1,0 @@
-Based on the original version of edump from qca-swiss-army-knife software.
-
-Use ath_info from madwifi-project and ath5k/ath9k drivers (Linux kernel)
-as a source of information about the EEPROM layout.
-
-https://github.com/mcgrof/qca-swiss-army-knife
-http://madwifi-project/svn/ath_info
