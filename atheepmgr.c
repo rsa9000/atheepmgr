@@ -443,7 +443,10 @@ static void usage(char *name)
 	int i;
 
 	printf(
-		"Atheros NIC EEPROM management utility.\n"
+		"Atheros NIC EEPROM management utility v1.0\n"
+		"Copyright (c) 2008-2011, Atheros Communications Inc.\n"
+		"Copyright (c) 2011-2012, Qualcomm Atheros, Inc.\n"
+		"Copyright (c) 2013-2018, Sergey Ryazanov <ryazanov.s.a@gmail.com>\n"
 		"\n"
 		"Usage:\n"
 		"  %s " CON_USAGE " [-t <eepmap>] [<action> [<actarg>]]\n"
