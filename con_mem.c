@@ -56,7 +56,7 @@ static void mem_reg_rmw(struct atheepmgr *aem, uint32_t reg, uint32_t set,
 static int mem_init(struct atheepmgr *aem, const char *arg_str)
 {
 	struct mem_priv *mpd = aem->con_priv;
-	static const size_t mem_size = 0x10000;	/* TODO: use autodetection */
+	static const size_t mem_size = 0x20000;	/* TODO: use autodetection */
 	char *endp;
 
 	errno = 0;
