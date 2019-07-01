@@ -16,6 +16,7 @@
  */
 
 #include "atheepmgr.h"
+#include "utils.h"
 #include "eep_5416.h"
 
 struct eep_5416_priv {
@@ -207,7 +208,6 @@ static void eep_5416_dump_base_header(struct atheepmgr *aem)
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_eeprom *ar5416Eep = &emp->eep;
 	struct ar5416_base_eep_hdr *pBase = &ar5416Eep->baseEepHeader;
-	uint16_t i;
 
 	EEP_PRINT_SECT_NAME("EEPROM Base Header");
 
@@ -283,11 +283,7 @@ static void eep_5416_dump_base_header(struct atheepmgr *aem)
 	}
 
 	printf("\nCustomer Data in hex:\n");
-	for (i = 0; i < ARRAY_SIZE(ar5416Eep->custData); i++) {
-		printf("%02X ", ar5416Eep->custData[i]);
-		if ((i % 16) == 15)
-			printf("\n");
-	}
+	hexdump_print(ar5416Eep->custData, sizeof(ar5416Eep->custData));
 
 	printf("\n");
 }

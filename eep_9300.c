@@ -16,6 +16,7 @@
  */
 
 #include "atheepmgr.h"
+#include "utils.h"
 #include "eep_9300.h"
 #include "eep_9300_templates.h"
 
@@ -532,6 +533,9 @@ static void eep_9300_dump_base_header(struct atheepmgr *aem)
 	printf("%-30s : %d\n", "Tx Gain", pBase->txrxgain >> 4);
 	printf("%-30s : %d\n", "Rx Gain", pBase->txrxgain & 0xf);
 	printf("%-30s : %d\n", "SW Reg", le32toh(pBase->swreg));
+
+	printf("\nCustomer Data in hex:\n");
+	hexdump_print(eep->custData, sizeof(eep->custData));
 
 	printf("\n");
 }

@@ -32,5 +32,6 @@ static inline int macaddr_is_valid(const uint8_t *mac)
 }
 
 int macaddr_parse(const char *str, uint8_t *out);
+void hexdump_print(const void *buf, int len);
 
 #endif	/* UTILS_H */

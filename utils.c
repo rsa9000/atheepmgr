@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <ctype.h>
 #include <stdint.h>
 
 #include "utils.h"
@@ -25,4 +26,27 @@ int macaddr_parse(const char *str, uint8_t *out)
 			 &out[0], &out[1], &out[2], &out[3], &out[4], &out[5]);
 
 	return res == 6 ? 0 : -1;
+}
+
+void hexdump_print(const void *buf, int len)
+{
+	const uint8_t *p = buf;
+	int i, j;
+
+	for (i = 0; i < len; i += 16) {
+		for (j = 0; j < 16; ++j) {
+			if (j % 8 == 0)
+				printf(" ");
+			if (i + j < len)
+				printf(" %02x", p[i + j]);
+			else
+				printf("   ");
+		}
+		printf(" |");
+		for (j = 0; j < 16 && i + j < len; ++j)
+			printf("%c", isprint(p[i + j]) ? p[i + j] : '.');
+		for (; j < 16; ++j)
+			printf(" ");
+		printf("|\n");
+	}
 }

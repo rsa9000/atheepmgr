@@ -15,6 +15,7 @@
  */
 
 #include "atheepmgr.h"
+#include "utils.h"
 #include "eep_5211.h"
 
 struct eep_5211_priv {
@@ -1144,6 +1145,9 @@ static void eep_5211_dump_base(struct atheepmgr *aem)
 		PR("Max QCU", "%u", base->max_qcu);
 		PR("Allow clipping", "%s", base->clip_en ? "enabled" : "disabled");
 	}
+
+	printf("\nCustomer Data in hex:\n");
+	hexdump_print(eep->cust_data, sizeof(eep->cust_data));
 
 	printf("\n");
 
