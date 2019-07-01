@@ -506,7 +506,7 @@ static void eep_5416_dump_power_info(struct atheepmgr *aem)
 				     __is_2g, eep->baseEepHeader.txMask,\
 				     (eep->modalHeader ## __band).xpdGain);\
 		printf("\n");
-#define PR_TARGET_POWER(__pref, __field, __rates, __is_2g)		\
+#define PR_TGT_PWR(__pref, __field, __rates, __is_2g)			\
 		EEP_PRINT_SUBSECT_NAME(__pref " per-rate target power");\
 		ar5416_dump_target_power((void *)eep->__field,		\
 				 ARRAY_SIZE(eep->__field),		\
@@ -523,17 +523,25 @@ static void eep_5416_dump_power_info(struct atheepmgr *aem)
 	    eep->baseEepHeader.openLoopPwrCntl & 0x01)
 		is_openloop = 1;
 
-	PR_PD_CAL("2 GHz", 2G, 1);
-	PR_PD_CAL("5 GHz", 5G, 0);
+	if (eep->baseEepHeader.opCapFlags & AR5416_OPFLAGS_11G) {
+		PR_PD_CAL("2 GHz", 2G, 1);
+	}
+	if (eep->baseEepHeader.opCapFlags & AR5416_OPFLAGS_11A) {
+		PR_PD_CAL("5 GHz", 5G, 0);
+	}
 
-	PR_TARGET_POWER("2 GHz CCK", calTargetPowerCck, eep_rates_cck, 1);
-	PR_TARGET_POWER("2 GHz OFDM", calTargetPower2G, eep_rates_ofdm, 1);
-	PR_TARGET_POWER("2 GHz HT20", calTargetPower2GHT20, eep_rates_ht, 1);
-	PR_TARGET_POWER("2 GHz HT40", calTargetPower2GHT40, eep_rates_ht, 1);
+	if (eep->baseEepHeader.opCapFlags & AR5416_OPFLAGS_11G) {
+		PR_TGT_PWR("2 GHz CCK", calTargetPowerCck, eep_rates_cck, 1);
+		PR_TGT_PWR("2 GHz OFDM", calTargetPower2G, eep_rates_ofdm, 1);
+		PR_TGT_PWR("2 GHz HT20", calTargetPower2GHT20, eep_rates_ht, 1);
+		PR_TGT_PWR("2 GHz HT40", calTargetPower2GHT40, eep_rates_ht, 1);
+	}
 
-	PR_TARGET_POWER("5 GHz OFDM", calTargetPower5G, eep_rates_ofdm, 0);
-	PR_TARGET_POWER("5 GHz HT20", calTargetPower5GHT20, eep_rates_ht, 0);
-	PR_TARGET_POWER("5 GHz HT40", calTargetPower5GHT40, eep_rates_ht, 0);
+	if (eep->baseEepHeader.opCapFlags & AR5416_OPFLAGS_11A) {
+		PR_TGT_PWR("5 GHz OFDM", calTargetPower5G, eep_rates_ofdm, 0);
+		PR_TGT_PWR("5 GHz HT20", calTargetPower5GHT20, eep_rates_ht, 0);
+		PR_TGT_PWR("5 GHz HT40", calTargetPower5GHT40, eep_rates_ht, 0);
+	}
 
 	EEP_PRINT_SUBSECT_NAME("CTL data");
 	for (i = 0; i < AR5416_MAX_CHAINS; ++i) {
