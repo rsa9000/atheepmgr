@@ -647,6 +647,8 @@ static void eep_9300_dump_modal_header(struct atheepmgr *aem)
 	PR("TX frame to xpa on", "", "d", pModal->txFrameToXpaOn);
 	PR("TxClip", "", "d", pModal->txClip);
 	PR("ADC Desired Size", "", "d", pModal->adcDesiredSize);
+	PR("PAPD Rate Mask HT20", "0x", "x", pModal->papdRateMaskHt20);
+	PR("PAPD Rate Mask HT40", "0x", "x", pModal->papdRateMaskHt40);
 
 	printf("\n");
 
