@@ -407,13 +407,17 @@ static const struct action {
 
 static const char *optstr = CON_OPTSTR "ht:v";
 
-static void usage_eepmap(const struct eepmap *eepmap)
+static void usage_eepmap(struct atheepmgr *aem, const struct eepmap *eepmap)
 {
 	const struct eepmap_param *param;
 	char buf[0x100];
 	int i;
 
 	printf("  %-15s %s\n", eepmap->name, eepmap->desc);
+
+	if (aem->verbose < 1)
+		return;
+
 	printf("%18s%s:\n", "", "Supported sections for dumping");
 	for (i = 0; i < EEP_SECT_MAX; ++i) {
 		if (!eepmap->dump[i])
@@ -438,7 +442,7 @@ static void usage_eepmap(const struct eepmap *eepmap)
 	}
 }
 
-static void usage(char *name)
+static void usage(struct atheepmgr *aem, char *name)
 {
 	int i;
 
@@ -456,45 +460,66 @@ static void usage(char *name)
 		"Options:\n"
 		"  -F <eepdump>    Read EEPROM dump from <eepdump> file.\n"
 #if defined(CONFIG_CON_MEM)
-		"  -M <ioaddr>     Interact with card via /dev/mem by mapping\n"
-		"                  card I/O memory at <ioaddr> to the process.\n"
+		"  -M <ioaddr>     Interact with card via /dev/mem by mapping card I/O memory\n"
+		"                  at <ioaddr> to the process.\n"
 #endif
 #if defined(CONFIG_CON_PCI)
-		"  -P <slot>       Use libpciaccess to interact with card installed\n"
-		"                  in <slot>. Slot should be specified in form:\n"
-		"                  [<domain>:]<bus>:<device>[.<func>] as displayed\n"
-		"                  by lspci(8) utility. If <domain> is omitted\n"
-		"                  then domain 0 will be used. If <func> is omitted\n"
-		"                  then first available function will be used.\n"
+		"  -P <slot>       Use libpciaccess to interact with card installed in <slot>.\n"
+		"                  Slot should be specified in form:\n"
+		"                  [<domain>:]<bus>:<device>[.<func>] as displayed by lspci(8)\n"
+		"                  utility. If <domain> is omitted then domain 0 will be used.\n"
+		"                  If <func> is omitted then first available function will be\n"
+		"                  used.\n"
 #endif
 		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
 		"                  for connectors, without direct HW access.\n"
-		"  -v              Be verbose.\n"
-		"  -h              Print this cruft.\n"
+		"  -v              Be verbose. I.e. print detailed help message, log action\n"
+		"                  stages, print all EEPROM data including unused parameters.\n"
+		"  -h              Print this cruft. Use -v option to see more details.\n"
 		"  <action>        Optional argument, which specifies the <action> that should be\n"
 		"                  performed (see actions list below). If no action is specified,\n"
-		"                  the 'dump' action is performed by default.\n"
+		"                  then the 'dump' action is performed by default.\n"
 		"  <actarg>        Action argument if the action accepts any (see details below\n"
 		"                  in the detailed actions list).\n"
-		"\n"
-		"Available actions:\n"
-		"  dump [<sects>]  Read & parse the EEPROM content and then dump it to the\n"
-		"                  terminal (this is the default action). An optional list of the\n"
-		"                  comma-separated EEPROM sections <sect> can be specified as the\n"
-		"                  argument. This argument tells the utility what sections should\n"
-		"                  be dumped. See the list of awailable sections for dumping\n"
-		"                  below in the EEPROM maps. Also there are two special keywords:\n"
-		"                  'all' and 'none'. The first causes the dumping of all sections\n"
-		"                  and the second disables any dumping to the terminal.\n"
-		"                  The default action behaviour is to print the contents of all\n"
-		"                  supported EEPROM sections.\n"
-		"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
-		"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>. See per-map\n"
-		"                  supported parameters list below.\n"
-		"  gpiodump        Dump GPIO lines state to the terminal.\n"
-		"  regread <addr>  Read register at address <addr> and print it value.\n"
-		"  regwrite <addr> <val> Write value <val> to the register at address <addr>.\n"
-		"\n"
+		"\n",
+		name, name
+	);
+
+	if (aem->verbose) {
+		printf(
+			"Available actions:\n"
+			"  dump [<sects>]  Read & parse the EEPROM content and then dump it to the\n"
+			"                  terminal (this is the default action). An optional list of the\n"
+			"                  comma-separated EEPROM sections <sect> can be specified as the\n"
+			"                  argument. This argument tells the utility what sections should\n"
+			"                  be dumped. See the list of awailable sections for dumping\n"
+			"                  below in the EEPROM maps. Also there are two special keywords:\n"
+			"                  'all' and 'none'. The first causes the dumping of all sections\n"
+			"                  and the second disables any dumping to the terminal.\n"
+			"                  The default action behaviour is to print the contents of all\n"
+			"                  supported EEPROM sections.\n"
+			"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
+			"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>. See per-map\n"
+			"                  supported parameters list below.\n"
+			"  gpiodump        Dump GPIO lines state to the terminal.\n"
+			"  regread <addr>  Read register at address <addr> and print it value.\n"
+			"  regwrite <addr> <val> Write value <val> to the register at address <addr>.\n"
+			"\n"
+		);
+	} else {
+		printf(
+			"Available actions (use -v option to see details):\n"
+			"  dump [<sects>]  Read & dump parsed EEPROM content to the terminal.\n"
+			"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
+			"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>.\n"
+			"  gpiodump        Dump GPIO lines state to the terminal.\n"
+			"  regread <addr>  Read register at address <addr> and print it value.\n"
+			"  regwrite <addr> <val> Write value <val> to the register at address <addr>.\n"
+			"\n"
+		);
+	}
+
+	printf(
 		"Available connectors (card interactions interface):\n"
 		"  File            Read EEPROM dump from file, activated by -F option with dump\n"
 		"                  file path argument.\n"
@@ -507,13 +532,15 @@ static void usage(char *name)
 		"  PCI             Interact with card via libpciaccess library, activated by -P\n"
 		"                  option with a device slot arg.\n"
 #endif
-		"\n",
-		name, name
+		"\n"
 	);
 
-	printf("Supported EEPROM map(s) and per-map capabilities:\n");
+	if (aem->verbose)
+		printf("Supported EEPROM map(s) and per-map capabilities:\n");
+	else
+		printf("Supported EEPROM map(s) and per-map capabilities (use -v option to see details):\n");
 	for (i = 0; i < ARRAY_SIZE(eepmaps); ++i)
-		usage_eepmap(eepmaps[i]);
+		usage_eepmap(aem, eepmaps[i]);
 	printf("\n");
 }
 
@@ -526,7 +553,7 @@ int main(int argc, char *argv[])
 	int ret;
 
 	if (argc == 1) {
-		usage(argv[0]);
+		usage(aem, argv[0]);
 		return 0;
 	}
 
@@ -565,7 +592,7 @@ int main(int argc, char *argv[])
 			aem->verbose++;
 			break;
 		case 'h':
-			usage(argv[0]);
+			usage(aem, argv[0]);
 			ret = 0;
 			goto exit;
 		default:
