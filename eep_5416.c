@@ -297,27 +297,35 @@ static void eep_5416_dump_base_header(struct atheepmgr *aem)
 
 static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 {
-#define _PR(_token, _fmt, _field)				\
+#define PR_LINE(_token, _cb, ...)				\
 	do {							\
 		printf("%-33s :", _token);			\
 		if (pBase->opCapFlags & AR5416_OPFLAGS_11G) {	\
-			snprintf(buf, sizeof(buf), _fmt,	\
-				 ar5416Eep->modalHeader2G._field);\
+			_cb(ar5416Eep->modalHeader2G, ## __VA_ARGS__);\
 			printf("       %-20s", buf);		\
 		}						\
 		if (pBase->opCapFlags & AR5416_OPFLAGS_11A) {	\
-			snprintf(buf, sizeof(buf), _fmt,	\
-				 ar5416Eep->modalHeader5G._field);\
+			_cb(ar5416Eep->modalHeader5G, ## __VA_ARGS__);\
 			printf("  %s", buf);			\
 		}						\
 		printf("\n");					\
 	} while(0)
+#define __HALFDB2DB(_val)	((_val) / (double)2.0)
+#define __PR_FMT_CONV(_fmt, _val, _conv)			\
+		snprintf(buf, sizeof(buf), _fmt, _conv(_val))
+#define __PR_FMT(_fmt, _val)	__PR_FMT_CONV(_fmt, _val, )
+#define _PR_CB_DEC(_hdr, _field)				\
+		__PR_FMT("%d", _hdr._field)
+#define _PR_CB_HEX(_hdr, _field)				\
+		__PR_FMT("0x%X", _hdr._field)
+#define _PR_CB_PWR(_hdr, _field)				\
+		__PR_FMT_CONV("%.1f", _hdr._field, __HALFDB2DB)
 #define PR_DEC(_token, _field)					\
-		_PR(_token, "%d", _field)
+		PR_LINE(_token, _PR_CB_DEC, _field)
 #define PR_HEX(_token, _field)					\
-		_PR(_token, "0x%X", _field)
+		PR_LINE(_token, _PR_CB_HEX, _field)
 #define PR_PWR(_token, _field)					\
-		_PR(_token, "%.1f", _field / (double)2.0);
+		PR_LINE(_token, _PR_CB_PWR, _field)
 
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_eeprom *ar5416Eep = &emp->eep;
@@ -400,7 +408,13 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 #undef PR_PWR
 #undef PR_HEX
 #undef PR_DEC
-#undef _PR
+#undef _PR_CB_PWR
+#undef _PR_CB_HEX
+#undef _PR_CB_DEC
+#undef __PR_FMT
+#undef __PR_FMT_CONV
+#undef __HALFDB2DB
+#undef PR_LINE
 }
 
 static void
