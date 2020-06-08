@@ -1198,18 +1198,17 @@ static void eep_5211_dump_modal(struct atheepmgr *aem)
 
 	printf("%24s %7s%-7s%7s%-7s%7s%s\n\n", "", "", ".11a", "", ".11b", "", ".11g");
 
-	PR_DEC(ABG, "Switch settling time", sw_settle_time);
-	PR_DEC(ABG, "Tx/Rx attenuation", txrx_atten);
 	for (i = 0; i < ARRAY_SIZE(eep->modal_a.ant_ctrl); ++i) {
 		snprintf(tok, sizeof(tok), "Ant control #%-2u", i);
 		PR_HEX(ABG, tok, ant_ctrl[i]);
 	}
-	PR_FLOAT(ABG, "ADC desired size, dBm", adc_desired_size / 2.0);
+	PR_DEC(ABG, "Switch settling time", sw_settle_time);
 
 	if (eep->base.version >= AR5211_EEP_VER_4_0) {
 		PR_DEC(AG, "I/Q calibration I", iq_cal_i);
 		PR_DEC(AG, "I/Q calibration Q", iq_cal_q);
 	}
+	PR_DEC(ABG, "Tx/Rx attenuation, dB", txrx_atten);
 	if (eep->base.version >= AR5211_EEP_VER_4_1)
 		PR_DEC(ABG, "Rx/Tx margin, dB", rxtx_margin);
 
@@ -1244,6 +1243,7 @@ static void eep_5211_dump_modal(struct atheepmgr *aem)
 	PR_DEC(ABG, "Tx End to xPA Off", tx_end_to_xpa_off);
 	PR_DEC(ABG, "Tx Frame to xPA On", tx_frame_to_xpa_on);
 
+	PR_FLOAT(ABG, "ADC desired size, dBm", adc_desired_size / 2.0);
 	PR_FLOAT(ABG, "PGA desired size, dBm", pga_desired_size / 2.0);
 	PR_HEX(ABG, "xPD gain", xpd_gain);
 	PR_STR(ABG, "xPD type", xpd ? "external" : "internal");
