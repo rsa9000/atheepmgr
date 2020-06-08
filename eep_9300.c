@@ -668,14 +668,14 @@ static void eep_9300_dump_pwr_cal(const uint8_t *piers, int maxpiers,
 	for (j = 0; j < AR9300_MAX_CHAINS; ++j) {
 		if (!(chainmask & (1 << j)))
 			continue;
-		printf(".------------- Chain %d ----------.", j);
+		printf(".-------------- Chain %d -----------.", j);
 	}
 	printf("\n");
 	printf("               ");
 	for (j = 0; j < AR9300_MAX_CHAINS; ++j) {
 		if (!(chainmask & (1 << j)))
 			continue;
-		printf("|       Tx       :       Rx      |");
+		printf("|        Tx        :       Rx      |");
 	}
 	printf("\n");
 
@@ -683,7 +683,7 @@ static void eep_9300_dump_pwr_cal(const uint8_t *piers, int maxpiers,
 	for (j = 0; j < AR9300_MAX_CHAINS; ++j) {
 		if (!(chainmask & (1 << j)))
 			continue;
-		printf(" RefPwr Volt Temp    NF  Pwr Temp ");
+		printf(" PwrDelta Volt Temp    NF  Pwr Temp ");
 	}
 	printf("\n");
 
@@ -693,7 +693,8 @@ static void eep_9300_dump_pwr_cal(const uint8_t *piers, int maxpiers,
 			if (!(chainmask & (1 << j)))
 				continue;
 			d = &data[j * maxpiers + i];
-			printf("   %4d %4u %4u  %4d %4d %4u ", d->refPower,
+			printf("    % 5.1f %4u %4u  %4d %4d %4u ",
+			       (double)d->refPower / 2,
 			       d->voltMeas, d->tempMeas,
 			       d->rxNoisefloorCal, d->rxNoisefloorPower,
 			       d->rxTempMeas);
