@@ -272,6 +272,13 @@ static void eep_5416_dump_base_header(struct atheepmgr *aem)
 	printf("%-30s : %d\n",
 	       "Cal Bin Build",
 	       (pBase->binBuildNumber >> 8) & 0xFF);
+	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_17) {
+		printf("%-30s : %s\n", "Rx Gain Type",
+		       pBase->rxGainType == 0 ? "23dB backoff" :
+		       pBase->rxGainType == 1 ? "13dB backoff" :
+		       pBase->rxGainType == 2 ? "original" :
+		       "unknown");
+	}
 	printf("%-30s : %-4.1f\n",
 	       "Power table offset",
 	       (double)pBase->power_table_offset / 2);
