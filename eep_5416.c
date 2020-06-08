@@ -314,18 +314,35 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 #define __PR_FMT_CONV(_fmt, _val, _conv)			\
 		snprintf(buf, sizeof(buf), _fmt, _conv(_val))
 #define __PR_FMT(_fmt, _val)	__PR_FMT_CONV(_fmt, _val, )
+#define __PR_FMT_PERCHAIN_CONV(_fmt, _val, _conv)		\
+		snprintf(buf, sizeof(buf), _fmt " / " _fmt " / " _fmt,\
+			 _conv(_val[0]), _conv(_val[1]), _conv(_val[2]))
+#define __PR_FMT_PERCHAIN(_fmt, _val)				\
+		__PR_FMT_PERCHAIN_CONV(_fmt, _val, )
+#define _PR_CB_FMT_PERCHAIN(_hdr, _field, _fmt)			\
+		__PR_FMT_PERCHAIN(_fmt, _hdr._field)
 #define _PR_CB_DEC(_hdr, _field)				\
 		__PR_FMT("%d", _hdr._field)
+#define _PR_CB_DEC_PERCHAIN(_hdr, _field)			\
+		__PR_FMT_PERCHAIN("%d", _hdr._field)
 #define _PR_CB_HEX(_hdr, _field)				\
 		__PR_FMT("0x%X", _hdr._field)
 #define _PR_CB_PWR(_hdr, _field)				\
 		__PR_FMT_CONV("%.1f", _hdr._field, __HALFDB2DB)
+#define _PR_CB_PWR_PERCHAIN(_hdr, _field)			\
+		__PR_FMT_PERCHAIN_CONV("%3.1f", _hdr._field, __HALFDB2DB)
 #define PR_DEC(_token, _field)					\
 		PR_LINE(_token, _PR_CB_DEC, _field)
+#define PR_DEC_PERCHAIN(_token, _field)				\
+		PR_LINE(_token, _PR_CB_DEC_PERCHAIN, _field)
 #define PR_HEX(_token, _field)					\
 		PR_LINE(_token, _PR_CB_HEX, _field)
 #define PR_PWR(_token, _field)					\
 		PR_LINE(_token, _PR_CB_PWR, _field)
+#define PR_PWR_PERCHAIN(_token, _field)				\
+		PR_LINE(_token, _PR_CB_PWR_PERCHAIN, _field)
+#define PR_FMT_PERCHAIN(_token, _field, _fmt)			\
+		PR_LINE(_token, _PR_CB_FMT_PERCHAIN, _field, _fmt)
 
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_eeprom *ar5416Eep = &emp->eep;
@@ -345,36 +362,33 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 	PR_HEX("Ant Chain 1", antCtrlChain[1]);
 	PR_HEX("Ant Chain 2", antCtrlChain[2]);
 	PR_HEX("Antenna Common", antCtrlCommon);
-	PR_DEC("Antenna Gain Chain 0", antennaGainCh[0]);
-	PR_DEC("Antenna Gain Chain 1", antennaGainCh[1]);
-	PR_DEC("Antenna Gain Chain 2", antennaGainCh[2]);
+	PR_PWR_PERCHAIN("Antenna Gain (per-chain)", antennaGainCh);
 	PR_DEC("Switch Settling", switchSettling);
-	PR_DEC("TxRxAttenuation Ch 0", txRxAttenCh[0]);
-	PR_DEC("TxRxAttenuation Ch 1", txRxAttenCh[1]);
-	PR_DEC("TxRxAttenuation Ch 2", txRxAttenCh[2]);
-	PR_DEC("RxTxMargin Chain 0", rxTxMarginCh[0]);
-	PR_DEC("RxTxMargin Chain 1", rxTxMarginCh[1]);
-	PR_DEC("RxTxMargin Chain 2", rxTxMarginCh[2]);
+	PR_FMT_PERCHAIN("TxRxAttenuation (per-chain), dB", txRxAttenCh, "%2u");
+	PR_FMT_PERCHAIN("TxRxAtten margin (per-chain), dB", rxTxMarginCh, "%2u");
+	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_3) {
+		PR_FMT_PERCHAIN("bswAtten (per-chain), dB", bswAtten,
+				"%2u");
+		PR_FMT_PERCHAIN("bswAtten margin (per-chain), dB", bswMargin,
+				"%2u");
+	}
+	if (AR_SREV_9280_20_OR_LATER(aem)) {
+		PR_FMT_PERCHAIN("xatten2Db (per-chain)", xatten2Db, "%2u");
+		PR_FMT_PERCHAIN("xatten2Db margin (per-chain)", xatten2Margin,
+				"%2u");
+	}
 	PR_DEC("ADC Desired Size", adcDesiredSize);
 	PR_DEC("PGA Desired Size", pgaDesiredSize);
 	PR_DEC("TX end to xlna on", txEndToRxOn);
-	PR_DEC("xlna gain Chain 0", xlnaGainCh[0]);
-	PR_DEC("xlna gain Chain 1", xlnaGainCh[1]);
-	PR_DEC("xlna gain Chain 2", xlnaGainCh[2]);
+	PR_DEC_PERCHAIN("xLNA gain (per-chain)", xlnaGainCh);
 	PR_DEC("TX end to xpa off", txEndToXpaOff);
 	PR_DEC("TX frame to xpa on", txFrameToXpaOn);
 	PR_DEC("THRESH62", thresh62);
-	PR_DEC("NF Thresh 0", noiseFloorThreshCh[0]);
-	PR_DEC("NF Thresh 1", noiseFloorThreshCh[1]);
-	PR_DEC("NF Thresh 2", noiseFloorThreshCh[2]);
+	PR_DEC_PERCHAIN("NF Thresh (per-chain)", noiseFloorThreshCh);
 	PR_HEX("Xpd Gain Mask", xpdGain);
 	PR_DEC("Xpd", xpd);
-	PR_DEC("IQ Cal I Chain 0", iqCalICh[0]);
-	PR_DEC("IQ Cal I Chain 1", iqCalICh[1]);
-	PR_DEC("IQ Cal I Chain 2", iqCalICh[2]);
-	PR_DEC("IQ Cal Q Chain 0", iqCalQCh[0]);
-	PR_DEC("IQ Cal Q Chain 1", iqCalQCh[1]);
-	PR_DEC("IQ Cal Q Chain 2", iqCalQCh[2]);
+	PR_DEC_PERCHAIN("IQ Cal I (per-chain)", iqCalICh);
+	PR_DEC_PERCHAIN("IQ Cal Q (per-chain)", iqCalQCh);
 	PR_DEC("Analog Output Bias(ob)", ob);
 	PR_DEC("Analog Driver Bias(db)", db);
 	PR_DEC("Xpa bias level", xpaBiasLvl);
@@ -388,10 +402,6 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 	PR_PWR("PWR dec 3 chain", pwrDecreaseFor3Chain);
 
 	if (AR_SREV_9280_20_OR_LATER(aem)) {
-		PR_DEC("xatten2Db Chain 0", xatten2Db[0]);
-		PR_DEC("xatten2Db Chain 1", xatten2Db[1]);
-		PR_DEC("xatten2Margin Chain 0", xatten2Margin[0]);
-		PR_DEC("xatten2Margin Chain 1", xatten2Margin[1]);
 		PR_DEC("ob_ch1", ob_ch1);
 		PR_DEC("db_ch1", db_ch1);
 	}
@@ -400,17 +410,24 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 		PR_DEC("txFrameToDataStart", txFrameToDataStart);
 		PR_DEC("txFrameToPaOn", txFrameToPaOn);
 		PR_DEC("HT40PowerIncForPDADC", ht40PowerIncForPdadc);
-		PR_DEC("bswAtten Chain 0", bswAtten[0]);
 	}
 
 	printf("\n");
 
+#undef PR_FMT_PERCHAIN
+#undef PR_PWR_PERCHAIN
 #undef PR_PWR
 #undef PR_HEX
+#undef PR_DEC_PERCHAIN
 #undef PR_DEC
+#undef _PR_CB_PWR_PERCHAIN
 #undef _PR_CB_PWR
 #undef _PR_CB_HEX
+#undef _PR_CB_DEC_PERCHAIN
 #undef _PR_CB_DEC
+#undef _PR_CB_FMT_PERCHAIN
+#undef __PR_FMT_PERCHAIN
+#undef __PR_FMT_PERCHAIN_CONV
 #undef __PR_FMT
 #undef __PR_FMT_CONV
 #undef __HALFDB2DB
