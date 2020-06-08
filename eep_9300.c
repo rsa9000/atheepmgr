@@ -31,6 +31,7 @@ struct eep_9300_blk_hdr {
 
 struct eep_9300_priv {
 	int valid_blocks;
+	int is_uncompressed;		/* Data is uncompressed */
 	struct ar9300_eeprom eep;
 };
 
@@ -394,6 +395,7 @@ parse_eeprom:
 	if (ar9300_check_eeprom_data((struct ar9300_eeprom *)aem->eep_buf)) {
 		if (aem->verbose)
 			printf("Found valid uncompressed EEPROM data\n");
+		emp->is_uncompressed = 1;
 		cptr = sizeof(emp->eep);
 		memcpy(&emp->eep, aem->eep_buf, sizeof(emp->eep));
 		emp->valid_blocks++;
@@ -845,6 +847,42 @@ static void eep_9300_dump_power_info(struct atheepmgr *aem)
 				  0);
 }
 
+static bool eep_9300_update_eeprom(struct atheepmgr *aem, int param,
+				   const void *data)
+{
+	struct eep_9300_priv *emp = aem->eepmap_priv;
+	struct ar9300_eeprom *eep = &emp->eep;
+	uint16_t *buf = aem->eep_buf;
+	int data_pos, data_len = 0, addr;
+
+	if (!emp->is_uncompressed) {
+		fprintf(stderr, "Updation is supported for uncompressed data only\n");
+		return false;
+	}
+
+	switch (param) {
+	case EEP_UPDATE_MAC:
+		data_pos = EEP_FIELD_OFFSET(macAddr);
+		data_len = EEP_FIELD_SIZE(macAddr);
+		memcpy(&buf[data_pos], data, data_len * sizeof(uint16_t));
+		break;
+	default:
+		fprintf(stderr, "Internal error: unknown parameter Id\n");
+		return false;
+	}
+
+	/* Store updated data */
+	for (addr = data_pos; addr < (data_pos + data_len); ++addr) {
+		if (!EEP_WRITE(addr, buf[addr])) {
+			fprintf(stderr, "Unable to write EEPROM data at 0x%04x\n",
+				addr);
+			return false;
+		}
+	}
+
+	return true;
+}
+
 const struct eepmap eepmap_9300 = {
 	.name = "9300",
 	.desc = "EEPROM map for modern .11n chips (AR93xx/AR64xx/AR95xx/etc.)",
@@ -857,4 +895,9 @@ const struct eepmap eepmap_9300 = {
 		[EEP_SECT_MODAL] = eep_9300_dump_modal_header,
 		[EEP_SECT_POWER] = eep_9300_dump_power_info,
 	},
+	.update_eeprom = eep_9300_update_eeprom,
+	.params_mask = BIT(EEP_UPDATE_MAC)
+#ifdef CONFIG_I_KNOW_WHAT_I_AM_DOING
+#endif
+	,
 };
