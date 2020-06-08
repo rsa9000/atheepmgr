@@ -299,16 +299,16 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 {
 #define _PR(_token, _fmt, _field)				\
 	do {							\
-		printf("%-23s :", _token);			\
+		printf("%-33s :", _token);			\
 		if (pBase->opCapFlags & AR5416_OPFLAGS_11G) {	\
 			snprintf(buf, sizeof(buf), _fmt,	\
 				 ar5416Eep->modalHeader2G._field);\
-			printf("%7s%-7s", "", buf);		\
+			printf("       %-20s", buf);		\
 		}						\
 		if (pBase->opCapFlags & AR5416_OPFLAGS_11A) {	\
 			snprintf(buf, sizeof(buf), _fmt,	\
 				 ar5416Eep->modalHeader5G._field);\
-			printf("%7s%s", "", buf);		\
+			printf("  %s", buf);			\
 		}						\
 		printf("\n");					\
 	} while(0)
@@ -322,15 +322,15 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_eeprom *ar5416Eep = &emp->eep;
 	struct ar5416_base_eep_hdr *pBase = &ar5416Eep->baseEepHeader;
-	char buf[0x10];
+	char buf[0x20];
 
 	EEP_PRINT_SECT_NAME("EEPROM Modal Header");
 
-	printf("%20s", "");
+	printf("%35s", "");
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11G)
-		printf("%14s", "2G");
+		printf("       %-20s", "2G");
 	if (pBase->opCapFlags & AR5416_OPFLAGS_11A)
-		printf("%14s", "5G");
+		printf("  %s", "5G");
 	printf("\n\n");
 
 	PR_HEX("Ant Chain 0", antCtrlChain[0]);
