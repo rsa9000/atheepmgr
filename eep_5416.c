@@ -559,10 +559,6 @@ static void eep_5416_dump_power_info(struct atheepmgr *aem)
 static bool eep_5416_update_eeprom(struct atheepmgr *aem, int param,
 				   const void *data)
 {
-#define EEP_FIELD_OFFSET(__field)					\
-		(offsetof(typeof(*eep), __field) / sizeof(uint16_t));
-#define EEP_FIELD_SIZE(__field)						\
-		(sizeof(eep->__field) / sizeof(uint16_t))
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_eeprom *eep = &emp->eep;
 	uint16_t *buf = aem->eep_buf;
@@ -605,9 +601,6 @@ static bool eep_5416_update_eeprom(struct atheepmgr *aem, int param,
 	}
 
 	return true;
-
-#undef EEP_FIELD_SIZE
-#undef EEP_FIELD_OFFSET
 }
 
 const struct eepmap eepmap_5416 = {

@@ -120,6 +120,11 @@ void ar5416_dump_ctl(const uint8_t *index,
 		     const struct ar5416_cal_ctl_edges *data,
 		     int maxctl, int maxchains, int maxradios, int maxedges);
 
+#define EEP_FIELD_OFFSET(__field)					\
+		(offsetof(typeof(*eep), __field) / sizeof(uint16_t))
+#define EEP_FIELD_SIZE(__field)						\
+		(sizeof(eep->__field) / sizeof(uint16_t))
+
 uint16_t eep_calc_csum(const uint16_t *buf, size_t len);
 
 #endif /* EEP_COMMON_H */
