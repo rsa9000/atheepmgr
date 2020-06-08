@@ -67,8 +67,8 @@ struct ar5416_modal_eep_hdr {
 	uint8_t switchSettling;
 	uint8_t txRxAttenCh[AR5416_MAX_CHAINS];
 	uint8_t rxTxMarginCh[AR5416_MAX_CHAINS];
-	uint8_t adcDesiredSize;
-	uint8_t pgaDesiredSize;
+	int8_t adcDesiredSize;
+	int8_t pgaDesiredSize;
 	uint8_t xlnaGainCh[AR5416_MAX_CHAINS];
 	uint8_t txEndToXpaOff;
 	uint8_t txEndToRxOn;

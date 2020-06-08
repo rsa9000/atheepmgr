@@ -377,8 +377,8 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 		PR_FMT_PERCHAIN("xatten2Db margin (per-chain)", xatten2Margin,
 				"%2u");
 	}
-	PR_DEC("ADC Desired Size", adcDesiredSize);
-	PR_DEC("PGA Desired Size", pgaDesiredSize);
+	PR_PWR("ADC Desired Size, dBm", adcDesiredSize);
+	PR_PWR("PGA Desired Size, dBm", pgaDesiredSize);
 	PR_DEC("TX end to xlna on", txEndToRxOn);
 	PR_DEC_PERCHAIN("xLNA gain (per-chain)", xlnaGainCh);
 	PR_DEC("TX end to xpa off", txEndToXpaOff);
