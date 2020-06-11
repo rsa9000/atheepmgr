@@ -331,6 +331,26 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 		__PR_FMT_CONV("%.1f", _hdr._field, __HALFDB2DB)
 #define _PR_CB_PWR_PERCHAIN(_hdr, _field)			\
 		__PR_FMT_PERCHAIN_CONV("%3.1f", _hdr._field, __HALFDB2DB)
+#define _PR_CB_ANTCTRLCHAIN(_hdr, _field)			\
+		do {						\
+			uint16_t val = _hdr._field;		\
+			snprintf(buf, sizeof(buf), "%x/%x/%x/%x/%x/%x",\
+				 MS(val, AR5416_ANTCTRLCHAIN_IDLE),\
+				 MS(val, AR5416_ANTCTRLCHAIN_TX),\
+				 MS(val, AR5416_ANTCTRLCHAIN_RX_NOATT),\
+				 MS(val, AR5416_ANTCTRLCHAIN_RX_ATT1),\
+				 MS(val, AR5416_ANTCTRLCHAIN_RX_ATT12),\
+				 MS(val, AR5416_ANTCTRLCHAIN_BT));\
+		} while (0);
+#define _PR_CB_ANTCTRLCMN(_hdr, _field)				\
+		do {						\
+			uint16_t val = _hdr._field;		\
+			snprintf(buf, sizeof(buf), "%x / %x / %x / %x",\
+				 MS(val, AR5416_ANTCTRLCMN_IDLE),\
+				 MS(val, AR5416_ANTCTRLCMN_TX),	\
+				 MS(val, AR5416_ANTCTRLCMN_RX),	\
+				 MS(val, AR5416_ANTCTRLCMN_BT));\
+		} while (0)
 #define PR_DEC(_token, _field)					\
 		PR_LINE(_token, _PR_CB_DEC, _field)
 #define PR_DEC_PERCHAIN(_token, _field)				\
@@ -359,9 +379,16 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 	printf("\n\n");
 
 	PR_HEX("Ant Chain 0", antCtrlChain[0]);
+	PR_LINE("  Idle/Tx/Rx/RxAtt1/RxAtt1&2/BT", _PR_CB_ANTCTRLCHAIN,
+		antCtrlChain[0]);
 	PR_HEX("Ant Chain 1", antCtrlChain[1]);
+	PR_LINE("  Idle/Tx/Rx/RxAtt1/RxAtt1&2/BT", _PR_CB_ANTCTRLCHAIN,
+		antCtrlChain[1]);
 	PR_HEX("Ant Chain 2", antCtrlChain[2]);
+	PR_LINE("  Idle/Tx/Rx/RxAtt1/RxAtt1&2/BT", _PR_CB_ANTCTRLCHAIN,
+		antCtrlChain[2]);
 	PR_HEX("Antenna Common", antCtrlCommon);
+	PR_LINE("  Idle/Tx/Rx/BT", _PR_CB_ANTCTRLCMN, antCtrlCommon);
 	PR_PWR_PERCHAIN("Antenna Gain (per-chain)", antennaGainCh);
 	PR_DEC("Switch Settling", switchSettling);
 	PR_FMT_PERCHAIN("TxRxAttenuation (per-chain), dB", txRxAttenCh, "%2u");
@@ -420,6 +447,8 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 #undef PR_HEX
 #undef PR_DEC_PERCHAIN
 #undef PR_DEC
+#undef _PR_CB_ANTCTRLCMN
+#undef _PR_CB_ANTCTRLCHAIN
 #undef _PR_CB_PWR_PERCHAIN
 #undef _PR_CB_PWR
 #undef _PR_CB_HEX
