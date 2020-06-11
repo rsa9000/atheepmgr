@@ -334,6 +334,9 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 		__PR_FMT_PERCHAIN_CONV("%3.1f", _hdr._field, __HALFDB2DB)
 #define _PR_CB_TIME(_hdr, _field)				\
 		__PR_FMT_CONV("%.1f", _hdr._field, __100NS2US)
+#define _PR_CB_FLAG(_hdr, _field, _false_str, _true_str)	\
+		snprintf(buf, sizeof(buf), "%s",		\
+			(_hdr._field) ? _true_str : _false_str)
 #define _PR_CB_ANTCTRLCHAIN(_hdr, _field)			\
 		do {						\
 			uint16_t val = _hdr._field;		\
@@ -366,6 +369,8 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 		PR_LINE(_token, _PR_CB_PWR_PERCHAIN, _field)
 #define PR_TIME(_token, _field)					\
 		PR_LINE(_token, _PR_CB_TIME, _field)
+#define PR_FLAG(_token, _field, _false_str, _true_str)		\
+		PR_LINE(_token, _PR_CB_FLAG, _field, _false_str, _true_str)
 #define PR_FMT_PERCHAIN(_token, _field, _fmt)			\
 		PR_LINE(_token, _PR_CB_FMT_PERCHAIN, _field, _fmt)
 
@@ -383,16 +388,16 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 		printf("  %s", "5G");
 	printf("\n\n");
 
-	PR_HEX("Ant Chain 0", antCtrlChain[0]);
+	PR_HEX("Ant Ctrl Chain 0", antCtrlChain[0]);
 	PR_LINE("  Idle/Tx/Rx/RxAtt1/RxAtt1&2/BT", _PR_CB_ANTCTRLCHAIN,
 		antCtrlChain[0]);
-	PR_HEX("Ant Chain 1", antCtrlChain[1]);
+	PR_HEX("Ant Ctrl Chain 1", antCtrlChain[1]);
 	PR_LINE("  Idle/Tx/Rx/RxAtt1/RxAtt1&2/BT", _PR_CB_ANTCTRLCHAIN,
 		antCtrlChain[1]);
-	PR_HEX("Ant Chain 2", antCtrlChain[2]);
+	PR_HEX("Ant Ctrl Chain 2", antCtrlChain[2]);
 	PR_LINE("  Idle/Tx/Rx/RxAtt1/RxAtt1&2/BT", _PR_CB_ANTCTRLCHAIN,
 		antCtrlChain[2]);
-	PR_HEX("Antenna Common", antCtrlCommon);
+	PR_HEX("Antenna Ctrl Common", antCtrlCommon);
 	PR_LINE("  Idle/Tx/Rx/BT", _PR_CB_ANTCTRLCMN, antCtrlCommon);
 	PR_PWR_PERCHAIN("Antenna Gain (per-chain)", antennaGainCh);
 	PR_DEC("Switch Settling", switchSettling);
@@ -412,23 +417,23 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 	PR_PWR("ADC Desired Size, dBm", adcDesiredSize);
 	PR_PWR("PGA Desired Size, dBm", pgaDesiredSize);
 	PR_DEC_PERCHAIN("xLNA gain (per-chain)", xlnaGainCh);
-	PR_DEC("THRESH62", thresh62);
+	PR_DEC("Thresh62", thresh62);
 	PR_DEC_PERCHAIN("NF Thresh (per-chain)", noiseFloorThreshCh);
-	PR_HEX("Xpd Gain Mask", xpdGain);
-	PR_DEC("Xpd", xpd);
+	PR_HEX("xPD Gain Mask", xpdGain);
+	PR_FLAG("PD type", xpd, "internal", "external");
 	PR_DEC_PERCHAIN("IQ Cal I (per-chain)", iqCalICh);
 	PR_DEC_PERCHAIN("IQ Cal Q (per-chain)", iqCalQCh);
 	PR_DEC("Analog Output Bias(ob)", ob);
 	PR_DEC("Analog Driver Bias(db)", db);
-	PR_DEC("Xpa bias level", xpaBiasLvl);
-	PR_DEC("Xpa bias level Freq 0", xpaBiasLvlFreq[0]);
-	PR_DEC("Xpa bias level Freq 1", xpaBiasLvlFreq[1]);
-	PR_DEC("Xpa bias level Freq 2", xpaBiasLvlFreq[2]);
-	PR_HEX("LNA Control", lna_ctl);
+	PR_DEC("xPA bias level", xpaBiasLvl);
+	PR_DEC("xPA bias level Freq 0", xpaBiasLvlFreq[0]);
+	PR_DEC("xPA bias level Freq 1", xpaBiasLvlFreq[1]);
+	PR_DEC("xPA bias level Freq 2", xpaBiasLvlFreq[2]);
+	PR_HEX("xLNA control", lna_ctl);
 
-	PR_PWR("pdGain Overlap (dB)", pdGainOverlap);
-	PR_PWR("PWR dec 2 chain", pwrDecreaseFor2Chain);
-	PR_PWR("PWR dec 3 chain", pwrDecreaseFor3Chain);
+	PR_PWR("PD gain Overlap, dB", pdGainOverlap);
+	PR_PWR("Pwr decrease 2 chain", pwrDecreaseFor2Chain);
+	PR_PWR("Pwr decrease 3 chain", pwrDecreaseFor3Chain);
 
 	if (AR_SREV_9280_20_OR_LATER(aem)) {
 		PR_DEC("ob_ch1", ob_ch1);
@@ -449,6 +454,7 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 	printf("\n");
 
 #undef PR_FMT_PERCHAIN
+#undef PR_FLAG
 #undef PR_TIME
 #undef PR_PWR_PERCHAIN
 #undef PR_PWR
@@ -457,6 +463,7 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 #undef PR_DEC
 #undef _PR_CB_ANTCTRLCMN
 #undef _PR_CB_ANTCTRLCHAIN
+#undef _PR_CB_FLAG
 #undef _PR_CB_TIME
 #undef _PR_CB_PWR_PERCHAIN
 #undef _PR_CB_PWR
