@@ -311,6 +311,7 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 		printf("\n");					\
 	} while(0)
 #define __HALFDB2DB(_val)	((_val) / (double)2.0)
+#define __100NS2US(_val)	((_val) / (double)10.0)
 #define __PR_FMT_CONV(_fmt, _val, _conv)			\
 		snprintf(buf, sizeof(buf), _fmt, _conv(_val))
 #define __PR_FMT(_fmt, _val)	__PR_FMT_CONV(_fmt, _val, )
@@ -331,6 +332,8 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 		__PR_FMT_CONV("%.1f", _hdr._field, __HALFDB2DB)
 #define _PR_CB_PWR_PERCHAIN(_hdr, _field)			\
 		__PR_FMT_PERCHAIN_CONV("%3.1f", _hdr._field, __HALFDB2DB)
+#define _PR_CB_TIME(_hdr, _field)				\
+		__PR_FMT_CONV("%.1f", _hdr._field, __100NS2US)
 #define _PR_CB_ANTCTRLCHAIN(_hdr, _field)			\
 		do {						\
 			uint16_t val = _hdr._field;		\
@@ -361,6 +364,8 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 		PR_LINE(_token, _PR_CB_PWR, _field)
 #define PR_PWR_PERCHAIN(_token, _field)				\
 		PR_LINE(_token, _PR_CB_PWR_PERCHAIN, _field)
+#define PR_TIME(_token, _field)					\
+		PR_LINE(_token, _PR_CB_TIME, _field)
 #define PR_FMT_PERCHAIN(_token, _field, _fmt)			\
 		PR_LINE(_token, _PR_CB_FMT_PERCHAIN, _field, _fmt)
 
@@ -406,10 +411,7 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 	}
 	PR_PWR("ADC Desired Size, dBm", adcDesiredSize);
 	PR_PWR("PGA Desired Size, dBm", pgaDesiredSize);
-	PR_DEC("TX end to xlna on", txEndToRxOn);
 	PR_DEC_PERCHAIN("xLNA gain (per-chain)", xlnaGainCh);
-	PR_DEC("TX end to xpa off", txEndToXpaOff);
-	PR_DEC("TX frame to xpa on", txFrameToXpaOn);
 	PR_DEC("THRESH62", thresh62);
 	PR_DEC_PERCHAIN("NF Thresh (per-chain)", noiseFloorThreshCh);
 	PR_HEX("Xpd Gain Mask", xpdGain);
@@ -433,15 +435,21 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 		PR_DEC("db_ch1", db_ch1);
 	}
 
-	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_3) {
-		PR_DEC("txFrameToDataStart", txFrameToDataStart);
-		PR_DEC("txFrameToPaOn", txFrameToPaOn);
+	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_3)
 		PR_DEC("HT40PowerIncForPDADC", ht40PowerIncForPdadc);
+
+	PR_TIME("TX End to xLNA On, us", txEndToRxOn);
+	PR_TIME("TX End to xPA Off, us", txEndToXpaOff);
+	PR_TIME("TX Frame to xPA On, us", txFrameToXpaOn);
+	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_3) {
+		PR_TIME("TX Frame to DataStart, us", txFrameToDataStart);
+		PR_TIME("TX Frame to PA On, us", txFrameToPaOn);
 	}
 
 	printf("\n");
 
 #undef PR_FMT_PERCHAIN
+#undef PR_TIME
 #undef PR_PWR_PERCHAIN
 #undef PR_PWR
 #undef PR_HEX
@@ -449,6 +457,7 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 #undef PR_DEC
 #undef _PR_CB_ANTCTRLCMN
 #undef _PR_CB_ANTCTRLCHAIN
+#undef _PR_CB_TIME
 #undef _PR_CB_PWR_PERCHAIN
 #undef _PR_CB_PWR
 #undef _PR_CB_HEX
@@ -459,6 +468,7 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 #undef __PR_FMT_PERCHAIN_CONV
 #undef __PR_FMT
 #undef __PR_FMT_CONV
+#undef __100NS2US
 #undef __HALFDB2DB
 #undef PR_LINE
 }
