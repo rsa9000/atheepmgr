@@ -656,6 +656,41 @@ static bool eep_5416_update_eeprom(struct atheepmgr *aem, int param,
 		data_len = EEP_FIELD_SIZE(baseEepHeader.macAddr);
 		memcpy(&buf[data_pos], data, data_len * sizeof(uint16_t));
 		break;
+#ifdef CONFIG_I_KNOW_WHAT_I_AM_DOING
+	case EEP_ERASE_CTL:
+		/* It is enough to erase the CTL index only */
+		data_pos = AR5416_DATA_START_LOC + EEP_FIELD_OFFSET(ctlIndex);
+		data_len = EEP_FIELD_SIZE(ctlIndex);
+
+		/**
+		 * The bad news is that the CTL index starts in the middle of
+		 * a EEPROM word (its bytes offset is 0x0a81). Since the CTL
+		 * index have an integer number of EEPROM words (0x18 bytes,
+		 * 0x0c words) it ends also in a middle of the word (bytes
+		 * offset 0x0a98). So in fact we should update +1 EEPROM words
+		 * to cover the whole CTL index. Also we need a special
+		 * treatment on first and last words erasing to avoid erasing
+		 * data that share these EEPROM words with the CTL index.
+		 */
+
+		data_len += 1;		/* Extend updation range */
+
+		/**
+		 * On a Little-Endians machine this code is equal to:
+		 *   memset((uint8_t *)buf + data_pos * 2 + 1, 0x00,
+		 *          (data_len - 1) * 2)
+		 *
+		 * But the following code should give a better representation of
+		 * the operation from the EEPROM point of view. Also this code
+		 * will work on any machine (i.e. having any endians).
+		 */
+		addr = data_pos;
+		buf[addr] &= 0x00ff;	/* Erase word MSB (i.e. first entry) */
+		for (++addr; addr < (data_pos + data_len - 1); ++addr)
+			buf[addr] = 0x0000;
+		buf[addr] &= 0xff00;	/* Erase word LSB (i.e. last entry) */
+		break;
+#endif
 	default:
 		fprintf(stderr, "Internal error: unknown parameter Id\n");
 		return false;
@@ -701,5 +736,9 @@ const struct eepmap eepmap_5416 = {
 		[EEP_SECT_POWER] = eep_5416_dump_power_info,
 	},
 	.update_eeprom = eep_5416_update_eeprom,
-	.params_mask = BIT(EEP_UPDATE_MAC),
+	.params_mask = BIT(EEP_UPDATE_MAC)
+#ifdef CONFIG_I_KNOW_WHAT_I_AM_DOING
+		| BIT(EEP_ERASE_CTL)
+#endif
+	,
 };
