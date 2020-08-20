@@ -496,32 +496,58 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 		uint8_t pwr;
 		uint8_t vpd[AR5416_NUM_PD_GAINS];
 	} merged[AR5416_PD_GAIN_ICEPTS * AR5416_NUM_PD_GAINS];
-	int gii[AR5416_NUM_PD_GAINS];	/* Array of indexes for merge */
-	int gain, pwr, npwr;		/* Indexes */
+	/* Map of Mask Gain bit Index to Calibrated per-Gain icepts set Index */
+	int mgi2cgi[AR5416_NUM_PD_GAINS];
+	int cgii[AR5416_NUM_PD_GAINS];	/* Array of indexes for merge */
+	int gain, ngains, pwr, npwr;	/* Indexes */
 	uint8_t pwrmin;
+
+	/**
+	 * Index of bits in the gains mask is not the same as gain index in the
+	 * calibration data. Calibration data are stored without gaps. And non
+	 * available per-gain sets are skipped if gain is not enabled via the
+	 * gains mask.  E.g. if the gains mask have a value of 0x06 then you
+	 * should use sets #0 and #1 from the calibration data. Where set #0 is
+	 * corespond to gains mask bit #1 and set #1 coresponds to gains mask
+	 * bit #3.
+	 *
+	 * To simplify further code we build a map of gain indexes to
+	 * calibration data sets indexes using the gains mask. Also count a
+	 * number of gains mask bit that are set aka number of configured
+	 * gains.
+	 */
+	ngains = 0;
+	for (gain = 0; gain < AR5416_NUM_PD_GAINS; ++gain) {
+		if (gainmask & (1 << gain)) {
+			mgi2cgi[gain] = ngains;
+			ngains++;
+		} else {
+			mgi2cgi[gain] = -1;
+		}
+	}
 
 	/* Merge calibration per-gain power lists to filter duplicates */
 	memset(merged, 0xff, sizeof(merged));
-	memset(gii, 0x00, sizeof(gii));
+	memset(cgii, 0x00, sizeof(cgii));
 	for (pwr = 0; pwr < ARRAY_SIZE(merged); ++pwr) {
 		pwrmin = 0xff;
-		for (gain = 0; gain < ARRAY_SIZE(gii); ++gain) {
-			if (!(gainmask & (1 << gain)) ||
-			    gii[gain] >= AR5416_PD_GAIN_ICEPTS)
+		/* Looking for unmerged yet power value */
+		for (gain = 0; gain < ngains; ++gain) {
+			if (cgii[gain] >= AR5416_PD_GAIN_ICEPTS)
 				continue;
-			if (item->pwrPdg[gain][gii[gain]] < pwrmin)
-				pwrmin = item->pwrPdg[gain][gii[gain]];
+			if (item->pwrPdg[gain][cgii[gain]] < pwrmin)
+				pwrmin = item->pwrPdg[gain][cgii[gain]];
 		}
 		if (pwrmin == 0xff)
 			break;
 		merged[pwr].pwr = pwrmin;
-		for (gain = 0; gain < ARRAY_SIZE(gii); ++gain) {
-			if (!(gainmask & (1 << gain)) ||
-			    gii[gain] >= AR5416_PD_GAIN_ICEPTS ||
-			    item->pwrPdg[gain][gii[gain]] != pwrmin)
+		/* Copy Vpd of all gains for this power */
+		for (gain = 0; gain < ngains; ++gain) {
+			if (cgii[gain] >= AR5416_PD_GAIN_ICEPTS ||
+			    item->pwrPdg[gain][cgii[gain]] != pwrmin)
 				continue;
-			merged[pwr].vpd[gain] = item->vpdPdg[gain][gii[gain]];
-			gii[gain]++;
+			merged[pwr].vpd[gain] = item->vpdPdg[gain][cgii[gain]];
+			cgii[gain]++;
 		}
 	}
 	npwr = pwr;
@@ -541,10 +567,12 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 			continue;
 		printf("      Gain x%-3s VPD:", gains[gain]);
 		for (pwr = 0; pwr < npwr; ++pwr) {
-			if (merged[pwr].vpd[gain] == 0xff)
+			uint8_t vpd = merged[pwr].vpd[mgi2cgi[gain]];
+
+			if (vpd == 0xff)
 				printf("      ");
 			else
-				printf("   %3u", merged[pwr].vpd[gain]);
+				printf("   %3u", vpd);
 		}
 		printf("\n");
 	}
