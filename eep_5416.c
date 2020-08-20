@@ -285,9 +285,10 @@ static void eep_5416_dump_base_header(struct atheepmgr *aem)
 		       pBase->rxGainType == 1 ? "high power" :
 		       "unknown");
 	}
-	printf("%-30s : %-4.1f\n",
-	       "Power table offset",
-	       (double)pBase->power_table_offset / 2);
+	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_21) {
+		printf("%-30s : %d\n", "Power table offset, dBm",
+		       pBase->power_table_offset);
+	}
 
 	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_3) {
 		printf("%-30s : %s\n",

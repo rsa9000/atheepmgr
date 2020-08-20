@@ -55,7 +55,7 @@ struct ar5416_base_eep_hdr {
 	uint8_t txGainType;
 	uint8_t rcChainMask;
 	uint8_t desiredScaleCCK;
-	uint8_t power_table_offset;
+	int8_t power_table_offset;
 	uint8_t frac_n_5g;
 	uint8_t futureBase_3[21];
 } __attribute__ ((packed));
