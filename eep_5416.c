@@ -491,7 +491,7 @@ static void
 eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 			     int gainmask, int power_table_offset)
 {
-	const char * const gains[AR5416_NUM_PD_GAINS] = {"0.5", "1", "2", "4"};
+	const char * const gains[AR5416_NUM_PD_GAINS] = {"4", "2", "1", "0.5"};
 	struct {
 		uint8_t pwr;
 		uint8_t vpd[AR5416_NUM_PD_GAINS];
