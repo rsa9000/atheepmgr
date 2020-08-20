@@ -489,7 +489,7 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 
 static void
 eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
-			     int gainmask)
+			     int gainmask, int power_table_offset)
 {
 	const char * const gains[AR5416_NUM_PD_GAINS] = {"0.5", "1", "2", "4"};
 	struct {
@@ -529,7 +529,8 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 	/* Print merged data */
 	printf("      Tx Power, dBm:");
 	for (pwr = 0; pwr < npwr; ++pwr)
-		printf(" %5.2f", (double)merged[pwr].pwr / 4);
+		printf(" %5.2f", (double)merged[pwr].pwr / 4 +
+				 power_table_offset);
 	printf("\n");
 	printf("      --------------");
 	for (pwr = 0; pwr < npwr; ++pwr)
@@ -551,7 +552,8 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 
 static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
 				    const struct ar5416_cal_data_per_freq *cal,
-				    int is_2g, int chainmask, int gainmask)
+				    int is_2g, int chainmask, int gainmask,
+				    int power_table_offset)
 {
 	const struct ar5416_cal_data_per_freq *item;
 	int chain, freq;	/* Indexes */
@@ -568,7 +570,8 @@ static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
 			printf("    %4u MHz:\n", FBIN2FREQ(freqs[freq], is_2g));
 			item = cal + (chain * maxfreq + freq);
 
-			eep_5416_dump_closeloop_item(item, gainmask);
+			eep_5416_dump_closeloop_item(item, gainmask,
+						     power_table_offset);
 
 			printf("\n");
 		}
@@ -577,13 +580,15 @@ static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
 
 static void eep_5416_dump_pd_cal(const uint8_t *freq, int maxfreq,
 				 const void *caldata, int is_openloop,
-				 int is_2g, int chainmask, int gainmask)
+				 int is_2g, int chainmask, int gainmask,
+				 int power_table_offset)
 {
 	if (is_openloop) {
 		printf("  Open-loop PD calibration dumping is not supported\n");
 	} else {
 		eep_5416_dump_closeloop(freq, maxfreq, caldata, is_2g,
-					chainmask, gainmask);
+					chainmask, gainmask,
+					power_table_offset);
 	}
 }
 
@@ -595,7 +600,8 @@ static void eep_5416_dump_power_info(struct atheepmgr *aem)
 				     ARRAY_SIZE(eep->calFreqPier ## __band),\
 				     eep->calPierData ## __band, is_openloop,\
 				     __is_2g, eep->baseEepHeader.txMask,\
-				     (eep->modalHeader ## __band).xpdGain);\
+				     (eep->modalHeader ## __band).xpdGain, \
+				     power_table_offset);\
 		printf("\n");
 #define PR_TGT_PWR(__pref, __field, __rates, __is_2g)			\
 		EEP_PRINT_SUBSECT_NAME(__pref " per-rate target power");\
@@ -607,12 +613,17 @@ static void eep_5416_dump_power_info(struct atheepmgr *aem)
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	const struct ar5416_eeprom *eep = &emp->eep;
 	int is_openloop = 0, maxradios = 0, i;
+	int power_table_offset;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
 
 	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_19 &&
 	    eep->baseEepHeader.openLoopPwrCntl & 0x01)
 		is_openloop = 1;
+
+	power_table_offset = eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_21 ?
+			     eep->baseEepHeader.power_table_offset :
+			     AR5416_PWR_TABLE_OFFSET_DB;
 
 	if (eep->baseEepHeader.opCapFlags & AR5416_OPFLAGS_11G) {
 		PR_PD_CAL("2 GHz", 2G, 1);
