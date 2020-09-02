@@ -1444,19 +1444,24 @@ static void eep_5211_dump_ctl(const uint8_t *index,
 static void eep_5211_dump_power(struct atheepmgr *aem)
 {
 #define PR_PD_CAL(__suf, __mode, __is_2g)				\
+	if (base-> __mode ## mode_en) {					\
 		EEP_PRINT_SUBSECT_NAME("Mode 802.11" __suf " per-freq PD cal. data");\
 		eep_5211_dump_pdcal(&emp->param.pdcal_ ## __mode,	\
 				    eep->pdcal_data_ ## __mode, __is_2g);\
-		printf("\n");
+		printf("\n");						\
+	}
 #define PR_TGT_PWR(__suf, __mode, __rates, __is_2g)			\
+	if (base-> __mode ## mode_en) {					\
 		EEP_PRINT_SUBSECT_NAME("Mode 802.11" __suf " per-rate target power");\
 		eep_5211_dump_tgtpwr(eep->tgtpwr_ ## __mode,		\
 				     ARRAY_SIZE(eep->tgtpwr_ ## __mode),\
 				     __rates, __is_2g);			\
-		printf("\n");
+		printf("\n");						\
+	}
 
 	struct eep_5211_priv *emp = aem->eepmap_priv;
 	struct ar5211_eeprom *eep = &emp->eep;
+	struct ar5211_base_eep_hdr *base = &eep->base;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
 
