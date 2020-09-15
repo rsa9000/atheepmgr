@@ -26,6 +26,7 @@ static const struct eepmap * const eepmaps[] = {
 	&eepmap_9285,
 	&eepmap_9287,
 	&eepmap_9300,
+	&eepmap_9880,
 };
 
 static const struct eepmap *eepmap_find_by_name(const char *name)

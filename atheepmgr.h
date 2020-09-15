@@ -255,6 +255,7 @@ extern const struct eepmap eepmap_5416;
 extern const struct eepmap eepmap_9285;
 extern const struct eepmap eepmap_9287;
 extern const struct eepmap eepmap_9300;
+extern const struct eepmap eepmap_9880;
 
 bool hw_wait(struct atheepmgr *aem, uint32_t reg, uint32_t mask,
 	     uint32_t val, uint32_t timeout);
