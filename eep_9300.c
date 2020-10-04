@@ -33,6 +33,7 @@ struct eep_9300_blk_hdr {
 struct eep_9300_priv {
 	int valid_blocks;
 	int is_uncompressed;		/* Data is uncompressed */
+	int buf_is_be;			/* Is buf 16-bits word in big-endians */
 	struct ar9300_eeprom eep;
 };
 
@@ -86,14 +87,15 @@ static int ar9300_eep2buf(struct atheepmgr *aem, int bytes)
  * Extract bytestream of specified length from the internal buffer as specified
  * offset.
  *
- * NB: we are reading the bytes in reverse order for a stream of 16-bit words.
- * E.g. first two bytes of the output stream extracted from word with specified
- * address, second two bytes of the output stream extraced from buffered word
- * with lower address, and so on.
+ * NB: we are reading bytes in a reverse direction from a stream of 16-bits
+ * words. E.g. first two bytes of the output stream are extracted from a word
+ * with a specified address, second two bytes of the output stream are extraced
+ * from a predcessor word (with a lower address), and so on.
  */
 static void ar9300_buf2bstr(struct atheepmgr *aem, int addr,
 			    uint8_t *buffer, int count)
 {
+	struct eep_9300_priv *emp = aem->eepmap_priv;
 	int i;
 
 	if ((addr - count) < 0 || addr / 2  >= aem->eep_len) {
@@ -103,13 +105,18 @@ static void ar9300_buf2bstr(struct atheepmgr *aem, int addr,
 	}
 
 	/*
-	 * We're reading the bytes in reverse order from a little-endian
-	 * word stream, an even address means we only use the lower half of
-	 * the 16-bit word at that address
+	 * Endians of a buffer item word depends on a data source and a host
+	 * machine endians: EEPROM is always in Little-endians format, while OTP
+	 * is Native-endians. So we check the buffer endians flag to determine
+	 * how we should handle buffer words and choose shift to select
+	 * appropriate byte (low or high).
 	 */
 
-	for (i = addr; i > addr - count; --i)
-		buffer[addr - i] = aem->eep_buf[i / 2] >> (8 * (i % 2));
+	for (i = addr; i > addr - count; --i) {
+		int shift_bytes = emp->buf_is_be ? (i + 1) % 2 : i % 2;
+
+		buffer[addr - i] = aem->eep_buf[i / 2] >> (8 * shift_bytes);
+	}
 }
 
 /**
@@ -147,22 +154,22 @@ static bool ar9300_otp_read_word(struct atheepmgr *aem, int addr, uint32_t *data
 static int ar9300_otp2buf(struct atheepmgr *aem, int bytes)
 {
 	int size = (bytes + 3) / 4;	/* Convert to 32 bits words */
-	uint16_t *buf = aem->eep_buf;
+	uint8_t *buf = (uint8_t *)aem->eep_buf;	/* Use as an array of bytes */
 	uint32_t word;
 	int addr;
 
+	/* NB: buffered data length is in 16-bits words */
+	/* NB: fetch only unavailable portion of data (append buffer) */
 	for (addr = aem->eep_len / 2; addr < size; ++addr) {
 		if (!ar9300_otp_read_word(aem, addr, &word)) {
 			fprintf(stderr, "Unable to read OTP to buffer\n");
 			return -1;
 		}
-		/**
-		 * Mimic EEPROM when placing 32-bit OTP word to the buffer,
-		 * which is array of 16-bit words. Assume we are on
-		 * little-endian platform.
-		 */
-		buf[addr * 2 + 0] = word & 0xffff;
-		buf[addr * 2 + 1] = word >> 16;
+		/* NB: OTP is a byte stream (i.e. utilizes Native-endians) */
+		buf[addr * 4 + 0] = word >> 0;
+		buf[addr * 4 + 1] = word >> 8;
+		buf[addr * 4 + 2] = word >> 16;
+		buf[addr * 4 + 3] = word >> 24;
 	}
 
 	if (addr > aem->eep_len / 2)
@@ -390,6 +397,8 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 
 	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
 
+	emp->buf_is_be = 0;	/* EEPROM is always in Little-endians */
+
 parse_eeprom:
 	if (ar9300_eep2buf(aem, sizeof(struct ar9300_eeprom)) != 0)
 		goto fail;
@@ -435,6 +444,7 @@ parse_eeprom:
 	if (!(aem->con->caps & CON_CAP_HW))
 		goto fail;
 
+	emp->buf_is_be = aem->host_is_be;	/* OTP utilize native-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
 
 	cptr = AR9300_BASE_ADDR;
