@@ -135,15 +135,33 @@ static void ar9300_buf_byteswap(struct atheepmgr *aem)
 		aem->eep_buf[i] = bswap_16(aem->eep_buf[i]);
 }
 
-static bool ar9300_otp_read_word(struct atheepmgr *aem, int addr, uint32_t *data)
+/**
+ * Chip reads OTP by 32-bits words. We cache readed word value and return
+ * cached data if user request octet from a same word. Such caching greatly (x4)
+ * increase sequent reading.
+ */
+static bool ar9300_otp_read(struct atheepmgr *aem, uint32_t off, uint8_t *data)
 {
-	REG_READ(AR9300_OTP_BASE + (4 * addr));
+	static uint32_t prev_word_addr = ~0;
+	static uint32_t prev_word_data;
+	uint32_t word_addr = off & ~0x3;	/* 32-bits alignment */
+	int shift = (off % 4) * 8;
+
+	if (word_addr == prev_word_addr)
+		goto data_return;	/* Serve from cache */
+
+	REG_READ(AR9300_OTP_BASE + word_addr);
 
 	if (!hw_wait(aem, AR9300_OTP_STATUS, AR9300_OTP_STATUS_TYPE,
 		     AR9300_OTP_STATUS_VALID, 1000))
 		return false;
 
-	*data = REG_READ(AR9300_OTP_READ_DATA);
+	prev_word_addr = word_addr;
+	prev_word_data = REG_READ(AR9300_OTP_READ_DATA);
+
+data_return:
+	*data = prev_word_data >> shift;
+
 	return true;
 }
 
@@ -153,27 +171,21 @@ static bool ar9300_otp_read_word(struct atheepmgr *aem, int addr, uint32_t *data
  */
 static int ar9300_otp2buf(struct atheepmgr *aem, int bytes)
 {
-	int size = (bytes + 3) / 4;	/* Convert to 32 bits words */
+	int size = (bytes + 1) & ~0x1;		/* 16-bits alignment */
 	uint8_t *buf = (uint8_t *)aem->eep_buf;	/* Use as an array of bytes */
-	uint32_t word;
 	int addr;
 
 	/* NB: buffered data length is in 16-bits words */
 	/* NB: fetch only unavailable portion of data (append buffer) */
-	for (addr = aem->eep_len / 2; addr < size; ++addr) {
-		if (!ar9300_otp_read_word(aem, addr, &word)) {
+	for (addr = aem->eep_len * 2; addr < size; ++addr) {
+		if (!ar9300_otp_read(aem, addr, &buf[addr])) {
 			fprintf(stderr, "Unable to read OTP to buffer\n");
 			return -1;
 		}
-		/* NB: OTP is a byte stream (i.e. utilizes Native-endians) */
-		buf[addr * 4 + 0] = word >> 0;
-		buf[addr * 4 + 1] = word >> 8;
-		buf[addr * 4 + 2] = word >> 16;
-		buf[addr * 4 + 3] = word >> 24;
 	}
 
-	if (addr > aem->eep_len / 2)
-		aem->eep_len = addr * 2;
+	if (addr > aem->eep_len * 2)
+		aem->eep_len = addr / 2;
 
 	return 0;
 }
