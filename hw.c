@@ -471,6 +471,40 @@ static const struct eep_ops hw_eep_5211 = {
 	.lock = hw_eeprom_lock_gpio,
 };
 
+/**
+ * Chip reads OTP by 32-bits words. We cache readed word value and return
+ * cached data if user request octet from a same word. Such caching greatly (x4)
+ * increase sequent reading.
+ */
+static bool hw_otp_read_93xx(struct atheepmgr *aem, uint32_t off, uint8_t *data)
+{
+	static uint32_t prev_word_addr = ~0;
+	static uint32_t prev_word_data;
+	uint32_t word_addr = off & ~0x3;	/* 32-bits alignment */
+	int shift = (off % 4) * 8;
+
+	if (word_addr == prev_word_addr)
+		goto data_return;	/* Serve from cache */
+
+	REG_READ(AR9300_OTP_BASE + word_addr);
+
+	if (!hw_wait(aem, AR9300_OTP_STATUS, AR9300_OTP_STATUS_TYPE,
+		     AR9300_OTP_STATUS_VALID, 1000))
+		return false;
+
+	prev_word_addr = word_addr;
+	prev_word_data = REG_READ(AR9300_OTP_READ_DATA);
+
+data_return:
+	*data = prev_word_data >> shift;
+
+	return true;
+}
+
+static const struct otp_ops hw_otp_93xx = {
+	.read = hw_otp_read_93xx,
+};
+
 void hw_eeprom_set_ops(struct atheepmgr *aem)
 {
 	if (aem->con->eep) {
@@ -524,6 +558,10 @@ void hw_otp_set_ops(struct atheepmgr *aem)
 		if (aem->verbose)
 			printf("OTP access ops: use connector's ops\n");
 		aem->otp = aem->con->otp;
+	} else if (AR_SREV_9300_20_OR_LATER(aem)) {
+		if (aem->verbose)
+			printf("OTP access ops: use AR93xx ops\n");
+		aem->otp = &hw_otp_93xx;
 	} else {
 		/*
 		 * It is Ok for older chips to not have an OTP memory, so do

@@ -60,14 +60,6 @@
 #define AR9300_BASE_ADDR			0x3ff
 #define AR9300_BASE_ADDR_512			0x1ff
 
-#define AR9300_OTP_BASE			0x14000
-#define AR9300_OTP_STATUS		0x15f18
-#define AR9300_OTP_STATUS_TYPE		0x7
-#define AR9300_OTP_STATUS_VALID		0x4
-#define AR9300_OTP_STATUS_ACCESS_BUSY	0x2
-#define AR9300_OTP_STATUS_SM_BUSY	0x1
-#define AR9300_OTP_READ_DATA		0x15f1c
-
 struct ar9300_eepFlags {
 	uint8_t opFlags;
 	uint8_t eepMisc;

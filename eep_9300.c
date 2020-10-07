@@ -136,36 +136,6 @@ static void ar9300_buf_byteswap(struct atheepmgr *aem)
 }
 
 /**
- * Chip reads OTP by 32-bits words. We cache readed word value and return
- * cached data if user request octet from a same word. Such caching greatly (x4)
- * increase sequent reading.
- */
-static bool ar9300_otp_read(struct atheepmgr *aem, uint32_t off, uint8_t *data)
-{
-	static uint32_t prev_word_addr = ~0;
-	static uint32_t prev_word_data;
-	uint32_t word_addr = off & ~0x3;	/* 32-bits alignment */
-	int shift = (off % 4) * 8;
-
-	if (word_addr == prev_word_addr)
-		goto data_return;	/* Serve from cache */
-
-	REG_READ(AR9300_OTP_BASE + word_addr);
-
-	if (!hw_wait(aem, AR9300_OTP_STATUS, AR9300_OTP_STATUS_TYPE,
-		     AR9300_OTP_STATUS_VALID, 1000))
-		return false;
-
-	prev_word_addr = word_addr;
-	prev_word_data = REG_READ(AR9300_OTP_READ_DATA);
-
-data_return:
-	*data = prev_word_data >> shift;
-
-	return true;
-}
-
-/**
  * Read data from OTP mem and fill internal buffer up to specified ammount of
  * bytes.
  */
@@ -178,7 +148,7 @@ static int ar9300_otp2buf(struct atheepmgr *aem, int bytes)
 	/* NB: buffered data length is in 16-bits words */
 	/* NB: fetch only unavailable portion of data (append buffer) */
 	for (addr = aem->eep_len * 2; addr < size; ++addr) {
-		if (!ar9300_otp_read(aem, addr, &buf[addr])) {
+		if (!OTP_READ(addr, &buf[addr])) {
 			fprintf(stderr, "Unable to read OTP to buffer\n");
 			return -1;
 		}
@@ -451,10 +421,6 @@ parse_eeprom:
 		ar9300_buf_byteswap(aem);
 		goto parse_eeprom;	/* Reparse EEPROM contents */
 	}
-
-	/* Avoid OTP touching if no real access to the hardware. */
-	if (!(aem->con->caps & CON_CAP_HW))
-		goto fail;
 
 	emp->buf_is_be = aem->host_is_be;	/* OTP utilize native-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
