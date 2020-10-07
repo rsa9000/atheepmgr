@@ -394,6 +394,21 @@ parse_eeprom:
 		goto found;
 	}
 
+	if (aem->eep_buf[0] != AR5416_EEPROM_MAGIC) {
+		if (aem->eep_io_swap == bswap) {
+			if (aem->verbose)
+				printf("Try to byteswap EEPROM contents\n");
+			aem->eep_io_swap = !aem->eep_io_swap;
+			ar9300_buf_byteswap(aem);
+			goto parse_eeprom;	/* Reparse EEPROM contents */
+		} else {
+			goto parse_otp;
+		}
+	}
+
+	if (aem->verbose)
+		printf("EEPROM magic found\n");
+
 	if (AR_SREV_9485(aem))
 		cptr = AR9300_BASE_ADDR_4K;
 	else if (AR_SREV_9330(aem))
@@ -414,14 +429,7 @@ parse_eeprom:
 	if (ar9300_process_blocks(aem, word, cptr) == 0)
 		goto found;
 
-	if (aem->eep_io_swap == bswap) {
-		if (aem->verbose)
-			printf("Try to byteswap EEPROM contents\n");
-		aem->eep_io_swap = !aem->eep_io_swap;
-		ar9300_buf_byteswap(aem);
-		goto parse_eeprom;	/* Reparse EEPROM contents */
-	}
-
+parse_otp:
 	emp->buf_is_be = aem->host_is_be;	/* OTP utilize native-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
 
