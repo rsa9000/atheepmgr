@@ -159,6 +159,10 @@ struct eep_ops {
 	void (*lock)(struct atheepmgr *aem, int lock);
 };
 
+struct otp_ops {
+	bool (*read)(struct atheepmgr *aem, uint32_t off, uint8_t *data);
+};
+
 struct connector {
 	const char *name;
 	size_t priv_data_sz;
@@ -170,6 +174,7 @@ struct connector {
 	void (*reg_rmw)(struct atheepmgr *aem, uint32_t reg, uint32_t set,
 			uint32_t clr);
 	const struct eep_ops *eep;
+	const struct otp_ops *otp;
 };
 
 enum eepmap_section_id {
@@ -223,6 +228,8 @@ struct atheepmgr {
 
 	const struct eep_ops *eep;
 
+	const struct otp_ops *otp;
+
 	const struct gpio_ops *gpio;
 	unsigned gpio_num;			/* Number of GPIO lines */
 };
@@ -243,6 +250,8 @@ void hw_eeprom_set_ops(struct atheepmgr *aem);
 bool hw_eeprom_read(struct atheepmgr *aem, uint32_t off, uint16_t *data);
 bool hw_eeprom_write(struct atheepmgr *aem, uint32_t off, uint16_t data);
 void hw_eeprom_lock(struct atheepmgr *aem, int lock);
+void hw_otp_set_ops(struct atheepmgr *aem);
+bool hw_otp_read(struct atheepmgr *aem, uint32_t off, uint8_t *data);
 int hw_init(struct atheepmgr *aem);
 
 #define EEP_READ(_off, _data)		\
@@ -253,6 +262,8 @@ int hw_init(struct atheepmgr *aem);
 		hw_eeprom_lock(aem, 1)
 #define EEP_UNLOCK()			\
 		hw_eeprom_lock(aem, 0)
+#define OTP_READ(_off, _data)		\
+		hw_otp_read(aem, _off, _data)
 #define REG_READ(_reg)			\
 		aem->con->reg_read(aem, _reg)
 #define REG_WRITE(_reg, _val)		\

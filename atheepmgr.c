@@ -659,6 +659,7 @@ int main(int argc, char *argv[])
 
 	if (act->flags & ACT_F_EEPROM) {
 		hw_eeprom_set_ops(aem);
+		hw_otp_set_ops(aem);
 
 		if (!aem->eepmap) {
 			ret = eepmap_detect(aem);

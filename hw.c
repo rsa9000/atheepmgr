@@ -518,6 +518,28 @@ void hw_eeprom_lock(struct atheepmgr *aem, int lock)
 		aem->eep->lock(aem, lock);
 }
 
+void hw_otp_set_ops(struct atheepmgr *aem)
+{
+	if (aem->con->otp) {
+		if (aem->verbose)
+			printf("OTP access ops: use connector's ops\n");
+		aem->otp = aem->con->otp;
+	} else {
+		/*
+		 * It is Ok for older chips to not have an OTP memory, so do
+		 * not print warning in this case.
+		 */
+	}
+}
+
+bool hw_otp_read(struct atheepmgr *aem, uint32_t off, uint8_t *data)
+{
+	if (!aem->otp)
+		return false;
+
+	return aem->otp->read(aem, off, data);
+}
+
 int hw_init(struct atheepmgr *aem)
 {
 	hw_read_revisions(aem);
