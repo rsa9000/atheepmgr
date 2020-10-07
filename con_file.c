@@ -102,6 +102,24 @@ static bool file_eeprom_write(struct atheepmgr *aem, uint32_t off, uint16_t data
 	return true;
 }
 
+static bool file_otp_read(struct atheepmgr *aem, uint32_t off, uint8_t *data)
+{
+	struct file_priv *fpd = aem->con_priv;
+
+	if (off >= fpd->data_len) {	/* Emulate empty area */
+		*data = 0x00;
+		return true;
+	}
+
+	if (fseek(fpd->fp, off, SEEK_SET) != 0)
+		return false;
+
+	if (fread(data, sizeof(*data), 1, fpd->fp) != 1)
+		return false;
+
+	return true;
+}
+
 static int file_init(struct atheepmgr *aem, const char *arg_str)
 {
 	struct file_priv *fpd = aem->con_priv;
@@ -160,6 +178,10 @@ static const struct eep_ops eep_file = {
 	.write = file_eeprom_write,
 };
 
+static const struct otp_ops otp_file = {
+	.read = file_otp_read,
+};
+
 const struct connector con_file = {
 	.name = "File",
 	.priv_data_sz = sizeof(struct file_priv),
@@ -169,4 +191,5 @@ const struct connector con_file = {
 	.reg_write = file_reg_write,
 	.reg_rmw = file_reg_rmw,
 	.eep = &eep_file,
+	.otp = &otp_file,
 };
