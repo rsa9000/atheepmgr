@@ -31,6 +31,7 @@ struct eep_9300_blk_hdr {
 };
 
 struct eep_9300_priv {
+	uint8_t unpack_buf[0x800];	/* Unpacking temporary data buffer */
 	int valid_blocks;
 	int is_uncompressed;		/* Data is uncompressed */
 	int buf_is_be;			/* Is buf 16-bits word in big-endians */
@@ -304,11 +305,11 @@ static int ar9300_check_eeprom_data(const struct ar9300_eeprom *eep)
 	return 1;
 }
 
-static int ar9300_process_blocks(struct atheepmgr *aem, uint8_t *buf,
-				 int cptr)
+static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 {
 #define MSTATE	100
 	struct eep_9300_priv *emp = aem->eepmap_priv;
+	uint8_t *buf = emp->unpack_buf;
 	int prev_valid_blocks = emp->valid_blocks;
 	struct eep_9300_blk_hdr blkh;
 	uint16_t checksum, mchecksum;
@@ -368,14 +369,7 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 {
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	int cptr;
-	uint8_t *word;
 	int bswap = aem->eep_io_swap;
-
-	word = calloc(1, 2048);
-	if (!word) {
-		fprintf(stderr, "Unable to allocate temporary buffer\n");
-		return false;
-	}
 
 	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
 
@@ -383,7 +377,7 @@ static bool eep_9300_fill(struct atheepmgr *aem)
 
 parse_eeprom:
 	if (ar9300_eep2buf(aem, sizeof(struct ar9300_eeprom)) != 0)
-		goto fail;
+		return false;
 	if (ar9300_check_eeprom_data((struct ar9300_eeprom *)aem->eep_buf)) {
 		if (aem->verbose)
 			printf("Found valid uncompressed EEPROM data\n");
@@ -419,14 +413,14 @@ parse_eeprom:
 	if (aem->verbose)
 		printf("Trying EEPROM access at Address 0x%04x\n", cptr);
 	if (ar9300_eep2buf(aem, cptr) != 0)
-		goto fail;
-	if (ar9300_process_blocks(aem, word, cptr) == 0)
+		return false;
+	if (ar9300_process_blocks(aem, cptr) == 0)
 		goto found;
 
 	cptr = AR9300_BASE_ADDR_512;
 	if (aem->verbose)
 		printf("Trying EEPROM access at Address 0x%04x\n", cptr);
-	if (ar9300_process_blocks(aem, word, cptr) == 0)
+	if (ar9300_process_blocks(aem, cptr) == 0)
 		goto found;
 
 parse_otp:
@@ -437,26 +431,21 @@ parse_otp:
 	if (aem->verbose)
 		printf("Trying OTP access at Address 0x%04x\n", cptr);
 	if (ar9300_otp2buf(aem, cptr) != 0)
-		goto fail;
-	if (ar9300_process_blocks(aem, word, cptr) == 0)
+		return false;
+	if (ar9300_process_blocks(aem, cptr) == 0)
 		goto found;
 
 	cptr = AR9300_BASE_ADDR_512;
 	if (aem->verbose)
 		printf("Trying OTP access at Address 0x%04x\n", cptr);
-	if (ar9300_process_blocks(aem, word, cptr) == 0)
+	if (ar9300_process_blocks(aem, cptr) == 0)
 		goto found;
 
-	goto fail;
+	return false;
 
 found:
 	aem->eep_len = (cptr + 1) / 2;	/* Set actual EEPROM size */
-	free(word);
 	return true;
-
-fail:
-	free(word);
-	return false;
 }
 
 static int eep_9300_check(struct atheepmgr *aem)
