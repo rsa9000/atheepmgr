@@ -38,7 +38,7 @@ static int eep_9287_get_rev(struct eep_9287_priv *emp)
 	return (emp->eep.baseEepHeader.version) & 0xFFF;
 }
 
-static bool eep_9287_fill_eeprom(struct atheepmgr *aem)
+static bool eep_9287_load_eeprom(struct atheepmgr *aem)
 {
 	struct eep_9287_priv *emp = aem->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
@@ -342,7 +342,7 @@ const struct eepmap eepmap_9287 = {
 	.desc = "AR9287 chip EEPROM map",
 	.priv_data_sz = sizeof(struct eep_9287_priv),
 	.eep_buf_sz = AR9287_DATA_START_LOC + AR9287_DATA_SZ,
-	.fill_eeprom  = eep_9287_fill_eeprom,
+	.load_eeprom  = eep_9287_load_eeprom,
 	.check_eeprom = eep_9287_check_eeprom,
 	.dump = {
 		[EEP_SECT_INIT] = eep_9287_dump_init_data,

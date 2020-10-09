@@ -38,7 +38,7 @@ static int eep_5416_get_rev(struct eep_5416_priv *emp)
 	return ((emp->eep.baseEepHeader.version) & 0xFFF);
 }
 
-static bool eep_5416_fill(struct atheepmgr *aem)
+static bool eep_5416_load_eeprom(struct atheepmgr *aem)
 {
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
@@ -740,7 +740,7 @@ const struct eepmap eepmap_5416 = {
 	.desc = "Default EEPROM map for earlier .11n chips (AR5416/AR9160/AR92xx/etc.)",
 	.priv_data_sz = sizeof(struct eep_5416_priv),
 	.eep_buf_sz = AR5416_DATA_START_LOC + AR5416_DATA_SZ,
-	.fill_eeprom  = eep_5416_fill,
+	.load_eeprom  = eep_5416_load_eeprom,
 	.check_eeprom = eep_5416_check,
 	.dump = {
 		[EEP_SECT_INIT] = eep_5416_dump_init_data,

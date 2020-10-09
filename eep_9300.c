@@ -365,7 +365,7 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 /*
  * Read the configuration data from the eeprom uncompress it if necessary.
  */
-static bool eep_9300_fill(struct atheepmgr *aem)
+static bool eep_9300_load_eeprom(struct atheepmgr *aem)
 {
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	int cptr;
@@ -908,7 +908,7 @@ const struct eepmap eepmap_9300 = {
 	.desc = "EEPROM map for modern .11n chips (AR93xx/AR94xx/AR95xx/etc.)",
 	.priv_data_sz = sizeof(struct eep_9300_priv),
 	.eep_buf_sz = AR9300_EEPROM_SIZE / sizeof(uint16_t),
-	.fill_eeprom = eep_9300_fill,
+	.load_eeprom = eep_9300_load_eeprom,
 	.check_eeprom = eep_9300_check,
 	.dump = {
 		[EEP_SECT_BASE] = eep_9300_dump_base_header,

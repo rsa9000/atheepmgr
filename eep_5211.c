@@ -922,7 +922,7 @@ static void eep_5211_fill_ctl_data_33(struct atheepmgr *aem)
 	}
 }
 
-static bool eep_5211_fill(struct atheepmgr *aem)
+static bool eep_5211_load_eeprom(struct atheepmgr *aem)
 {
 	struct eep_5211_priv *emp = aem->eepmap_priv;
 	struct ar5211_eeprom *eep = &emp->eep;
@@ -1544,7 +1544,7 @@ const struct eepmap eepmap_5211 = {
 	.desc = "Legacy .11abg chips EEPROM map (AR5211/AR5212/AR5414/etc.)",
 	.priv_data_sz = sizeof(struct eep_5211_priv),
 	.eep_buf_sz = AR5211_SIZE_MAX,
-	.fill_eeprom = eep_5211_fill,
+	.load_eeprom = eep_5211_load_eeprom,
 	.check_eeprom = eep_5211_check,
 	.dump = {
 		[EEP_SECT_INIT] = eep_5211_dump_init_data,

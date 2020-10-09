@@ -38,7 +38,7 @@ static int eep_9285_get_rev(struct eep_9285_priv *emp)
 	return ((emp->eep.baseEepHeader.version) & 0xFFF);
 }
 
-static bool eep_9285_fill(struct atheepmgr *aem)
+static bool eep_9285_load_eeprom(struct atheepmgr *aem)
 {
 	struct eep_9285_priv *emp = aem->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
@@ -337,7 +337,7 @@ const struct eepmap eepmap_9285 = {
 	.desc = "AR9285 chip EEPROM map",
 	.priv_data_sz = sizeof(struct eep_9285_priv),
 	.eep_buf_sz = AR9285_DATA_START_LOC + AR9285_DATA_SZ,
-	.fill_eeprom  = eep_9285_fill,
+	.load_eeprom  = eep_9285_load_eeprom,
 	.check_eeprom = eep_9285_check,
 	.dump = {
 		[EEP_SECT_INIT] = eep_9285_dump_init_data,

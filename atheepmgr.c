@@ -682,8 +682,8 @@ int main(int argc, char *argv[])
 			goto con_clean;
 		}
 
-		if (!aem->eepmap->fill_eeprom(aem)) {
-			fprintf(stderr, "Unable to fill EEPROM data\n");
+		if (!aem->eepmap->load_eeprom(aem)) {
+			fprintf(stderr, "Unable to load EEPROM data\n");
 			ret = -EIO;
 			goto con_clean;
 		}
