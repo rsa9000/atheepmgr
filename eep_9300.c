@@ -32,7 +32,6 @@ struct eep_9300_blk_hdr {
 
 struct eep_9300_priv {
 	uint8_t unpack_buf[0x800];	/* Unpacking temporary data buffer */
-	int valid_blocks;
 	enum {
 		DATA_SRC_NONE = 0,
 		DATA_SRC_BLOB,
@@ -299,7 +298,7 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 #define MSTATE	100
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	uint8_t *buf = emp->unpack_buf;
-	int prev_valid_blocks = emp->valid_blocks;
+	int valid_blocks = 0;
 	struct eep_9300_blk_hdr blkh;
 	uint16_t checksum, mchecksum;
 	uint8_t *ptr;
@@ -341,12 +340,12 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 					       (uint8_t *)&emp->eep, buf,
 					       sizeof(emp->eep));
 		if (res == 0)
-			emp->valid_blocks++;
+			valid_blocks++;
 
 		cptr -= COMP_HDR_LEN + blkh.len + COMP_CKSUM_LEN;
 	}
 
-	return prev_valid_blocks == emp->valid_blocks ? -1 : 0;
+	return valid_blocks ? 0 : -1;
 
 #undef MSTATE
 }
@@ -372,7 +371,6 @@ static bool eep_9300_load_blob(struct atheepmgr *aem)
 
 	emp->data_src = DATA_SRC_BLOB;
 	memcpy(&emp->eep, aem->eep_buf, sizeof(emp->eep));
-	emp->valid_blocks++;
 
 	aem->eep_len = (data_size + 1) / 2;	/* Set actual EEPROM size */
 
@@ -472,14 +470,15 @@ found:
 	return true;
 }
 
-static int eep_9300_check(struct atheepmgr *aem)
+static bool eep_9300_check(struct atheepmgr *aem)
 {
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	struct ar9300_eeprom *eep = &emp->eep;
 	struct ar9300_base_eep_hdr *pBase = &eep->baseEepHeader;
 	int i;
 
-	if (!emp->valid_blocks)
+	/* We perform all checks at data loading stage */
+	if (emp->data_src == DATA_SRC_NONE)
 		return false;
 
 	if (!!(pBase->opCapFlags.eepMisc & AR5416_EEPMISC_BIG_ENDIAN) !=
