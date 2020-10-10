@@ -658,6 +658,8 @@ int main(int argc, char *argv[])
 	}
 
 	if (act->flags & ACT_F_EEPROM) {
+		int tries = 0;
+
 		hw_eeprom_set_ops(aem);
 		hw_otp_set_ops(aem);
 
@@ -682,12 +684,24 @@ int main(int argc, char *argv[])
 			goto con_clean;
 		}
 
-		if (!aem->eepmap->load_eeprom(aem)) {
-			fprintf(stderr, "Unable to load EEPROM data\n");
-			ret = -EIO;
-			goto con_clean;
+		if (aem->eep && aem->eepmap->load_eeprom) {
+			tries++;
+			if (aem->verbose > 1)
+				printf("Try to load data from EEPROM\n");
+			if (aem->eepmap->load_eeprom(aem))
+				goto loading_done;
 		}
 
+		if (tries) {
+			fprintf(stderr, "Unable to load data from any sources\n");
+			ret = -EIO;
+		} else {
+			fprintf(stderr, "No suitable data source in available via configured connector\n");
+			ret = -EINVAL;
+		}
+		goto con_clean;
+
+loading_done:
 		if (!aem->eepmap->check_eeprom(aem)) {
 			fprintf(stderr, "EEPROM check failed\n");
 			ret = -EINVAL;
