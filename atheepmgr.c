@@ -356,7 +356,7 @@ static int act_reg_write(struct atheepmgr *aem, int argc, char *argv[])
 	return 0;
 }
 
-#define ACT_F_EEPROM	(1 << 0)	/* Action will interact with EEPROM */
+#define ACT_F_DATA	(1 << 0)	/* Action will interact with EEPROM/OTP data */
 #define ACT_F_HW	(1 << 1)	/* Action require direct HW access */
 
 static const struct action {
@@ -367,15 +367,15 @@ static const struct action {
 	{
 		.name = "dump",
 		.func = act_eep_dump,
-		.flags = ACT_F_EEPROM,
+		.flags = ACT_F_DATA,
 	}, {
 		.name = "save",
 		.func = act_eep_save,
-		.flags = ACT_F_EEPROM,
+		.flags = ACT_F_DATA,
 	}, {
 		.name = "update",
 		.func = act_eep_update,
-		.flags = ACT_F_EEPROM,
+		.flags = ACT_F_DATA,
 	}, {
 		.name = "gpiodump",
 		.func = act_gpio_dump,
@@ -627,7 +627,7 @@ int main(int argc, char *argv[])
 		goto exit;
 	}
 
-	if ((act->flags & ACT_F_EEPROM) && !aem->eepmap &&
+	if ((act->flags & ACT_F_DATA) && !aem->eepmap &&
 	    !(aem->con->caps & CON_CAP_HW)) {
 		fprintf(stderr, "EEPROM map type option is mandatory for connectors without direct HW access\n");
 		goto exit;
@@ -657,7 +657,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (act->flags & ACT_F_EEPROM) {
+	if (act->flags & ACT_F_DATA) {
 		int tries = 0;
 
 		hw_eeprom_set_ops(aem);
