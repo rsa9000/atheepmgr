@@ -362,6 +362,34 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 #undef MSTATE
 }
 
+static bool eep_9300_load_blob(struct atheepmgr *aem)
+{
+	const int data_size = sizeof(struct ar9300_eeprom);
+	struct eep_9300_priv *emp = aem->eepmap_priv;
+	int res;
+
+	if (aem->con->blob->getsize(aem) < data_size)
+		return false;
+	res = aem->con->blob->read(aem, aem->eep_buf, data_size);
+	if (res != data_size) {
+		fprintf(stderr, "Unable to read EEPROM blob\n");
+		return false;
+	}
+
+	if (!ar9300_check_eeprom_data((struct ar9300_eeprom *)aem->eep_buf))
+		return false;
+	if (aem->verbose)
+		printf("Found valid uncompressed EEPROM data\n");
+
+	emp->is_uncompressed = 1;
+	memcpy(&emp->eep, aem->eep_buf, sizeof(emp->eep));
+	emp->valid_blocks++;
+
+	aem->eep_len = (data_size + 1) / 2;	/* Set actual EEPROM size */
+
+	return true;
+}
+
 /*
  * Read the configuration data from the eeprom uncompress it if necessary.
  */
@@ -374,20 +402,11 @@ static bool eep_9300_load_eeprom(struct atheepmgr *aem)
 	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
 
 	emp->buf_is_be = 0;	/* EEPROM is always in Little-endians */
+	aem->eep_len = 0;	/* Reset internal buffer contents */
 
 parse_eeprom:
-	if (ar9300_eep2buf(aem, sizeof(struct ar9300_eeprom)) != 0)
+	if (ar9300_eep2buf(aem, sizeof(uint16_t)) != 0)	/* Read magic */
 		return false;
-	if (ar9300_check_eeprom_data((struct ar9300_eeprom *)aem->eep_buf)) {
-		if (aem->verbose)
-			printf("Found valid uncompressed EEPROM data\n");
-		emp->is_uncompressed = 1;
-		cptr = sizeof(emp->eep);
-		memcpy(&emp->eep, aem->eep_buf, sizeof(emp->eep));
-		emp->valid_blocks++;
-		goto found;
-	}
-
 	if (aem->eep_buf[0] != AR5416_EEPROM_MAGIC) {
 		if (aem->eep_io_swap == bswap) {
 			if (aem->verbose)
@@ -924,6 +943,7 @@ const struct eepmap eepmap_9300 = {
 	.desc = "EEPROM map for modern .11n chips (AR93xx/AR94xx/AR95xx/etc.)",
 	.priv_data_sz = sizeof(struct eep_9300_priv),
 	.eep_buf_sz = AR9300_EEPROM_SIZE / sizeof(uint16_t),
+	.load_blob = eep_9300_load_blob,
 	.load_eeprom = eep_9300_load_eeprom,
 	.load_otp = eep_9300_load_otp,
 	.check_eeprom = eep_9300_check,
