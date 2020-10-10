@@ -198,6 +198,7 @@ struct eepmap {
 	size_t priv_data_sz;
 	size_t eep_buf_sz;		/* EEP buffer size in 16-bit words */
 	bool (*load_eeprom)(struct atheepmgr *aem);
+	bool (*load_otp)(struct atheepmgr *aem);
 	int (*check_eeprom)(struct atheepmgr *aem);
 	void (*dump[EEP_SECT_MAX])(struct atheepmgr *aem);
 	bool (*update_eeprom)(struct atheepmgr *aem, int param,

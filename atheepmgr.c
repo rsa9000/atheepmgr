@@ -691,6 +691,13 @@ int main(int argc, char *argv[])
 			if (aem->eepmap->load_eeprom(aem))
 				goto loading_done;
 		}
+		if (aem->otp && aem->eepmap->load_otp) {
+			tries++;
+			if (aem->verbose > 1)
+				printf("Try to load data from OTP memory\n");
+			if (aem->eepmap->load_otp(aem))
+				goto loading_done;
+		}
 
 		if (tries) {
 			fprintf(stderr, "Unable to load data from any sources\n");
