@@ -121,22 +121,6 @@ static void ar9300_buf2bstr(struct atheepmgr *aem, int addr,
 }
 
 /**
- * Since the AR93xx EEPROM layout does not contain any predefined value
- * (like a magic number), we can not determine at the EEPROM contents
- * loading stage whether to do the byte-swaping or not.
- *
- * So, this routine is used to byte-swap a data that are already loaded
- * to the buffer.
- */
-static void ar9300_buf_byteswap(struct atheepmgr *aem)
-{
-	int i;
-
-	for (i = 0; i < aem->eep_len; ++i)
-		aem->eep_buf[i] = bswap_16(aem->eep_buf[i]);
-}
-
-/**
  * Read data from OTP mem and fill internal buffer up to specified ammount of
  * bytes.
  */
@@ -396,27 +380,25 @@ static bool eep_9300_load_blob(struct atheepmgr *aem)
 static bool eep_9300_load_eeprom(struct atheepmgr *aem)
 {
 	struct eep_9300_priv *emp = aem->eepmap_priv;
+	uint16_t magic;
 	int cptr;
-	int bswap = aem->eep_io_swap;
 
 	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
 
 	emp->buf_is_be = 0;	/* EEPROM is always in Little-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
 
-parse_eeprom:
-	if (ar9300_eep2buf(aem, sizeof(uint16_t)) != 0)	/* Read magic */
+	/* Check byteswaping requirements */
+	if (!EEP_READ(AR5416_EEPROM_MAGIC_OFFSET, &magic)) {
+		fprintf(stderr, "EEPROM magic read failed\n");
 		return false;
-	if (aem->eep_buf[0] != AR5416_EEPROM_MAGIC) {
-		if (aem->eep_io_swap == bswap) {
-			if (aem->verbose)
-				printf("Try to byteswap EEPROM contents\n");
-			aem->eep_io_swap = !aem->eep_io_swap;
-			ar9300_buf_byteswap(aem);
-			goto parse_eeprom;	/* Reparse EEPROM contents */
-		} else {
-			return false;
-		}
+	}
+	if (bswap_16(magic) == AR5416_EEPROM_MAGIC) {
+		if (aem->verbose)
+			printf("Use byteswapped EEPROM I/O\n");
+		aem->eep_io_swap = !aem->eep_io_swap;
+	} else if (magic != AR5416_EEPROM_MAGIC) {
+		return false;
 	}
 
 	if (aem->verbose)
