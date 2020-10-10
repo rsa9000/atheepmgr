@@ -153,6 +153,11 @@ struct gpio_ops {
 	const char * (*out_mux_get_str)(struct atheepmgr *aem, unsigned gpio);
 };
 
+struct blob_ops {
+	int (*getsize)(struct atheepmgr *aem);
+	int (*read)(struct atheepmgr *aem, void *buf, int len);
+};
+
 struct eep_ops {
 	bool (*read)(struct atheepmgr *aem, uint32_t off, uint16_t *data);
 	bool (*write)(struct atheepmgr *aem, uint32_t off, uint16_t data);
@@ -173,6 +178,7 @@ struct connector {
 	void (*reg_write)(struct atheepmgr *aem, uint32_t reg, uint32_t val);
 	void (*reg_rmw)(struct atheepmgr *aem, uint32_t reg, uint32_t set,
 			uint32_t clr);
+	const struct blob_ops *blob;
 	const struct eep_ops *eep;
 	const struct otp_ops *otp;
 };
@@ -197,6 +203,7 @@ struct eepmap {
 	const char *desc;
 	size_t priv_data_sz;
 	size_t eep_buf_sz;		/* EEP buffer size in 16-bit words */
+	bool (*load_blob)(struct atheepmgr *aem);
 	bool (*load_eeprom)(struct atheepmgr *aem);
 	bool (*load_otp)(struct atheepmgr *aem);
 	int (*check_eeprom)(struct atheepmgr *aem);

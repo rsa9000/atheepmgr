@@ -53,6 +53,23 @@ static void file_reg_rmw(struct atheepmgr *aem, uint32_t reg, uint32_t set,
 	fprintf(stderr, "confile: direct reg RMW is not supported\n");
 }
 
+static int file_blob_getsize(struct atheepmgr *aem)
+{
+	struct file_priv *fpd = aem->con_priv;
+
+	return fpd->data_len;
+}
+
+static int file_blob_read(struct atheepmgr *aem, void *buf, int len)
+{
+	struct file_priv *fpd = aem->con_priv;
+
+	if (fseek(fpd->fp, 0, SEEK_SET) != 0)
+		return -1;
+
+	return fread(buf, 1, len, fpd->fp);
+}
+
 static bool file_eeprom_read(struct atheepmgr *aem, uint32_t off, uint16_t *data)
 {
 	struct file_priv *fpd = aem->con_priv;
@@ -173,6 +190,11 @@ static void file_clean(struct atheepmgr *aem)
 	fclose(fpd->fp);
 }
 
+static const struct blob_ops blob_file = {
+	.getsize = file_blob_getsize,
+	.read = file_blob_read,
+};
+
 static const struct eep_ops eep_file = {
 	.read = file_eeprom_read,
 	.write = file_eeprom_write,
@@ -190,6 +212,7 @@ const struct connector con_file = {
 	.reg_read = file_reg_read,
 	.reg_write = file_reg_write,
 	.reg_rmw = file_reg_rmw,
+	.blob = &blob_file,
 	.eep = &eep_file,
 	.otp = &otp_file,
 };

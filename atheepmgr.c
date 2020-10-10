@@ -684,6 +684,13 @@ int main(int argc, char *argv[])
 			goto con_clean;
 		}
 
+		if (aem->con->blob && aem->eepmap->load_blob) {
+			tries++;
+			if (aem->verbose > 1)
+				printf("Try to load data from blob\n");
+			if (aem->eepmap->load_blob(aem))
+				goto loading_done;
+		}
 		if (aem->eep && aem->eepmap->load_eeprom) {
 			tries++;
 			if (aem->verbose > 1)
