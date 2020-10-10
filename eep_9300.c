@@ -33,7 +33,12 @@ struct eep_9300_blk_hdr {
 struct eep_9300_priv {
 	uint8_t unpack_buf[0x800];	/* Unpacking temporary data buffer */
 	int valid_blocks;
-	int is_uncompressed;		/* Data is uncompressed */
+	enum {
+		DATA_SRC_NONE = 0,
+		DATA_SRC_BLOB,
+		DATA_SRC_EEPROM,
+		DATA_SRC_OTP,
+	} data_src;			/* Source of data in buffer */
 	int buf_is_be;			/* Is buf 16-bits word in big-endians */
 	struct ar9300_eeprom eep;
 };
@@ -365,7 +370,7 @@ static bool eep_9300_load_blob(struct atheepmgr *aem)
 	if (aem->verbose)
 		printf("Found valid uncompressed EEPROM data\n");
 
-	emp->is_uncompressed = 1;
+	emp->data_src = DATA_SRC_BLOB;
 	memcpy(&emp->eep, aem->eep_buf, sizeof(emp->eep));
 	emp->valid_blocks++;
 
@@ -427,6 +432,7 @@ static bool eep_9300_load_eeprom(struct atheepmgr *aem)
 	return false;
 
 found:
+	emp->data_src = DATA_SRC_EEPROM;
 	aem->eep_len = (cptr + 1) / 2;	/* Set actual EEPROM size */
 	return true;
 }
@@ -461,6 +467,7 @@ static bool eep_9300_load_otp(struct atheepmgr *aem)
 	return false;
 
 found:
+	emp->data_src = DATA_SRC_OTP;
 	aem->eep_len = (cptr + 1) / 2;	/* Set actual EEPROM size */
 	return true;
 }
@@ -892,7 +899,7 @@ static bool eep_9300_update_eeprom(struct atheepmgr *aem, int param,
 	uint16_t *buf = aem->eep_buf;
 	int data_pos, data_len = 0, addr;
 
-	if (!emp->is_uncompressed) {
+	if (emp->data_src != DATA_SRC_BLOB) {
 		fprintf(stderr, "Updation is supported for uncompressed data only\n");
 		return false;
 	}
