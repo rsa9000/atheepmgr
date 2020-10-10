@@ -396,7 +396,7 @@ parse_eeprom:
 			ar9300_buf_byteswap(aem);
 			goto parse_eeprom;	/* Reparse EEPROM contents */
 		} else {
-			goto parse_otp;
+			return false;
 		}
 	}
 
@@ -423,7 +423,23 @@ parse_eeprom:
 	if (ar9300_process_blocks(aem, cptr) == 0)
 		goto found;
 
-parse_otp:
+	return false;
+
+found:
+	aem->eep_len = (cptr + 1) / 2;	/* Set actual EEPROM size */
+	return true;
+}
+
+/*
+ * Read the configuration data from the OTP memory uncompress it if necessary.
+ */
+static bool eep_9300_load_otp(struct atheepmgr *aem)
+{
+	struct eep_9300_priv *emp = aem->eepmap_priv;
+	int cptr;
+
+	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
+
 	emp->buf_is_be = aem->host_is_be;	/* OTP utilize native-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
 
@@ -909,6 +925,7 @@ const struct eepmap eepmap_9300 = {
 	.priv_data_sz = sizeof(struct eep_9300_priv),
 	.eep_buf_sz = AR9300_EEPROM_SIZE / sizeof(uint16_t),
 	.load_eeprom = eep_9300_load_eeprom,
+	.load_otp = eep_9300_load_otp,
 	.check_eeprom = eep_9300_check,
 	.dump = {
 		[EEP_SECT_BASE] = eep_9300_dump_base_header,
