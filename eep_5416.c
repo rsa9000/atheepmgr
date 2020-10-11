@@ -146,7 +146,7 @@ static void eep_5416_dump_init_data(struct atheepmgr *aem)
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_eep_init *ini = &emp->ini;
 
-	EEP_PRINT_SECT_NAME("EEPROM Init data");
+	EEP_PRINT_SECT_NAME("Chip init data");
 
 	ar5416_dump_eep_init(ini, sizeof(emp->init_data) / 2);
 }

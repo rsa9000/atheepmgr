@@ -1063,7 +1063,7 @@ static void eep_5211_dump_init_data(struct atheepmgr *aem)
 	struct ar5211_pci_eep_data *pci = &ini->pci;
 	int i;
 
-	EEP_PRINT_SECT_NAME("EEPROM Init data");
+	EEP_PRINT_SECT_NAME("Chip init data");
 
 	PR("Device ID", "0x%04x", le16toh(pci->dev_id));
 	PR("Vendor ID", "0x%04x", le16toh(pci->ven_id));
