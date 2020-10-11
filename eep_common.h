@@ -94,17 +94,17 @@ extern const char * const eep_rates_ht[AR5416_NUM_TARGET_POWER_RATES_HT];
 extern const char * const eep_ctldomains[];
 extern const char * const eep_ctlmodes[];
 
-struct ar5416_reg_init {
+struct ar5416_eep_reg_init {
 	uint16_t addr;
 	uint16_t val_low;
 	uint16_t val_high;
 } __attribute__ ((packed));
 
-struct ar5416_init {
+struct ar5416_eep_init {
 	uint16_t magic;
 	uint16_t prot;
 	uint16_t iptr;
-	struct ar5416_reg_init regs[];
+	struct ar5416_eep_reg_init regs[];
 } __attribute__ ((packed));
 
 struct ar5416_spur_chan {
@@ -155,6 +155,8 @@ bool __ar5416_toggle_byteswap(struct atheepmgr *aem, uint32_t eepmisc_off,
 				 AR ## __chip ## _DATA_START_LOC +	\
 				 offsetof(struct ar ## __chip ## _eeprom,\
 				          baseEepHeader.binBuildNumber) / 2)
+
+void ar5416_dump_eep_init(const struct ar5416_eep_init *ini, size_t size);
 
 void ar5416_dump_target_power(const struct ar5416_cal_target_power *pow,
 			      int maxchans, const char * const rates[],

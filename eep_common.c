@@ -191,6 +191,34 @@ skip_eeprom_io_swap:
 	return true;
 }
 
+/**
+ * NB: size is in 16-bits words
+ */
+void ar5416_dump_eep_init(const struct ar5416_eep_init *ini, size_t size)
+{
+	int i, maxregsnum;
+
+	printf("%-20s : 0x%04X\n", "Magic", ini->magic);
+	for (i = 0; i < 8; ++i)
+		printf("Region%d access       : %s\n", i,
+		       sAccessType[(ini->prot >> (i * 2)) & 0x3]);
+	printf("%-20s : 0x%04X\n", "Regs init data ptr", ini->iptr);
+	printf("\n");
+
+	EEP_PRINT_SUBSECT_NAME("Register(s) initialization data");
+
+	maxregsnum = (2 * size - offsetof(typeof(*ini), regs)) /
+		     sizeof(ini->regs[0]);
+	for (i = 0; i < maxregsnum; ++i) {
+		if (ini->regs[i].addr == 0xffff)
+			break;
+		printf("  %04X: %04X%04X\n", ini->regs[i].addr,
+		       ini->regs[i].val_high, ini->regs[i].val_low);
+	}
+
+	printf("\n");
+}
+
 void ar5416_dump_target_power(const struct ar5416_cal_target_power *caldata,
 			      int maxchans, const char * const rates[],
 			      int nrates, int is_2g)

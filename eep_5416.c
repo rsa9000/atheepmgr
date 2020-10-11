@@ -22,7 +22,7 @@
 
 struct eep_5416_priv {
 	union {
-		struct ar5416_init ini;
+		struct ar5416_eep_init ini;
 		uint16_t init_data[AR5416_DATA_START_LOC];
 	};
 	struct ar5416_eeprom eep;
@@ -73,7 +73,7 @@ static bool eep_5416_load_eeprom(struct atheepmgr *aem)
 static bool eep_5416_check(struct atheepmgr *aem)
 {
 	struct eep_5416_priv *emp = aem->eepmap_priv;
-	struct ar5416_init *ini = &emp->ini;
+	struct ar5416_eep_init *ini = &emp->ini;
 	struct ar5416_eeprom *eep = &emp->eep;
 	struct ar5416_base_eep_hdr *pBase = &eep->baseEepHeader;
 	const uint16_t *buf = aem->eep_buf;
@@ -144,30 +144,11 @@ static bool eep_5416_check(struct atheepmgr *aem)
 static void eep_5416_dump_init_data(struct atheepmgr *aem)
 {
 	struct eep_5416_priv *emp = aem->eepmap_priv;
-	struct ar5416_init *ini = &emp->ini;
-	int i, maxregsnum;
+	struct ar5416_eep_init *ini = &emp->ini;
 
 	EEP_PRINT_SECT_NAME("EEPROM Init data");
 
-	printf("%-20s : 0x%04X\n", "Magic", ini->magic);
-	for (i = 0; i < 8; ++i)
-		printf("Region%d access       : %s\n", i,
-		       sAccessType[(ini->prot >> (i * 2)) & 0x3]);
-	printf("%-20s : 0x%04X\n", "Regs init data ptr", ini->iptr);
-	printf("\n");
-
-	EEP_PRINT_SUBSECT_NAME("Register(s) initialization data");
-
-	maxregsnum = (sizeof(emp->init_data) - offsetof(typeof(*ini), regs)) /
-		     sizeof(ini->regs[0]);
-	for (i = 0; i < maxregsnum; ++i) {
-		if (ini->regs[i].addr == 0xffff)
-			break;
-		printf("  %04X: %04X%04X\n", ini->regs[i].addr,
-		       ini->regs[i].val_high, ini->regs[i].val_low);
-	}
-
-	printf("\n");
+	ar5416_dump_eep_init(ini, sizeof(emp->init_data) / 2);
 }
 
 static void eep_5416_dump_base_header(struct atheepmgr *aem)
