@@ -487,12 +487,16 @@ static int eep_9300_check(struct atheepmgr *aem)
 		bswap_32_inplace(pModal->antCtrlCommon2);
 		for (i = 0; i < ARRAY_SIZE(pModal->antCtrlChain); ++i)
 			bswap_16_inplace(pModal->antCtrlChain[i]);
+		bswap_32_inplace(pModal->papdRateMaskHt20);
+		bswap_32_inplace(pModal->papdRateMaskHt40);
 
 		pModal = &eep->modalHeader2G;
 		bswap_32_inplace(pModal->antCtrlCommon);
 		bswap_32_inplace(pModal->antCtrlCommon2);
 		for (i = 0; i < ARRAY_SIZE(pModal->antCtrlChain); ++i)
 			bswap_16_inplace(pModal->antCtrlChain[i]);
+		bswap_32_inplace(pModal->papdRateMaskHt20);
+		bswap_32_inplace(pModal->papdRateMaskHt40);
 	}
 
 	return true;
