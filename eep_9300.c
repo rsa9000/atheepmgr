@@ -38,6 +38,7 @@ struct eep_9300_priv {
 		DATA_SRC_EEPROM,
 		DATA_SRC_OTP,
 	} data_src;			/* Source of data in buffer */
+	int init_data_max_size;		/* Position of data stream finish */
 	int buf_is_be;			/* Is buf 16-bits word in big-endians */
 	struct ar9300_eeprom eep;
 };
@@ -345,6 +346,8 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 		cptr -= COMP_HDR_LEN + blkh.len + COMP_CKSUM_LEN;
 	}
 
+	emp->init_data_max_size = cptr;	/* Preserve for future usage */
+
 	return valid_blocks ? 0 : -1;
 
 #undef MSTATE
@@ -509,6 +512,46 @@ static bool eep_9300_check(struct atheepmgr *aem)
 	}
 
 	return true;
+}
+
+static void eep_9300_dump_otp_init(struct ar9300_otp_init *ini,
+				   size_t size)
+{
+	int i, maxregsnum;
+
+	printf("Flags: 0x%08x\n", le32toh(ini->flags));
+	printf("\n");
+
+	EEP_PRINT_SUBSECT_NAME("Register(s) initialization data");
+
+	maxregsnum = (size - offsetof(typeof(*ini), regs)) /
+		     sizeof(ini->regs[0]);
+	for (i = 0; i < maxregsnum; ++i) {
+		if (!ini->regs[i].addr)
+			break;
+		printf("  %06X: %08X\n", le32toh(ini->regs[i].addr),
+		       le32toh(ini->regs[i].val));
+	}
+
+	printf("\n");
+}
+
+static void eep_9300_dump_init_data(struct atheepmgr *aem)
+{
+	struct eep_9300_priv *emp = aem->eepmap_priv;
+
+	EEP_PRINT_SECT_NAME("Chip init data");
+
+	if (emp->data_src == DATA_SRC_BLOB) {
+		printf("Blob has no chip initialization data\n");
+		printf("\n");
+	} else if (emp->data_src == DATA_SRC_EEPROM) {
+		ar5416_dump_eep_init((struct ar5416_eep_init *)aem->eep_buf,
+				     emp->init_data_max_size / 2);
+	} else if (emp->data_src == DATA_SRC_OTP) {
+		eep_9300_dump_otp_init((struct ar9300_otp_init *)aem->eep_buf,
+				       emp->init_data_max_size);
+	}
 }
 
 static void eep_9300_dump_base_header(struct atheepmgr *aem)
@@ -936,6 +979,7 @@ const struct eepmap eepmap_9300 = {
 	.load_otp = eep_9300_load_otp,
 	.check_eeprom = eep_9300_check,
 	.dump = {
+		[EEP_SECT_INIT] = eep_9300_dump_init_data,
 		[EEP_SECT_BASE] = eep_9300_dump_base_header,
 		[EEP_SECT_MODAL] = eep_9300_dump_modal_header,
 		[EEP_SECT_POWER] = eep_9300_dump_power_info,

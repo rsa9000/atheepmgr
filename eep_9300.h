@@ -17,6 +17,17 @@
 #ifndef EEP_9300_H
 #define EEP_9300_H
 
+struct ar9300_otp_reg_init {
+	uint32_t addr;
+	uint32_t val;
+} __attribute__ ((packed));
+
+struct ar9300_otp_init {
+	uint32_t flags;
+	uint8_t res[0x1c];	/* Reserved region */
+	struct ar9300_otp_reg_init regs[];
+} __attribute__ ((packed));
+
 /**
  * This set of macro extends size of subfield with GPIO line number. Actually
  * we need this only for AR9462 and AR9565 chips, which have more GPIO lines.
