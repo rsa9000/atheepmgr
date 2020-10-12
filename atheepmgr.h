@@ -63,8 +63,6 @@
 #endif
 #endif
 
-#include "eep_common.h"
-
 #define bswap_16_inplace(__x)	(__x) = bswap_16(__x)
 #define bswap_32_inplace(__x)	(__x) = bswap_32(__x)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))

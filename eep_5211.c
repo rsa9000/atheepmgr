@@ -16,6 +16,7 @@
 
 #include "atheepmgr.h"
 #include "utils.h"
+#include "eep_common.h"
 #include "eep_5211.h"
 
 struct eep_5211_priv {

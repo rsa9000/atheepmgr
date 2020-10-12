@@ -16,6 +16,7 @@
  */
 
 #include "atheepmgr.h"
+#include "eep_common.h"
 
 const char * const sDeviceType[] = {
 	"UNKNOWN [0] ",

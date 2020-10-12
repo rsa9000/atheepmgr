@@ -17,6 +17,7 @@
 
 #include "atheepmgr.h"
 #include "utils.h"
+#include "eep_common.h"
 #include "eep_9300.h"
 #include "eep_9300_templates.h"
 
