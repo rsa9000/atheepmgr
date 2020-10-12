@@ -139,6 +139,22 @@ struct ar5416_cal_target_power {
 #define EEP_PRINT_SUBSECT_NAME(__name)			\
 		printf("[%s]\n\n", __name);
 
+/**
+ * All EEPROM maps in scope have a similar fields structure and names, but
+ * different offsets within a base header and (or) different start position of
+ * the main data within EEPROM. So use macro to overcome offset differences.
+ */
+bool __ar5416_toggle_byteswap(struct atheepmgr *aem, uint32_t eepmisc_off,
+			      uint32_t binbuildnum_off);
+#define AR5416_TOGGLE_BYTESWAP(__chip)					\
+	__ar5416_toggle_byteswap(aem,					\
+				 AR ## __chip ## _DATA_START_LOC +	\
+				 offsetof(struct ar ## __chip ## _eeprom,\
+				          baseEepHeader.eepMisc) / 2,	\
+				 AR ## __chip ## _DATA_START_LOC +	\
+				 offsetof(struct ar ## __chip ## _eeprom,\
+				          baseEepHeader.binBuildNumber) / 2)
+
 void ar5416_dump_target_power(const struct ar5416_cal_target_power *pow,
 			      int maxchans, const char * const rates[],
 			      int nrates, int is_2g);

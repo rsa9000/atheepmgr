@@ -44,16 +44,11 @@ static bool eep_9287_fill_eeprom(struct atheepmgr *aem)
 	uint16_t *eep_data = (uint16_t *)&emp->eep;
 	uint16_t *eep_init = (uint16_t *)&emp->ini;
 	uint16_t *buf = aem->eep_buf;
-	uint16_t magic;
 	int addr;
 
 	/* Check byteswaping requirements */
-	if (!EEP_READ(AR5416_EEPROM_MAGIC_OFFSET, &magic)) {
-		fprintf(stderr, "EEPROM magic read failed\n");
+	if (!AR5416_TOGGLE_BYTESWAP(9287))
 		return false;
-	}
-	if (bswap_16(magic) == AR5416_EEPROM_MAGIC)
-		aem->eep_io_swap = !aem->eep_io_swap;
 
 	/* Read to the intermediate buffer */
 	for (addr = 0; addr < AR9287_DATA_START_LOC + AR9287_DATA_SZ; ++addr) {
@@ -85,7 +80,8 @@ static bool eep_9287_check_eeprom(struct atheepmgr *aem)
 	uint16_t sum;
 	int i, el;
 
-	if (ini->magic != AR5416_EEPROM_MAGIC) {
+	if (ini->magic != AR5416_EEPROM_MAGIC &&
+	    bswap_16(ini->magic) != AR5416_EEPROM_MAGIC) {
 		fprintf(stderr, "Invalid EEPROM Magic 0x%04x, expected 0x%04x\n",
 			ini->magic, AR5416_EEPROM_MAGIC);
 		return false;
