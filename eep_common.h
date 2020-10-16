@@ -96,7 +96,8 @@ extern const char * const eep_ctlmodes[];
 
 struct ar5416_reg_init {
 	uint16_t addr;
-	uint32_t val;
+	uint16_t val_low;
+	uint16_t val_high;
 } __attribute__ ((packed));
 
 struct ar5416_init {

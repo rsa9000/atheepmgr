@@ -92,6 +92,9 @@ static bool eep_5416_check(struct atheepmgr *aem)
 
 		printf("EEPROM Endianness is not native.. Changing.\n");
 
+		for (i = 0; i < ARRAY_SIZE(emp->init_data); ++i)
+			bswap_16_inplace(emp->init_data[i]);
+
 		bswap_16_inplace(pBase->length);
 		bswap_16_inplace(pBase->checksum);
 		bswap_16_inplace(pBase->version);
@@ -142,29 +145,26 @@ static void eep_5416_dump_init_data(struct atheepmgr *aem)
 {
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_init *ini = &emp->ini;
-	uint16_t magic = le16toh(ini->magic);
-	uint16_t prot = le16toh(ini->prot);
-	uint16_t iptr = le16toh(ini->iptr);
 	int i, maxregsnum;
 
 	EEP_PRINT_SECT_NAME("EEPROM Init data");
 
-	printf("%-20s : 0x%04X\n", "Magic", magic);
+	printf("%-20s : 0x%04X\n", "Magic", ini->magic);
 	for (i = 0; i < 8; ++i)
 		printf("Region%d access       : %s\n", i,
-		       sAccessType[(prot >> (i * 2)) & 0x3]);
-	printf("%-20s : 0x%04X\n", "Regs init data ptr", iptr);
+		       sAccessType[(ini->prot >> (i * 2)) & 0x3]);
+	printf("%-20s : 0x%04X\n", "Regs init data ptr", ini->iptr);
 	printf("\n");
 
-	EEP_PRINT_SUBSECT_NAME("Register initialization data");
+	EEP_PRINT_SUBSECT_NAME("Register(s) initialization data");
 
 	maxregsnum = (sizeof(emp->init_data) - offsetof(typeof(*ini), regs)) /
 		     sizeof(ini->regs[0]);
 	for (i = 0; i < maxregsnum; ++i) {
 		if (ini->regs[i].addr == 0xffff)
 			break;
-		printf("  %04X: %08X\n", le16toh(ini->regs[i].addr),
-		       le32toh(ini->regs[i].val));
+		printf("  %04X: %04X%04X\n", ini->regs[i].addr,
+		       ini->regs[i].val_high, ini->regs[i].val_low);
 	}
 
 	printf("\n");
