@@ -93,17 +93,17 @@ typedef int bool;
 #define AR_SREV_REVISION_5418		0
 #define AR_SREV_VERSION_5416		0xD
 #define AR_SREV_REVISION_5416		0
-#define AR_SREV_VERSION_9160            0x40
-#define AR_SREV_VERSION_9280            0x80
-#define AR_SREV_VERSION_9285            0xC0
-#define AR_SREV_VERSION_9287            0x180
-#define AR_SREV_VERSION_9300            0x1c0
-#define AR_SREV_VERSION_9330            0x200
-#define AR_SREV_VERSION_9485            0x240
-#define AR_SREV_VERSION_9462            0x280
-#define AR_SREV_VERSION_9565            0x2c0
-#define AR_SREV_VERSION_9340            0x300
-#define AR_SREV_VERSION_9550            0x400
+#define AR_SREV_VERSION_9160		0x40
+#define AR_SREV_VERSION_9280		0x80
+#define AR_SREV_VERSION_9285		0xC0
+#define AR_SREV_VERSION_9287		0x180
+#define AR_SREV_VERSION_9300		0x1c0
+#define AR_SREV_VERSION_9330		0x200
+#define AR_SREV_VERSION_9485		0x240
+#define AR_SREV_VERSION_9462		0x280
+#define AR_SREV_VERSION_9565		0x2c0
+#define AR_SREV_VERSION_9340		0x300
+#define AR_SREV_VERSION_9550		0x400
 
 #define AR_SREV_5211_OR_LATER(_aem) \
 	((_aem)->macVersion >= AR_SREV_VERSION_5211)
@@ -134,8 +134,8 @@ typedef int bool;
 #define AR_SREV_9565(_aem) \
 	((_aem)->macVersion == AR_SREV_VERSION_9565)
 
-#define AH_WAIT_TIMEOUT 100000 /* (us) */
-#define AH_TIME_QUANTUM 10
+#define AH_WAIT_TIMEOUT		100000 /* (us) */
+#define AH_TIME_QUANTUM		10
 
 #define CON_CAP_HW		1	/* Con. is able to interact with HW */
 

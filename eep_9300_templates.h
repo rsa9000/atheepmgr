@@ -34,7 +34,7 @@
 #define LE32(__val)		((uint32_t)(__val))
 #endif
 
-#define CTL(_tpower, _flag) ((_tpower) | ((_flag) << 6))
+#define CTL(_tpower, _flag)			((_tpower) | ((_flag) << 6))
 
 static const struct ar9300_eeprom ar9300_default = {
 	.eepromVersion = 2,
@@ -56,14 +56,14 @@ static const struct ar9300_eeprom ar9300_default = {
 		.pwrTableOffset = AR9300_PWR_TABLE_OFFSET,
 		.params_for_tuning_caps = {0, 0},
 		.featureEnable = 0x0c,
-		 /*
-		  * bit0 - enable tx temp comp - disabled
-		  * bit1 - enable tx volt comp - disabled
-		  * bit2 - enable fastClock - enabled
-		  * bit3 - enable doubling - enabled
-		  * bit4 - enable internal regulator - disabled
-		  * bit5 - enable pa predistortion - disabled
-		  */
+		/*
+		 * bit0 - enable tx temp comp - disabled
+		 * bit1 - enable tx volt comp - disabled
+		 * bit2 - enable fastClock - enabled
+		 * bit3 - enable doubling - enabled
+		 * bit4 - enable internal regulator - disabled
+		 * bit5 - enable pa predistortion - disabled
+		 */
 		.miscConfiguration = 0, /* bit0 - turn down drivestrength */
 		.eepromWriteEnableGpio = 3,
 		.wlanDisableGpio = 0,
@@ -71,9 +71,9 @@ static const struct ar9300_eeprom ar9300_default = {
 		.rxBandSelectGpio = 0xff,
 		.txrxgain = 0,
 		.swreg = 0,
-	 },
+	},
 	.modalHeader2G = {
-	/* ar9300_modal_eep_header  2g */
+		/* ar9300_modal_eep_header  2g */
 		.antCtrlCommon = LE32(0x00000110),
 		.antCtrlCommon2 = LE32(0x00022222),
 		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
@@ -119,7 +119,7 @@ static const struct ar9300_eeprom ar9300_default = {
 		.futureModal = {
 			0, 0, 0, 0, 0, 0, 0,
 		},
-	 },
+	},
 	.base_ext1 = {
 		.ant_div_control = 0,
 		.future = {0, 0, 0},
@@ -129,42 +129,42 @@ static const struct ar9300_eeprom ar9300_default = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1),
-	 },
+	},
 	/* ar9300_cal_data_per_freq_op_loop 2g */
 	.calPierData2G = {
 		{ {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0} },
 		{ {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0} },
 		{ {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0} },
-	 },
+	},
 	.calTarget_freqbin_Cck = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2484, 1),
-	 },
+	},
 	.calTarget_freqbin_2G = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1)
-	 },
+	},
 	.calTarget_freqbin_2GHT20 = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1)
-	 },
+	},
 	.calTarget_freqbin_2GHT40 = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1)
-	 },
+	},
 	.calTargetPowerCck = {
-		 /* 1L-5L,5S,11L,11S */
-		 { {36, 36, 36, 36} },
-		 { {36, 36, 36, 36} },
+		/* 1L-5L,5S,11L,11S */
+		{ {36, 36, 36, 36} },
+		{ {36, 36, 36, 36} },
 	},
 	.calTargetPower2G = {
-		 /* 6-24,36,48,54 */
-		 { {32, 32, 28, 24} },
-		 { {32, 32, 28, 24} },
-		 { {32, 32, 28, 24} },
+		/* 6-24,36,48,54 */
+		{ {32, 32, 28, 24} },
+		{ {32, 32, 28, 24} },
+		{ {32, 32, 28, 24} },
 	},
 	.calTargetPower2GHT20 = {
 		{ {32, 32, 32, 32, 28, 20, 32, 32, 28, 20, 32, 32, 28, 20} },
@@ -261,28 +261,28 @@ static const struct ar9300_eeprom ar9300_default = {
 			/* Data[11].ctlEdges[2].bChannel */ FREQ2FBIN(2447, 1),
 			/* Data[11].ctlEdges[3].bChannel */ FREQ2FBIN(2462, 1),
 		}
-	 },
+	},
 	.ctlPowerData_2G = {
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
 
-		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
 
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
 
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-	 },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+	},
 	.modalHeader5G = {
 		.antCtrlCommon = LE32(0x00000110),
 		.antCtrlCommon2 = LE32(0x00022222),
-		 /* xatten1DB 3 xatten1_db for AR9280 (0xa20c/b20c 5:0) */
+		/* xatten1DB 3 xatten1_db for AR9280 (0xa20c/b20c 5:0) */
 		.xatten1DB = {0, 0, 0},
 
 		/*
@@ -313,7 +313,7 @@ static const struct ar9300_eeprom ar9300_default = {
 		.futureModal = {
 			0, 0, 0, 0, 0, 0, 0,
 		},
-	 },
+	},
 	.base_ext2 = {
 		.tempSlopeLow = 0,
 		.tempSlopeHigh = 0,
@@ -394,7 +394,7 @@ static const struct ar9300_eeprom ar9300_default = {
 		FREQ2FBIN(5745, 0),
 		FREQ2FBIN(5725, 0),
 		FREQ2FBIN(5825, 0)
-	 },
+	},
 	.calTargetPower5G = {
 		/* 6-24,36,48,54 */
 		{ {20, 20, 20, 10} },
@@ -405,7 +405,7 @@ static const struct ar9300_eeprom ar9300_default = {
 		{ {20, 20, 20, 10} },
 		{ {20, 20, 20, 10} },
 		{ {20, 20, 20, 10} },
-	 },
+	},
 	.calTargetPower5GHT20 = {
 		/*
 		 * 0_8_16,1-3_9-11_17-19,
@@ -419,7 +419,7 @@ static const struct ar9300_eeprom ar9300_default = {
 		{ {20, 20, 10, 10, 0, 0, 10, 10, 0, 0, 10, 10, 0, 0} },
 		{ {20, 20, 10, 10, 0, 0, 10, 10, 0, 0, 10, 10, 0, 0} },
 		{ {20, 20, 10, 10, 0, 0, 10, 10, 0, 0, 10, 10, 0, 0} },
-	 },
+	},
 	.calTargetPower5GHT40 =  {
 		/*
 		 * 0_8_16,1-3_9-11_17-19,
@@ -433,7 +433,7 @@ static const struct ar9300_eeprom ar9300_default = {
 		{ {20, 20, 10, 10, 0, 0, 10, 10, 0, 0, 10, 10, 0, 0} },
 		{ {20, 20, 10, 10, 0, 0, 10, 10, 0, 0, 10, 10, 0, 0} },
 		{ {20, 20, 10, 10, 0, 0, 10, 10, 0, 0, 10, 10, 0, 0} },
-	 },
+	},
 	.ctlIndex_5G =  {
 		0x10, 0x16, 0x18, 0x40, 0x46,
 		0x48, 0x30, 0x36, 0x38
@@ -536,7 +536,7 @@ static const struct ar9300_eeprom ar9300_default = {
 			/* Data[8].ctlEdges[6].bChannel */ FREQ2FBIN(5755, 0),
 			/* Data[8].ctlEdges[7].bChannel */ FREQ2FBIN(5795, 0)
 		}
-	 },
+	},
 	.ctlPowerData_5G = {
 		{
 			{
@@ -592,7 +592,7 @@ static const struct ar9300_eeprom ar9300_default = {
 				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
 			}
 		},
-	 }
+	}
 };
 
 static const struct ar9300_eeprom ar9300_x113 = {
@@ -614,14 +614,14 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		.pwrTableOffset = AR9300_PWR_TABLE_OFFSET,
 		.params_for_tuning_caps = {0, 0},
 		.featureEnable = 0x0d,
-		 /*
-		  * bit0 - enable tx temp comp - disabled
-		  * bit1 - enable tx volt comp - disabled
-		  * bit2 - enable fastClock - enabled
-		  * bit3 - enable doubling - enabled
-		  * bit4 - enable internal regulator - disabled
-		  * bit5 - enable pa predistortion - disabled
-		  */
+		/*
+		 * bit0 - enable tx temp comp - disabled
+		 * bit1 - enable tx volt comp - disabled
+		 * bit2 - enable fastClock - enabled
+		 * bit3 - enable doubling - enabled
+		 * bit4 - enable internal regulator - disabled
+		 * bit5 - enable pa predistortion - disabled
+		 */
 		.miscConfiguration = 0, /* bit0 - turn down drivestrength */
 		.eepromWriteEnableGpio = 6,
 		.wlanDisableGpio = 0,
@@ -629,7 +629,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		.rxBandSelectGpio = 0xff,
 		.txrxgain = 0x21,
 		.swreg = 0,
-	 },
+	},
 	.modalHeader2G = {
 	/* ar9300_modal_eep_header  2g */
 		.antCtrlCommon = LE32(0x00000110),
@@ -677,52 +677,52 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		.futureModal = {
 			0, 0, 0, 0, 0, 0, 0,
 		},
-	 },
-	 .base_ext1 = {
+	},
+	.base_ext1 = {
 		.ant_div_control = 0,
 		.future = {0, 0, 0},
 		.tempslopextension = {0, 0, 0, 0, 0, 0, 0, 0}
-	 },
+	},
 	.calFreqPier2G = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1),
-	 },
+	},
 	/* ar9300_cal_data_per_freq_op_loop 2g */
 	.calPierData2G = {
 		{ {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0} },
 		{ {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0} },
 		{ {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0} },
-	 },
+	},
 	.calTarget_freqbin_Cck = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2472, 1),
-	 },
+	},
 	.calTarget_freqbin_2G = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1)
-	 },
+	},
 	.calTarget_freqbin_2GHT20 = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1)
-	 },
+	},
 	.calTarget_freqbin_2GHT40 = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1)
-	 },
+	},
 	.calTargetPowerCck = {
-		 /* 1L-5L,5S,11L,11S */
-		 { {34, 34, 34, 34} },
-		 { {34, 34, 34, 34} },
+		/* 1L-5L,5S,11L,11S */
+		{ {34, 34, 34, 34} },
+		{ {34, 34, 34, 34} },
 	},
 	.calTargetPower2G = {
-		 /* 6-24,36,48,54 */
-		 { {34, 34, 32, 32} },
-		 { {34, 34, 32, 32} },
-		 { {34, 34, 32, 32} },
+		/* 6-24,36,48,54 */
+		{ {34, 34, 32, 32} },
+		{ {34, 34, 32, 32} },
+		{ {34, 34, 32, 32} },
 	},
 	.calTargetPower2GHT20 = {
 		{ {32, 32, 32, 32, 32, 28, 32, 32, 30, 28, 0, 0, 0, 0} },
@@ -819,24 +819,24 @@ static const struct ar9300_eeprom ar9300_x113 = {
 			/* Data[11].ctlEdges[2].bChannel */ FREQ2FBIN(2447, 1),
 			/* Data[11].ctlEdges[3].bChannel */ FREQ2FBIN(2462, 1),
 		}
-	 },
+	},
 	.ctlPowerData_2G = {
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
 
-		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
 
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
 
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-	 },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+	},
 	.modalHeader5G = {
 		.antCtrlCommon = LE32(0x00000220),
 		.antCtrlCommon2 = LE32(0x00011111),
@@ -872,7 +872,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		.futureModal = {
 			0, 0, 0, 0, 0, 0, 0,
 		},
-	 },
+	},
 	.base_ext2 = {
 		.tempSlopeLow = 72,
 		.tempSlopeHigh = 105,
@@ -880,7 +880,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		.xatten1MarginLow = {0, 0, 0},
 		.xatten1DBHigh = {0, 0, 0},
 		.xatten1MarginHigh = {0, 0, 0}
-	 },
+	},
 	.calFreqPier5G = {
 		FREQ2FBIN(5180, 0),
 		FREQ2FBIN(5240, 0),
@@ -953,7 +953,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		FREQ2FBIN(5670, 0),
 		FREQ2FBIN(5755, 0),
 		FREQ2FBIN(5825, 0)
-	 },
+	},
 	.calTargetPower5G = {
 		/* 6-24,36,48,54 */
 		{ {42, 40, 40, 34} },
@@ -964,7 +964,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		{ {42, 40, 40, 34} },
 		{ {42, 40, 40, 34} },
 		{ {42, 40, 40, 34} },
-	 },
+	},
 	.calTargetPower5GHT20 = {
 		/*
 		 * 0_8_16,1-3_9-11_17-19,
@@ -978,7 +978,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		{ {40, 40, 40, 40, 32, 28, 40, 40, 32, 28, 40, 40, 32, 20} },
 		{ {38, 38, 38, 38, 32, 28, 38, 38, 32, 28, 38, 38, 32, 26} },
 		{ {36, 36, 36, 36, 32, 28, 36, 36, 32, 28, 36, 36, 32, 26} },
-	 },
+	},
 	.calTargetPower5GHT40 =  {
 		/*
 		 * 0_8_16,1-3_9-11_17-19,
@@ -992,7 +992,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		{ {40, 40, 40, 38, 30, 26, 40, 40, 30, 26, 40, 40, 30, 24} },
 		{ {36, 36, 36, 36, 30, 26, 36, 36, 30, 26, 36, 36, 30, 24} },
 		{ {34, 34, 34, 34, 30, 26, 34, 34, 30, 26, 34, 34, 30, 24} },
-	 },
+	},
 	.ctlIndex_5G =  {
 		0x10, 0x16, 0x18, 0x40, 0x46,
 		0x48, 0x30, 0x36, 0x38
@@ -1095,7 +1095,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 			/* Data[8].ctlEdges[6].bChannel */ FREQ2FBIN(5755, 0),
 			/* Data[8].ctlEdges[7].bChannel */ FREQ2FBIN(5795, 0)
 		}
-	 },
+	},
 	.ctlPowerData_5G = {
 		{
 			{
@@ -1151,7 +1151,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
 			}
 		},
-	 }
+	}
 };
 
 
@@ -2292,14 +2292,14 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		.pwrTableOffset = AR9300_PWR_TABLE_OFFSET,
 		.params_for_tuning_caps = {0, 0},
 		.featureEnable = 0x0d,
-		 /*
-		  * bit0 - enable tx temp comp - disabled
-		  * bit1 - enable tx volt comp - disabled
-		  * bit2 - enable fastClock - enabled
-		  * bit3 - enable doubling - enabled
-		  * bit4 - enable internal regulator - disabled
-		  * bit5 - enable pa predistortion - disabled
-		  */
+		/*
+		 * bit0 - enable tx temp comp - disabled
+		 * bit1 - enable tx volt comp - disabled
+		 * bit2 - enable fastClock - enabled
+		 * bit3 - enable doubling - enabled
+		 * bit4 - enable internal regulator - disabled
+		 * bit5 - enable pa predistortion - disabled
+		 */
 		.miscConfiguration = 0, /* bit0 - turn down drivestrength */
 		.eepromWriteEnableGpio = 6,
 		.wlanDisableGpio = 0,
@@ -2307,7 +2307,7 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		.rxBandSelectGpio = 0xff,
 		.txrxgain = 0x10,
 		.swreg = 0,
-	 },
+	},
 	.modalHeader2G = {
 	/* ar9300_modal_eep_header  2g */
 		.antCtrlCommon = LE32(0x00000110),
@@ -2355,52 +2355,52 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		.futureModal = {
 			0, 0, 0, 0, 0, 0, 0,
 		},
-	 },
-	 .base_ext1 = {
+	},
+	.base_ext1 = {
 		.ant_div_control = 0,
 		.future = {0, 0, 0},
 		.tempslopextension = {0, 0, 0, 0, 0, 0, 0, 0}
-	 },
+	},
 	.calFreqPier2G = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2462, 1),
-	 },
+	},
 	/* ar9300_cal_data_per_freq_op_loop 2g */
 	.calPierData2G = {
 		{ {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0} },
 		{ {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0} },
 		{ {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0} },
-	 },
+	},
 	.calTarget_freqbin_Cck = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2472, 1),
-	 },
+	},
 	.calTarget_freqbin_2G = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1)
-	 },
+	},
 	.calTarget_freqbin_2GHT20 = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1)
-	 },
+	},
 	.calTarget_freqbin_2GHT40 = {
 		FREQ2FBIN(2412, 1),
 		FREQ2FBIN(2437, 1),
 		FREQ2FBIN(2472, 1)
-	 },
+	},
 	.calTargetPowerCck = {
-		 /* 1L-5L,5S,11L,11S */
-		 { {34, 34, 34, 34} },
-		 { {34, 34, 34, 34} },
+		/* 1L-5L,5S,11L,11S */
+		{ {34, 34, 34, 34} },
+		{ {34, 34, 34, 34} },
 	},
 	.calTargetPower2G = {
-		 /* 6-24,36,48,54 */
-		 { {34, 34, 32, 32} },
-		 { {34, 34, 32, 32} },
-		 { {34, 34, 32, 32} },
+		/* 6-24,36,48,54 */
+		{ {34, 34, 32, 32} },
+		{ {34, 34, 32, 32} },
+		{ {34, 34, 32, 32} },
 	},
 	.calTargetPower2GHT20 = {
 		{ {32, 32, 32, 32, 32, 30, 32, 32, 30, 28, 0, 0, 0, 0} },
@@ -2497,29 +2497,29 @@ static const struct ar9300_eeprom ar9300_h116 = {
 			/* Data[11].ctlEdges[2].bChannel */ FREQ2FBIN(2447, 1),
 			/* Data[11].ctlEdges[3].bChannel */ FREQ2FBIN(2462, 1),
 		}
-	 },
+	},
 	.ctlPowerData_2G = {
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
 
-		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
 
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
 
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-		 { { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-	 },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+	},
 	.modalHeader5G = {
 		.antCtrlCommon = LE32(0x00000220),
 		.antCtrlCommon2 = LE32(0x00044444),
 		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
-		 /* xatten1DB 3 xatten1_db for AR9280 (0xa20c/b20c 5:0) */
+		/* xatten1DB 3 xatten1_db for AR9280 (0xa20c/b20c 5:0) */
 		.xatten1DB = {0x19, 0x19, 0x19},
 
 		/*
@@ -2550,7 +2550,7 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		.futureModal = {
 			0, 0, 0, 0, 0, 0, 0,
 		},
-	 },
+	},
 	.base_ext2 = {
 		.tempSlopeLow = 35,
 		.tempSlopeHigh = 50,
@@ -2558,7 +2558,7 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		.xatten1MarginLow = {0, 0, 0},
 		.xatten1DBHigh = {0, 0, 0},
 		.xatten1MarginHigh = {0, 0, 0}
-	 },
+	},
 	.calFreqPier5G = {
 		FREQ2FBIN(5160, 0),
 		FREQ2FBIN(5220, 0),
@@ -2631,7 +2631,7 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		FREQ2FBIN(5700, 0),
 		FREQ2FBIN(5745, 0),
 		FREQ2FBIN(5825, 0)
-	 },
+	},
 	.calTargetPower5G = {
 		/* 6-24,36,48,54 */
 		{ {30, 30, 28, 24} },
@@ -2642,7 +2642,7 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		{ {30, 30, 28, 24} },
 		{ {30, 30, 28, 24} },
 		{ {30, 30, 28, 24} },
-	 },
+	},
 	.calTargetPower5GHT20 = {
 		/*
 		 * 0_8_16,1-3_9-11_17-19,
@@ -2656,7 +2656,7 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		{ {30, 30, 30, 24, 20, 16, 30, 24, 20, 16, 0, 0, 0, 0} },
 		{ {30, 30, 30, 22, 18, 14, 30, 22, 18, 14, 0, 0, 0, 0} },
 		{ {30, 30, 30, 22, 18, 14, 30, 22, 18, 14, 0, 0, 0, 0} },
-	 },
+	},
 	.calTargetPower5GHT40 =  {
 		/*
 		 * 0_8_16,1-3_9-11_17-19,
@@ -2670,7 +2670,7 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		{ {28, 28, 28, 22, 18, 14, 28, 22, 18, 14, 0, 0, 0, 0} },
 		{ {28, 28, 28, 20, 16, 12, 28, 20, 16, 12, 0, 0, 0, 0} },
 		{ {28, 28, 28, 20, 16, 12, 28, 20, 16, 12, 0, 0, 0, 0} },
-	 },
+	},
 	.ctlIndex_5G =  {
 		0x10, 0x16, 0x18, 0x40, 0x46,
 		0x48, 0x30, 0x36, 0x38
@@ -2773,7 +2773,7 @@ static const struct ar9300_eeprom ar9300_h116 = {
 			/* Data[8].ctlEdges[6].bChannel */ FREQ2FBIN(5755, 0),
 			/* Data[8].ctlEdges[7].bChannel */ FREQ2FBIN(5795, 0)
 		}
-	 },
+	},
 	.ctlPowerData_5G = {
 		{
 			{
@@ -2829,7 +2829,7 @@ static const struct ar9300_eeprom ar9300_h116 = {
 				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
 			}
 		},
-	 }
+	}
 };
 
 #endif

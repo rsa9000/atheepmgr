@@ -35,8 +35,8 @@ struct eep_9300_priv {
 	struct ar9300_eeprom eep;
 };
 
-#define COMP_HDR_LEN 4
-#define COMP_CKSUM_LEN 2
+#define COMP_HDR_LEN		4
+#define COMP_CKSUM_LEN		2
 
 #define EEPROM_DATA_LEN_9485	1088
 
@@ -317,7 +317,7 @@ static int ar9300_check_eeprom_data(const struct ar9300_eeprom *eep)
 static int ar9300_process_blocks(struct atheepmgr *aem, uint8_t *buf,
 				 int cptr)
 {
-#define MSTATE 100
+#define MSTATE	100
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	int prev_valid_blocks = emp->valid_blocks;
 	struct eep_9300_blk_hdr blkh;

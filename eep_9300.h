@@ -17,22 +17,21 @@
 #ifndef EEP_9300_H
 #define EEP_9300_H
 
-/* 16-bit offset location start of calibration struct */
-#define AR9300_NUM_5G_CAL_PIERS      8
-#define AR9300_NUM_2G_CAL_PIERS      3
-#define AR9300_NUM_5G_20_TARGET_POWERS  8
-#define AR9300_NUM_5G_40_TARGET_POWERS  8
-#define AR9300_NUM_2G_CCK_TARGET_POWERS 2
-#define AR9300_NUM_2G_20_TARGET_POWERS  3
-#define AR9300_NUM_2G_40_TARGET_POWERS  3
-/* #define AR9300_NUM_CTLS              21 */
-#define AR9300_NUM_CTLS_5G           9
-#define AR9300_NUM_CTLS_2G           12
-#define AR9300_NUM_BAND_EDGES_5G     8
-#define AR9300_NUM_BAND_EDGES_2G     4
-#define AR9300_CUSTOMER_DATA_SIZE    20
+#define AR9300_NUM_5G_CAL_PIERS			8
+#define AR9300_NUM_2G_CAL_PIERS			3
+#define AR9300_NUM_5G_20_TARGET_POWERS		8
+#define AR9300_NUM_5G_40_TARGET_POWERS		8
+#define AR9300_NUM_2G_CCK_TARGET_POWERS		2
+#define AR9300_NUM_2G_20_TARGET_POWERS		3
+#define AR9300_NUM_2G_40_TARGET_POWERS		3
+#define AR9300_NUM_CTLS_5G			9
+#define AR9300_NUM_CTLS_2G			12
+#define AR9300_NUM_BAND_EDGES_5G		8
+#define AR9300_NUM_BAND_EDGES_2G		4
 
-#define AR9300_MAX_CHAINS            3
+#define AR9300_CUSTOMER_DATA_SIZE		20
+
+#define AR9300_MAX_CHAINS			3
 
 /* Delta from which to start power to pdadc table */
 /* This offset is used in both open loop and closed loop power control
@@ -41,14 +40,14 @@
  * value is overwritten by the value in the flag "pwrTableOffset" just
  * before writing the pdadc vs pwr into the chip registers.
  */
-#define AR9300_PWR_TABLE_OFFSET  0
+#define AR9300_PWR_TABLE_OFFSET			0
 
 /* byte addressable */
-#define AR9300_EEPROM_SIZE (16*1024)
+#define AR9300_EEPROM_SIZE			(16 * 1024)
 
-#define AR9300_BASE_ADDR_4K  0xfff
-#define AR9300_BASE_ADDR     0x3ff
-#define AR9300_BASE_ADDR_512 0x1ff
+#define AR9300_BASE_ADDR_4K			0xfff
+#define AR9300_BASE_ADDR			0x3ff
+#define AR9300_BASE_ADDR_512			0x1ff
 
 #define AR9300_OTP_BASE			0x14000
 #define AR9300_OTP_STATUS		0x15f18
