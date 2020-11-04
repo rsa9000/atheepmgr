@@ -79,6 +79,7 @@ static bool eep_5416_check(struct atheepmgr *aem)
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	struct ar5416_init *ini = &emp->ini;
 	struct ar5416_eeprom *eep = &emp->eep;
+	struct ar5416_base_eep_hdr *pBase = &eep->baseEepHeader;
 	const uint16_t *buf = aem->eep_buf;
 	uint16_t sum;
 	int i, el;
@@ -89,76 +90,45 @@ static bool eep_5416_check(struct atheepmgr *aem)
 		return false;
 	}
 
-	if (!!(eep->baseEepHeader.eepMisc & AR5416_EEPMISC_BIG_ENDIAN) !=
-	    aem->host_is_be) {
-		uint32_t integer;
-		uint16_t word;
+	if (!!(pBase->eepMisc & AR5416_EEPMISC_BIG_ENDIAN) != aem->host_is_be) {
+		struct ar5416_modal_eep_hdr *pModal;
 
 		printf("EEPROM Endianness is not native.. Changing.\n");
 
-		word = bswap_16(eep->baseEepHeader.length);
-		eep->baseEepHeader.length = word;
+		bswap_16_inplace(pBase->length);
+		bswap_16_inplace(pBase->checksum);
+		bswap_16_inplace(pBase->version);
+		bswap_16_inplace(pBase->regDmn[0]);
+		bswap_16_inplace(pBase->regDmn[1]);
+		bswap_16_inplace(pBase->rfSilent);
+		bswap_16_inplace(pBase->blueToothOptions);
+		bswap_16_inplace(pBase->deviceCap);
+		bswap_32_inplace(pBase->binBuildNumber);
 
-		word = bswap_16(eep->baseEepHeader.checksum);
-		eep->baseEepHeader.checksum = word;
+		pModal = &eep->modalHeader5G;
+		bswap_32_inplace(pModal->antCtrlCommon);
+		for (i = 0; i < ARRAY_SIZE(pModal->antCtrlChain); ++i)
+			bswap_32_inplace(pModal->antCtrlChain[i]);
+		for (i = 0; i < ARRAY_SIZE(pModal->spurChans); ++i)
+			bswap_16_inplace(pModal->spurChans[i].spurChan);
 
-		word = bswap_16(eep->baseEepHeader.version);
-		eep->baseEepHeader.version = word;
-
-		word = bswap_16(eep->baseEepHeader.regDmn[0]);
-		eep->baseEepHeader.regDmn[0] = word;
-
-		word = bswap_16(eep->baseEepHeader.regDmn[1]);
-		eep->baseEepHeader.regDmn[1] = word;
-
-		word = bswap_16(eep->baseEepHeader.rfSilent);
-		eep->baseEepHeader.rfSilent = word;
-
-		word = bswap_16(eep->baseEepHeader.blueToothOptions);
-		eep->baseEepHeader.blueToothOptions = word;
-
-		word = bswap_16(eep->baseEepHeader.deviceCap);
-		eep->baseEepHeader.deviceCap = word;
-
-		integer = bswap_32(eep->baseEepHeader.binBuildNumber);
-		eep->baseEepHeader.binBuildNumber = integer;
-
-		integer = bswap_32(eep->modalHeader5G.antCtrlCommon);
-		eep->modalHeader5G.antCtrlCommon = integer;
-
-		for (i = 0; i < AR5416_MAX_CHAINS; i++) {
-			integer = bswap_32(eep->modalHeader5G.antCtrlChain[i]);
-			eep->modalHeader5G.antCtrlChain[i] = integer;
-		}
-
-		for (i = 0; i < AR_EEPROM_MODAL_SPURS; i++) {
-			word = bswap_16(eep->modalHeader5G.spurChans[i].spurChan);
-			eep->modalHeader5G.spurChans[i].spurChan = word;
-		}
-
-		integer = bswap_32(eep->modalHeader2G.antCtrlCommon);
-		eep->modalHeader2G.antCtrlCommon = integer;
-
-		for (i = 0; i < AR5416_MAX_CHAINS; i++) {
-			integer = bswap_32(eep->modalHeader2G.antCtrlChain[i]);
-			eep->modalHeader2G.antCtrlChain[i] = integer;
-		}
-
-		for (i = 0; i < AR_EEPROM_MODAL_SPURS; i++) {
-			word = bswap_16(eep->modalHeader2G.spurChans[i].spurChan);
-			eep->modalHeader2G.spurChans[i].spurChan = word;
-		}
+		pModal = &eep->modalHeader2G;
+		bswap_32_inplace(pModal->antCtrlCommon);
+		for (i = 0; i < ARRAY_SIZE(pModal->antCtrlChain); ++i)
+			bswap_32_inplace(pModal->antCtrlChain[i]);
+		for (i = 0; i < ARRAY_SIZE(pModal->spurChans); ++i)
+			bswap_16_inplace(pModal->spurChans[i].spurChan);
 	}
 
 	if (eep_5416_get_ver(emp) != AR5416_EEP_VER ||
 	    eep_5416_get_rev(emp) < AR5416_EEP_NO_BACK_VER) {
 		fprintf(stderr, "Bad EEPROM version 0x%04x (%d.%d)\n",
-			eep->baseEepHeader.version, eep_5416_get_ver(emp),
+			pBase->version, eep_5416_get_ver(emp),
 			eep_5416_get_rev(emp));
 		return false;
 	}
 
-	el = eep->baseEepHeader.length / sizeof(uint16_t);
+	el = pBase->length / sizeof(uint16_t);
 	if (el > AR5416_DATA_SZ)
 		el = AR5416_DATA_SZ;
 

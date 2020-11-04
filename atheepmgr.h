@@ -65,6 +65,8 @@
 
 #include "eep_common.h"
 
+#define bswap_16_inplace(__x)	(__x) = bswap_16(__x)
+#define bswap_32_inplace(__x)	(__x) = bswap_32(__x)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define MS(_v, _f)  (((_v) & _f) >> _f##_S)
 #define BIT(_n)				(1 << (_n))
