@@ -17,6 +17,17 @@
 #ifndef EEP_9300_H
 #define EEP_9300_H
 
+/**
+ * This set of macro extends size of subfield with GPIO line number. Actually
+ * we need this only for AR9462 and AR9565 chips, which have more GPIO lines.
+ * For older chips it is enough to use mask from previous chip families.
+ */
+#define AR9300_RFSILENT_ENABLED			0x0001
+#define AR9300_RFSILENT_POLARITY		0x0002
+#define AR9300_RFSILENT_POLARITY_S		1
+#define AR9300_RFSILENT_GPIO_SEL		0x00fc
+#define AR9300_RFSILENT_GPIO_SEL_S		2
+
 #define AR9300_NUM_5G_CAL_PIERS			8
 #define AR9300_NUM_2G_CAL_PIERS			3
 #define AR9300_NUM_5G_20_TARGET_POWERS		8
