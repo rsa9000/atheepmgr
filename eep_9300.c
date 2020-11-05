@@ -465,8 +465,37 @@ fail:
 static int eep_9300_check(struct atheepmgr *aem)
 {
 	struct eep_9300_priv *emp = aem->eepmap_priv;
+	struct ar9300_eeprom *eep = &emp->eep;
+	struct ar9300_base_eep_hdr *pBase = &eep->baseEepHeader;
+	int i;
 
-	return emp->valid_blocks ? 1 : 0;
+	if (!emp->valid_blocks)
+		return false;
+
+	if (!!(pBase->opCapFlags.eepMisc & AR5416_EEPMISC_BIG_ENDIAN) !=
+	    aem->host_is_be) {
+		struct ar9300_modal_eep_hdr *pModal;
+
+		printf("EEPROM Endianness is not native.. Changing.\n");
+
+		bswap_16_inplace(pBase->regDmn[0]);
+		bswap_16_inplace(pBase->regDmn[1]);
+		bswap_32_inplace(pBase->swreg);
+
+		pModal = &eep->modalHeader5G;
+		bswap_32_inplace(pModal->antCtrlCommon);
+		bswap_32_inplace(pModal->antCtrlCommon2);
+		for (i = 0; i < ARRAY_SIZE(pModal->antCtrlChain); ++i)
+			bswap_16_inplace(pModal->antCtrlChain[i]);
+
+		pModal = &eep->modalHeader2G;
+		bswap_32_inplace(pModal->antCtrlCommon);
+		bswap_32_inplace(pModal->antCtrlCommon2);
+		for (i = 0; i < ARRAY_SIZE(pModal->antCtrlChain); ++i)
+			bswap_16_inplace(pModal->antCtrlChain[i]);
+	}
+
+	return true;
 }
 
 static void eep_9300_dump_base_header(struct atheepmgr *aem)
@@ -478,8 +507,8 @@ static void eep_9300_dump_base_header(struct atheepmgr *aem)
 	EEP_PRINT_SECT_NAME("EEPROM Base Header");
 
 	printf("%-30s : %2d\n", "Version", eep->eepromVersion);
-	printf("%-30s : 0x%04X\n", "RegDomain1", le16toh(pBase->regDmn[0]));
-	printf("%-30s : 0x%04X\n", "RegDomain2", le16toh(pBase->regDmn[1]));
+	printf("%-30s : 0x%04X\n", "RegDomain1", pBase->regDmn[0]);
+	printf("%-30s : 0x%04X\n", "RegDomain2", pBase->regDmn[1]);
 	printf("%-30s : %02X:%02X:%02X:%02X:%02X:%02X\n", "MacAddress",
 			eep->macAddr[0], eep->macAddr[1], eep->macAddr[2],
 			eep->macAddr[3], eep->macAddr[4], eep->macAddr[5]);
@@ -498,7 +527,7 @@ static void eep_9300_dump_base_header(struct atheepmgr *aem)
 	printf("%-30s : %d\n", "Disable 5Ghz HT40",
 		!!(pBase->opCapFlags.opFlags & AR5416_OPFLAGS_N_5G_HT40));
 	printf("%-30s : %d\n", "Big Endian",
-			!!(pBase->opCapFlags.eepMisc & 0x01));
+		!!(pBase->opCapFlags.eepMisc & AR5416_EEPMISC_BIG_ENDIAN));
 	printf("%-30s : %x\n", "RF Silent", pBase->rfSilent);
 	printf("%-30s : %x\n", "BT option", pBase->blueToothOptions);
 	printf("%-30s : %x\n", "Device Cap", pBase->deviceCap);
@@ -534,7 +563,7 @@ static void eep_9300_dump_base_header(struct atheepmgr *aem)
 	printf("%-30s : %d\n", "Rx Band Select Gpio", pBase->rxBandSelectGpio);
 	printf("%-30s : %d\n", "Tx Gain", pBase->txrxgain >> 4);
 	printf("%-30s : %d\n", "Rx Gain", pBase->txrxgain & 0xf);
-	printf("%-30s : %d\n", "SW Reg", le32toh(pBase->swreg));
+	printf("%-30s : %d\n", "SW Reg", pBase->swreg);
 
 	printf("\nCustomer Data in hex:\n");
 	hexdump_print(eep->custData, sizeof(eep->custData));
@@ -576,51 +605,51 @@ static void eep_9300_dump_modal_header(struct atheepmgr *aem)
 	printf("%-23s %-8s", "Ant Chain 0", ":");
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11G) {
 		pModal = &eep->modalHeader2G;
-		printf("%-6d", le16toh(pModal->antCtrlChain[0]));
+		printf("%-6d", pModal->antCtrlChain[0]);
 	}
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11A) {
 		pModal = &eep->modalHeader5G;
-		printf("%10d\n", le16toh(pModal->antCtrlChain[0]));
+		printf("%10d\n", pModal->antCtrlChain[0]);
 	} else
 		 printf("\n");
 	printf("%-23s %-8s", "Ant Chain 1", ":");
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11G) {
 		pModal = &eep->modalHeader2G;
-		printf("%-6d", le16toh(pModal->antCtrlChain[1]));
+		printf("%-6d", pModal->antCtrlChain[1]);
 	}
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11A) {
 		pModal = &eep->modalHeader5G;
-		printf("%10d\n", le16toh(pModal->antCtrlChain[1]));
+		printf("%10d\n", pModal->antCtrlChain[1]);
 	} else
 		 printf("\n");
 	printf("%-23s %-8s", "Ant Chain 2", ":");
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11G) {
 		pModal = &eep->modalHeader2G;
-		printf("%-6d", le16toh(pModal->antCtrlChain[2]));
+		printf("%-6d", pModal->antCtrlChain[2]);
 	}
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11A) {
 		pModal = &eep->modalHeader5G;
-		printf("%10d\n", le16toh(pModal->antCtrlChain[2]));
+		printf("%10d\n", pModal->antCtrlChain[2]);
 	} else
 		 printf("\n");
 	printf("%-23s %-8s", "Antenna Common", ":");
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11G) {
 		pModal = &eep->modalHeader2G;
-		printf("%-6d", le32toh(pModal->antCtrlCommon));
+		printf("%-6d", pModal->antCtrlCommon);
 	}
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11A) {
 		pModal = &eep->modalHeader5G;
-		printf("%10d\n", le32toh(pModal->antCtrlCommon));
+		printf("%10d\n", pModal->antCtrlCommon);
 	} else
 		 printf("\n");
 	printf("%-23s %-8s", "Antenna Common2", ":");
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11G) {
 		pModal = &eep->modalHeader2G;
-		printf("%-6d", le32toh(pModal->antCtrlCommon2));
+		printf("%-6d", pModal->antCtrlCommon2);
 	}
 	if (pBase->opCapFlags.opFlags & AR5416_OPFLAGS_11A) {
 		pModal = &eep->modalHeader5G;
-		printf("%10d\n", le32toh(pModal->antCtrlCommon2));
+		printf("%10d\n", pModal->antCtrlCommon2);
 	} else
 		 printf("\n");
 	PR("Antenna Gain", "", "d", pModal->antennaGain);
