@@ -99,7 +99,7 @@ struct ar5416_modal_eep_hdr {
 	uint8_t miscBits;
 	uint16_t xpaBiasLvlFreq[3];
 	uint8_t futureModal[6];
-	struct ar5416_spur_chan spurChans[AR_EEPROM_MODAL_SPURS];
+	struct ar5416_spur_chan spurChans[AR5416_EEPROM_MODAL_SPURS];
 } __attribute__ ((packed));
 
 struct ar5416_cal_data_per_freq {

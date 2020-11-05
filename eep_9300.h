@@ -121,7 +121,7 @@ struct ar9300_modal_eep_hdr {
 	int8_t tempSlope;
 	int8_t voltSlope;
 	/* spur channels in usual fbin coding format */
-	uint8_t spurChans[AR_EEPROM_MODAL_SPURS];
+	uint8_t spurChans[AR5416_EEPROM_MODAL_SPURS];
 	/* 3  Check if the register is per chain */
 	int8_t noiseFloorThreshCh[AR9300_MAX_CHAINS];
 	uint8_t reserved[11];

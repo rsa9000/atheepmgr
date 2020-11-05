@@ -107,7 +107,7 @@ struct ar9285_modal_eep_hdr {
 	uint8_t flc_pwr_thresh;
 	uint8_t bb_scale_smrt_antenna;
 	uint8_t futureModal[1];
-	struct ar5416_spur_chan spurChans[AR_EEPROM_MODAL_SPURS];
+	struct ar5416_spur_chan spurChans[AR5416_EEPROM_MODAL_SPURS];
 } __attribute__ ((packed));
 
 struct ar9285_cal_data_per_freq {

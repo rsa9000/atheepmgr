@@ -84,7 +84,7 @@ struct ar9287_modal_eep_hdr {
 	uint8_t ob_qam;
 	uint8_t ob_pal_off;
 	uint8_t futureModal[30];
-	struct ar5416_spur_chan spurChans[AR_EEPROM_MODAL_SPURS];
+	struct ar5416_spur_chan spurChans[AR5416_EEPROM_MODAL_SPURS];
 } __attribute__ ((packed));
 
 struct ar9287_cal_data_op_loop {
