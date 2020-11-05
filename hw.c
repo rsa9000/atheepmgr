@@ -37,21 +37,22 @@ static struct {
 
 static struct {
 	uint32_t version;
+	uint8_t type; /* Use 0xff for common names, when type is yet unknown */
 	const char * name;
 } mac_bb_names2[] = {
 	/* Devices with external radios */
-	{ AR_SREV_VERSION_9160, "9160" },
+	{ AR_SREV_VERSION_9160, 0xff, "AR9160" },
 	/* Single-chip solutions */
-	{ AR_SREV_VERSION_9280, "9220" },
-	{ AR_SREV_VERSION_9285, "9285" },
-	{ AR_SREV_VERSION_9287, "9287" },
-	{ AR_SREV_VERSION_9300, "9300" },
-	{ AR_SREV_VERSION_9330, "9330" },
-	{ AR_SREV_VERSION_9485, "9485" },
-	{ AR_SREV_VERSION_9462, "9462" },
-	{ AR_SREV_VERSION_9565, "9565" },
-	{ AR_SREV_VERSION_9340, "9340" },
-	{ AR_SREV_VERSION_9550, "9550" },
+	{ AR_SREV_VERSION_9280, 0xff, "AR9220" },
+	{ AR_SREV_VERSION_9285, 0xff, "AR9285" },
+	{ AR_SREV_VERSION_9287, 0xff, "AR9287" },
+	{ AR_SREV_VERSION_9300, 0xff, "AR9300" },
+	{ AR_SREV_VERSION_9330, 0xff, "AR9330" },
+	{ AR_SREV_VERSION_9485, 0xff, "AR9485" },
+	{ AR_SREV_VERSION_9462, 0xff, "AR9462" },
+	{ AR_SREV_VERSION_9565, 0xff, "QCA9565" },
+	{ AR_SREV_VERSION_9340, 0xff, "AR9340" },
+	{ AR_SREV_VERSION_9550, 0xff, "AR9550" },
 };
 
 static const char *mac_bb_name(uint32_t ver, uint32_t rev)
@@ -72,17 +73,22 @@ static const char *mac_bb_name(uint32_t ver, uint32_t rev)
 	return name;
 }
 
-static const char *mac_bb_name2(uint32_t mac_bb_version)
+static const char *mac_bb_name2(uint32_t mac_bb_version, uint8_t mac_bb_type)
 {
+	const char *name = "????";
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(mac_bb_names2); i++) {
-		if (mac_bb_names2[i].version == mac_bb_version) {
-			return mac_bb_names2[i].name;
-		}
+		if (mac_bb_names2[i].version == mac_bb_version)
+			name = mac_bb_names2[i].name;
+		else
+			continue;
+
+		if (mac_bb_names2[i].type == mac_bb_type)
+			break;	/* NB: name already assigned above */
 	}
 
-	return "????";
+	return name;
 }
 
 static void hw_read_revisions(struct atheepmgr *aem)
@@ -90,14 +96,16 @@ static void hw_read_revisions(struct atheepmgr *aem)
 	uint32_t val = REG_READ(AR_SREV);
 
 	if ((val & AR_SREV_ID) == 0xFF) {
+		uint8_t type = (val & AR_SREV_TYPE2) >> AR_SREV_TYPE2_S;
+
 		aem->macVersion = (val & AR_SREV_VERSION2) >> AR_SREV_TYPE2_S;
 		aem->macRev = MS(val, AR_SREV_REVISION2);
 
 		if (!aem->verbose)
 			return;
 
-		printf("Atheros AR%s MAC/BB Rev:%x (SREV: 0x%08x)\n",
-		       mac_bb_name2(aem->macVersion), aem->macRev, val);
+		printf("Atheros %s MAC/BB Rev:%x (SREV: 0x%08x)\n",
+		       mac_bb_name2(aem->macVersion, type), aem->macRev, val);
 	} else {
 		aem->macVersion = MS(val, AR_SREV_VERSION);
 		aem->macRev = val & AR_SREV_REVISION;
