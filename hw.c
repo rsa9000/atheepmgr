@@ -47,7 +47,7 @@ static struct {
 	{ AR_SREV_VERSION_9280, 0x03, "AR9223" },
 	{ AR_SREV_VERSION_9280, 0x05, "AR9280" },
 	{ AR_SREV_VERSION_9280, 0x07, "AR9220" },/* Keep last as common name */
-	{ AR_SREV_VERSION_9285, 0xff, "AR9285" },
+	{ AR_SREV_VERSION_9285, 0x01, "AR9285" },
 	{ AR_SREV_VERSION_9287, 0xff, "AR9287" },
 	{ AR_SREV_VERSION_9300, 0xff, "AR9300" },
 	{ AR_SREV_VERSION_9330, 0xff, "AR9330" },
