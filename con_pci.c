@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012 Qualcomm Atheros, Inc.
- * Copyright (c) 2013,2017-2018 Sergey Ryazanov <ryazanov.s.a@gmail.com>
+ * Copyright (c) 2013,2017-2020 Sergey Ryazanov <ryazanov.s.a@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,7 +19,8 @@
 #include <pciaccess.h>
 
 #include "atheepmgr.h"
-#include "con_pci.h"
+
+#define ATHEROS_VENDOR_ID	0x168c
 
 struct pci_priv {
 #if defined(__OpenBSD__)
@@ -33,43 +34,25 @@ struct pci_priv {
 
 static int is_supported_chipset(struct atheepmgr *aem, struct pci_device *pdev)
 {
-	static const struct {
-		uint16_t dev_id;
-		const char *name;
-	} devs[] = {
-		{AR5211_DEVID_PCI,  "AR5211 PCI"},
-		{AR5212_DEVID_PCI,  "AR5212/AR5213 PCI"},
-		{AR5413_DEVID_PCI,  "AR5413/AR5414 PCI"},
-		{AR5416_DEVID_PCI,  "AR5416 PCI"},
-		{AR5418_DEVID_PCIE, "AR5418 PCIe"},
-		{AR9160_DEVID_PCI,  "AR9160 PCI"},
-		{AR9220_DEVID_PCI,  "AR9220 PCI"},
-		{AR9280_DEVID_PCIE, "AR9280 PCIe"},
-		{AR9285_DEVID_PCIE, "AR9285 PCIe"},
-		{AR9227_DEVID_PCI,  "AR9227 PCI"},
-		{AR9287_DEVID_PCIE, "AR9287 PCIe"},
-		{AR9300_DEVID_PCIE, "AR9300 PCIe"},
-		{AR9485_DEVID_PCIE, "AR9485 PCIe"},
-		{AR9580_DEVID_PCIE, "AR9580 PCIe"},
-		{AR9462_DEVID_PCIE, "AR9462 PCIe"},
-		{AR9565_DEVID_PCIE, "AR9565 PCIe"},
-		{AR1111_DEVID_PCIE, "AR1111 PCIe"},
-	};
-	int i;
+	const struct chip *chips[10];	/* 10 is an arbitrary expected maximum
+					   number of chips with a same PCI ID */
+	int n, i;
 
 	if (pdev->vendor_id != ATHEROS_VENDOR_ID)
 		goto not_supported;
 
-	for (i = 0; i < ARRAY_SIZE(devs); ++i)
-		if (devs[i].dev_id == pdev->device_id)
-			break;
-
-	if (i == ARRAY_SIZE(devs))
+	n = chips_find_by_pci_id(pdev->device_id, chips, ARRAY_SIZE(chips));
+	if (!n)
 		goto not_supported;
 
-	if (aem->verbose)
-		printf("Found Device: %04x:%04x (%s)\n", pdev->vendor_id,
-			pdev->device_id, devs[i].name);
+	if (aem->verbose) {
+		printf("Found Device: %04x:%04x", pdev->vendor_id,
+		       pdev->device_id);
+		printf(" (%s", chips[0]->name);
+		for (i = 1; i < n; ++i)
+			printf("/%s", chips[i]->name);
+		printf(")\n");
+	}
 
 	return 1;
 

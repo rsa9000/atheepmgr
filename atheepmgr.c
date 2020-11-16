@@ -48,20 +48,20 @@ static const struct eepmap * const eepmaps[] = {
 
 static const struct chip chips[] = {
 	/* AR5211 EEPROM map PCI/PCIe chip(s) */
-	{ AEM_CHIP_EEP5211("AR5211") },
-	{ AEM_CHIP_EEP5211("AR5212") },
-	{ AEM_CHIP_EEP5211("AR5213") },
-	{ AEM_CHIP_EEP5211("AR2413") },
-	{ AEM_CHIP_EEP5211("AR2414") },
-	{ AEM_CHIP_EEP5211("AR2415") },
-	{ AEM_CHIP_EEP5211("AR5413") },
-	{ AEM_CHIP_EEP5211("AR5414") },
-	{ AEM_CHIP_EEP5211("AR2417") },
-	{ AEM_CHIP_EEP5211("AR2423") },
-	{ AEM_CHIP_EEP5211("AR2424") },
-	{ AEM_CHIP_EEP5211("AR2425") },
-	{ AEM_CHIP_EEP5211("AR5423") },
-	{ AEM_CHIP_EEP5211("AR5424") },
+	{ AEM_CHIP_EEP5211("AR5211"), .pciids = {{ .dev_id = 0x0012 }} },
+	{ AEM_CHIP_EEP5211("AR5212"), .pciids = {{ .dev_id = 0x0013 }} },
+	{ AEM_CHIP_EEP5211("AR5213"), .pciids = {{ .dev_id = 0x0013 }} },
+	{ AEM_CHIP_EEP5211("AR2413"), .pciids = {{ .dev_id = 0x001a }} },
+	{ AEM_CHIP_EEP5211("AR2414"), .pciids = {{ .dev_id = 0x0013 }} },
+	{ AEM_CHIP_EEP5211("AR2415"), .pciids = {{ .dev_id = 0x001b }} },
+	{ AEM_CHIP_EEP5211("AR5413"), .pciids = {{ .dev_id = 0x001b }} },
+	{ AEM_CHIP_EEP5211("AR5414"), .pciids = {{ .dev_id = 0x001b }} },
+	{ AEM_CHIP_EEP5211("AR2417"), .pciids = {{ .dev_id = 0x001d }} },
+	{ AEM_CHIP_EEP5211("AR2423"), .pciids = {{ .dev_id = 0x001c }} },
+	{ AEM_CHIP_EEP5211("AR2424"), .pciids = {{ .dev_id = 0x001c }} },
+	{ AEM_CHIP_EEP5211("AR2425"), .pciids = {{ .dev_id = 0x001c }} },
+	{ AEM_CHIP_EEP5211("AR5423"), .pciids = {{ .dev_id = 0x001c }} },
+	{ AEM_CHIP_EEP5211("AR5424"), .pciids = {{ .dev_id = 0x001c }} },
 	/* AR5211 EEPROM map WiSoC(s) */
 	{ AEM_CHIP_EEP5211("AR5311") },
 	{ AEM_CHIP_EEP5211("AR5312") },
@@ -73,47 +73,47 @@ static const struct chip chips[] = {
 	{ AEM_CHIP_EEP5211("AR2318") },
 
 	/* AR5416 EEPROM map PCI/PCIe chip(s) */
-	{ AEM_CHIP_EEP5416("AR5416") },
-	{ AEM_CHIP_EEP5416("AR5418") },
-	{ AEM_CHIP_EEP5416("AR9160") },
-	{ AEM_CHIP_EEP5416("AR9220") },
-	{ AEM_CHIP_EEP5416("AR9223") },
-	{ AEM_CHIP_EEP5416("AR9280") },
-	{ AEM_CHIP_EEP5416("AR9281") },
-	{ AEM_CHIP_EEP5416("AR9283") },
+	{ AEM_CHIP_EEP5416("AR5416"), .pciids = {{ .dev_id = 0x0023 }} },
+	{ AEM_CHIP_EEP5416("AR5418"), .pciids = {{ .dev_id = 0x0024 }} },
+	{ AEM_CHIP_EEP5416("AR9160"), .pciids = {{ .dev_id = 0x0027 }} },
+	{ AEM_CHIP_EEP5416("AR9220"), .pciids = {{ .dev_id = 0x0029 }} },
+	{ AEM_CHIP_EEP5416("AR9223"), .pciids = {{ .dev_id = 0x0029 }} },
+	{ AEM_CHIP_EEP5416("AR9280"), .pciids = {{ .dev_id = 0x002a }} },
+	{ AEM_CHIP_EEP5416("AR9281"), .pciids = {{ .dev_id = 0x002a }} },
+	{ AEM_CHIP_EEP5416("AR9283"), .pciids = {{ .dev_id = 0x002a }} },
 	/* AR5416 EEPROM map WiSoC (AHB interface) chip(s) */
 	{ AEM_CHIP_EEP5416("AR9130") },
 	{ AEM_CHIP_EEP5416("AR9132") },
 
 	/* AR9285 EEPROM map PCIe chip(s) */
-	{ AEM_CHIP_EEP9285("AR2427") },
-	{ AEM_CHIP_EEP9285("AR9285") },
+	{ AEM_CHIP_EEP9285("AR2427"), .pciids = {{ .dev_id = 0x002c }} },	/* Check PCI Id */
+	{ AEM_CHIP_EEP9285("AR9285"), .pciids = {{ .dev_id = 0x002b }} },
 
 	/* AR9287 EEPROM map PCI/PCIe chip(s) */
-	{ AEM_CHIP_EEP9287("AR9227") },
-	{ AEM_CHIP_EEP9287("AR9287") },
+	{ AEM_CHIP_EEP9287("AR9227"), .pciids = {{ .dev_id = 0x002d }} },
+	{ AEM_CHIP_EEP9287("AR9287"), .pciids = {{ .dev_id = 0x002e }} },
 
 	/* AR93xx EEPROM map PCIe chip(s) */
-	{ AEM_CHIP_EEP9300("AR9380") },
-	{ AEM_CHIP_EEP9300("AR9381") },
-	{ AEM_CHIP_EEP9300("QCA9381") },
-	{ AEM_CHIP_EEP9300("AR9382") },
-	{ AEM_CHIP_EEP9300("AR9388") },
-	{ AEM_CHIP_EEP9300("AR9390") },
-	{ AEM_CHIP_EEP9300("AR9392") },
-	{ AEM_CHIP_EEP9300("AR9462") },
-	{ AEM_CHIP_EEP9300("AR9463") },
-	{ AEM_CHIP_EEP9300("AR9485") },
-	{ AEM_CHIP_EEP9300("AR9580") },
-	{ AEM_CHIP_EEP9300("QCA9580") },
-	{ AEM_CHIP_EEP9300("AR9582") },
-	{ AEM_CHIP_EEP9300("QCA9582") },
-	{ AEM_CHIP_EEP9300("AR9590") },
-	{ AEM_CHIP_EEP9300("QCA9590") },
-	{ AEM_CHIP_EEP9300("AR9592") },
-	{ AEM_CHIP_EEP9300("QCA9592") },
-	{ AEM_CHIP_EEP9300("QCA9565") },
-	{ AEM_CHIP_EEP9300("AR1111") },
+	{ AEM_CHIP_EEP9300("AR9380"), .pciids = {{ .dev_id = 0x0030 }} },
+	{ AEM_CHIP_EEP9300("AR9381"), .pciids = {{ .dev_id = 0x0030 }} },
+	{ AEM_CHIP_EEP9300("QCA9381"), .pciids = {{ .dev_id = 0x0030 }} },
+	{ AEM_CHIP_EEP9300("AR9382"), .pciids = {{ .dev_id = 0x0030 }} },
+	{ AEM_CHIP_EEP9300("AR9388"), .pciids = {{ .dev_id = 0x0030 }} },	/* Check PCI Id */
+	{ AEM_CHIP_EEP9300("AR9390"), .pciids = {{ .dev_id = 0x0030 }} },	/* Check PCI Id */
+	{ AEM_CHIP_EEP9300("AR9392"), .pciids = {{ .dev_id = 0x0030 }} },	/* Check PCI Id */
+	{ AEM_CHIP_EEP9300("AR9462"), .pciids = {{ .dev_id = 0x0034 }} },
+	{ AEM_CHIP_EEP9300("AR9463"), .pciids = {{ .dev_id = 0x0034 }} },	/* Check PCI Id */
+	{ AEM_CHIP_EEP9300("AR9485"), .pciids = {{ .dev_id = 0x0032 }} },
+	{ AEM_CHIP_EEP9300("AR9580"), .pciids = {{ .dev_id = 0x0033 }} },
+	{ AEM_CHIP_EEP9300("QCA9580"), .pciids = {{ .dev_id = 0x0033 }} },
+	{ AEM_CHIP_EEP9300("AR9582"), .pciids = {{ .dev_id = 0x0033 }} },
+	{ AEM_CHIP_EEP9300("QCA9582"), .pciids = {{ .dev_id = 0x0033 }} },
+	{ AEM_CHIP_EEP9300("AR9590"), .pciids = {{ .dev_id = 0x0033 }} },
+	{ AEM_CHIP_EEP9300("QCA9590"), .pciids = {{ .dev_id = 0x0033 }} },
+	{ AEM_CHIP_EEP9300("AR9592"), .pciids = {{ .dev_id = 0x0033 }} },	/* Check PCI Id */
+	{ AEM_CHIP_EEP9300("QCA9592"), .pciids = {{ .dev_id = 0x0033 }} },	/* Check PCI Id */
+	{ AEM_CHIP_EEP9300("QCA9565"), .pciids = {{ .dev_id = 0x0036 }} },
+	{ AEM_CHIP_EEP9300("AR1111"), .pciids = {{ .dev_id = 0x0037 }} },
 	/* AR93xx EEPROM map WiSoC (AHB interface) chip(s) */
 	{ AEM_CHIP_EEP9300("AR9331") },
 	{ AEM_CHIP_EEP9300("AR9341") },
@@ -129,6 +129,25 @@ static const struct chip chips[] = {
 	{ AEM_CHIP_EEP9880("QCA9890") },
 	{ AEM_CHIP_EEP9880("QCA9892") },
 };
+
+int chips_find_by_pci_id(uint16_t dev_id, const struct chip *res[], int nmemb)
+{
+	int i, j, n = 0;
+
+	for (i = 0; i < ARRAY_SIZE(chips); ++i) {
+		for (j = 0; j < ARRAY_SIZE(chips[0].pciids); ++j) {
+			if (!chips[i].pciids[j].dev_id)
+				break;
+			if (chips[i].pciids[j].dev_id != dev_id)
+				continue;
+			if (n < nmemb)
+				res[n++] = &chips[i];
+			break;
+		}
+	}
+
+	return n;
+}
 
 static const struct eepmap *eepmap_find_by_chip(const char *name)
 {

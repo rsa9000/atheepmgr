@@ -221,9 +221,14 @@ struct eepmap {
 	int params_mask;		/* Mask of updateable params */
 };
 
+struct chip_pciid {
+	uint16_t dev_id;
+};
+
 struct chip {
 	const char *name;
 	const struct eepmap *eepmap;
+	struct chip_pciid pciids[4];	/* Allow multiple IDs */
 };
 
 struct atheepmgr {
@@ -269,6 +274,8 @@ extern const struct eepmap eepmap_9285;
 extern const struct eepmap eepmap_9287;
 extern const struct eepmap eepmap_9300;
 extern const struct eepmap eepmap_9880;
+
+int chips_find_by_pci_id(uint16_t dev_id, const struct chip *res[], int nmemb);
 
 bool hw_wait(struct atheepmgr *aem, uint32_t reg, uint32_t mask,
 	     uint32_t val, uint32_t timeout);
