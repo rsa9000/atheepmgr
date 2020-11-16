@@ -221,6 +221,11 @@ struct eepmap {
 	int params_mask;		/* Mask of updateable params */
 };
 
+struct chip {
+	const char *name;
+	const struct eepmap *eepmap;
+};
+
 struct atheepmgr {
 	int verbose;
 

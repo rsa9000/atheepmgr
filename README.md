@@ -72,7 +72,13 @@ Example: print data from a EEPROM dump in file eep.bin, which was extracted earl
 # atheepmgr -t 5416 -F eep.bin
 ```
 
-*NB*: chip autodetection is not supported for file access, so you should specifiy EEPROM map (layout) manually. To see a full list of supported EEPROM maps use a *-h* option.
+or using chip name instead of EEPROM map (layout) name:
+
+```
+# atheepmgr -t AR9220 -F eep.bin
+```
+
+*NB*: chip autodetection is not supported for file access, so you should specifiy EEPROM map (layout) or chip name manually. To see a full list of supported EEPROM maps use a *-h* option.
 
 ### Dump NIC EEPROM content to the file
 

@@ -31,6 +31,117 @@ static const struct eepmap * const eepmaps[] = {
 	&eepmap_9880,
 };
 
+#define AEM_CHIP(__name, __eepmap)		\
+		.name = __name, .eepmap = __eepmap
+#define AEM_CHIP_EEP5211(__name)		\
+		AEM_CHIP(__name, &eepmap_5211)
+#define AEM_CHIP_EEP5416(__name)		\
+		AEM_CHIP(__name, &eepmap_5416)
+#define AEM_CHIP_EEP9285(__name)		\
+		AEM_CHIP(__name, &eepmap_9285)
+#define AEM_CHIP_EEP9287(__name)		\
+		AEM_CHIP(__name, &eepmap_9287)
+#define AEM_CHIP_EEP9300(__name)		\
+		AEM_CHIP(__name, &eepmap_9300)
+#define AEM_CHIP_EEP9880(__name)		\
+		AEM_CHIP(__name, &eepmap_9880)
+
+static const struct chip chips[] = {
+	/* AR5211 EEPROM map PCI/PCIe chip(s) */
+	{ AEM_CHIP_EEP5211("AR5211") },
+	{ AEM_CHIP_EEP5211("AR5212") },
+	{ AEM_CHIP_EEP5211("AR5213") },
+	{ AEM_CHIP_EEP5211("AR2413") },
+	{ AEM_CHIP_EEP5211("AR2414") },
+	{ AEM_CHIP_EEP5211("AR2415") },
+	{ AEM_CHIP_EEP5211("AR5413") },
+	{ AEM_CHIP_EEP5211("AR5414") },
+	{ AEM_CHIP_EEP5211("AR2417") },
+	{ AEM_CHIP_EEP5211("AR2423") },
+	{ AEM_CHIP_EEP5211("AR2424") },
+	{ AEM_CHIP_EEP5211("AR2425") },
+	{ AEM_CHIP_EEP5211("AR5423") },
+	{ AEM_CHIP_EEP5211("AR5424") },
+	/* AR5211 EEPROM map WiSoC(s) */
+	{ AEM_CHIP_EEP5211("AR5311") },
+	{ AEM_CHIP_EEP5211("AR5312") },
+	{ AEM_CHIP_EEP5211("AR2312") },
+	{ AEM_CHIP_EEP5211("AR2313") },
+	{ AEM_CHIP_EEP5211("AR2315") },
+	{ AEM_CHIP_EEP5211("AR2316") },
+	{ AEM_CHIP_EEP5211("AR2317") },
+	{ AEM_CHIP_EEP5211("AR2318") },
+
+	/* AR5416 EEPROM map PCI/PCIe chip(s) */
+	{ AEM_CHIP_EEP5416("AR5416") },
+	{ AEM_CHIP_EEP5416("AR5418") },
+	{ AEM_CHIP_EEP5416("AR9160") },
+	{ AEM_CHIP_EEP5416("AR9220") },
+	{ AEM_CHIP_EEP5416("AR9223") },
+	{ AEM_CHIP_EEP5416("AR9280") },
+	{ AEM_CHIP_EEP5416("AR9281") },
+	{ AEM_CHIP_EEP5416("AR9283") },
+	/* AR5416 EEPROM map WiSoC (AHB interface) chip(s) */
+	{ AEM_CHIP_EEP5416("AR9130") },
+	{ AEM_CHIP_EEP5416("AR9132") },
+
+	/* AR9285 EEPROM map PCIe chip(s) */
+	{ AEM_CHIP_EEP9285("AR2427") },
+	{ AEM_CHIP_EEP9285("AR9285") },
+
+	/* AR9287 EEPROM map PCI/PCIe chip(s) */
+	{ AEM_CHIP_EEP9287("AR9227") },
+	{ AEM_CHIP_EEP9287("AR9287") },
+
+	/* AR93xx EEPROM map PCIe chip(s) */
+	{ AEM_CHIP_EEP9300("AR9380") },
+	{ AEM_CHIP_EEP9300("AR9381") },
+	{ AEM_CHIP_EEP9300("QCA9381") },
+	{ AEM_CHIP_EEP9300("AR9382") },
+	{ AEM_CHIP_EEP9300("AR9388") },
+	{ AEM_CHIP_EEP9300("AR9390") },
+	{ AEM_CHIP_EEP9300("AR9392") },
+	{ AEM_CHIP_EEP9300("AR9462") },
+	{ AEM_CHIP_EEP9300("AR9463") },
+	{ AEM_CHIP_EEP9300("AR9485") },
+	{ AEM_CHIP_EEP9300("AR9580") },
+	{ AEM_CHIP_EEP9300("QCA9580") },
+	{ AEM_CHIP_EEP9300("AR9582") },
+	{ AEM_CHIP_EEP9300("QCA9582") },
+	{ AEM_CHIP_EEP9300("AR9590") },
+	{ AEM_CHIP_EEP9300("QCA9590") },
+	{ AEM_CHIP_EEP9300("AR9592") },
+	{ AEM_CHIP_EEP9300("QCA9592") },
+	{ AEM_CHIP_EEP9300("QCA9565") },
+	{ AEM_CHIP_EEP9300("AR1111") },
+	/* AR93xx EEPROM map WiSoC (AHB interface) chip(s) */
+	{ AEM_CHIP_EEP9300("AR9331") },
+	{ AEM_CHIP_EEP9300("AR9341") },
+	{ AEM_CHIP_EEP9300("AR9342") },
+	{ AEM_CHIP_EEP9300("AR9344") },
+	{ AEM_CHIP_EEP9300("AR9350") },
+
+	/* QCA988x EEPROM map PCIe chip(s) */
+	{ AEM_CHIP_EEP9880("QCA9860") },
+	{ AEM_CHIP_EEP9880("QCA9862") },
+	{ AEM_CHIP_EEP9880("QCA9880") },
+	{ AEM_CHIP_EEP9880("QCA9882") },
+	{ AEM_CHIP_EEP9880("QCA9890") },
+	{ AEM_CHIP_EEP9880("QCA9892") },
+};
+
+static const struct eepmap *eepmap_find_by_chip(const char *name)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(chips); ++i) {
+		if (strcasecmp(chips[i].name, name) == 0)
+			return chips[i].eepmap;
+	}
+
+	return NULL;
+}
+
 static const struct eepmap *eepmap_find_by_name(const char *name)
 {
 	int i;
@@ -517,6 +628,58 @@ static const struct action {
 
 static const char *optstr = CON_OPTSTR "ht:v";
 
+static int strptrcmp(const void *a, const void *b)
+{
+	return strcmp(*(char **)a, *(char **)b);
+}
+
+static void usage_eepmap_chips(const struct eepmap *eepmap)
+{
+	char const **stridx = NULL, **__stridx;
+	int i, n, l;
+
+	/* Build index of supported chips */
+	for (n = 0, i = 0; i < ARRAY_SIZE(chips); ++i) {
+		if (chips[i].eepmap != eepmap)
+			continue;
+
+		n++;
+		__stridx = realloc(stridx, sizeof(stridx[0]) * n);
+		if (!__stridx) {
+			fprintf(stderr, "Unable to allocate index buffer for chip names\n");
+			free(stridx);
+			return;
+		}
+		stridx = __stridx;
+		stridx[n - 1] = chips[i].name;
+	}
+
+	/* Sort chip names alphabetically */
+	qsort(stridx, n, sizeof(stridx[0]), strptrcmp);
+
+	/* Now we are ready to print supported chip names */
+	l = printf("%18sSupported chip(s):", "");
+	for (i = 0; i < n; ++i) {
+		int _l = 1 + strlen(stridx[i]);
+		int is_last = i + 1 == n;
+
+		if (!is_last)
+			_l += 1;	/* account comma symbol */
+		l += _l;
+		if (l > 80) {
+			printf("\n");
+			l = printf("%19s", "") + _l;
+		}
+
+		printf(" %s", stridx[i]);
+		if (!is_last)
+			printf(",");
+	}
+	printf("\n");
+
+	free(stridx);
+}
+
 static void usage_eepmap(struct atheepmgr *aem, const struct eepmap *eepmap)
 {
 	const struct eepmap_param *param;
@@ -527,6 +690,8 @@ static void usage_eepmap(struct atheepmgr *aem, const struct eepmap *eepmap)
 
 	if (aem->verbose < 1)
 		return;
+
+	usage_eepmap_chips(eepmap);
 
 	printf("%18sSupport for unpacked data saving: %s\n", "",
 	       eepmap->unpacked_buf_sz ? "Yes" : "No");
@@ -591,7 +756,8 @@ static void usage(struct atheepmgr *aem, char *name)
 		"                  used.\n"
 #endif
 		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
-		"                  for connectors, without direct HW access.\n"
+		"                  for connectors, without direct HW access. EEPROM map type\n"
+		"                  could be specified by its name or by a name of chip.\n"
 		"  -v              Be verbose. I.e. print detailed help message, log action\n"
 		"                  stages, print all EEPROM data including unused parameters.\n"
 		"  -h              Print this cruft. Use -v option to see more details.\n"
@@ -707,8 +873,10 @@ int main(int argc, char *argv[])
 #endif
 		case 't':
 			aem->eepmap = eepmap_find_by_name(optarg);
+			if (!aem->eepmap)
+				aem->eepmap = eepmap_find_by_chip(optarg);
 			if (!aem->eepmap) {
-				fprintf(stderr, "Unknown EEPROM map type name: %s\n",
+				fprintf(stderr, "Unknown EEPROM map type or chip name: %s\n",
 					optarg);
 				goto exit;
 			}
