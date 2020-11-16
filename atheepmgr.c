@@ -675,13 +675,12 @@ int main(int argc, char *argv[])
 	struct atheepmgr *aem = &__aem;
 	const struct action *act = NULL;
 	char *con_arg = NULL;
+	int print_usage = 0;
 	int i, opt;
 	int ret;
 
-	if (argc == 1) {
-		usage(aem, argv[0]);
-		return 0;
-	}
+	if (argc == 1)
+		print_usage = 1;
 
 	aem->host_is_be = __BYTE_ORDER == __BIG_ENDIAN;
 	aem->eep_wp_gpio_num = EEP_WP_GPIO_AUTO;	/* Autodetection */
@@ -718,12 +717,17 @@ int main(int argc, char *argv[])
 			aem->verbose++;
 			break;
 		case 'h':
-			usage(aem, argv[0]);
-			ret = 0;
-			goto exit;
+			print_usage = 1;
+			break;
 		default:
 			goto exit;
 		}
+	}
+
+	if (print_usage) {
+		usage(aem, argv[0]);
+		ret = 0;
+		goto exit;
 	}
 
 	if (optind >= argc) {
