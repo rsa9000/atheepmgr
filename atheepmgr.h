@@ -138,6 +138,7 @@ typedef int bool;
 #define AH_TIME_QUANTUM		10
 
 #define CON_CAP_HW		1	/* Con. is able to interact with HW */
+#define CON_CAP_PNP		2	/* Con. is able to detect EEP layout */
 
 #define EEP_WP_GPIO_AUTO	-1	/* Use autodetection */
 #define EEP_WP_GPIO_NONE	-2	/* Do not use GPIO for unlocking */

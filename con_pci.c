@@ -54,6 +54,8 @@ static int is_supported_chipset(struct atheepmgr *aem, struct pci_device *pdev)
 		printf(")\n");
 	}
 
+	aem->eepmap = chips[0]->eepmap;
+
 	return 1;
 
 not_supported:
@@ -249,7 +251,7 @@ static void pci_clean(struct atheepmgr *aem)
 const struct connector con_pci = {
 	.name = "PCI",
 	.priv_data_sz = sizeof(struct pci_priv),
-	.caps = CON_CAP_HW,
+	.caps = CON_CAP_HW | CON_CAP_PNP,
 	.init = pci_init,
 	.clean = pci_clean,
 	.reg_read = pci_reg_read,

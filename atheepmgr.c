@@ -859,6 +859,7 @@ int main(int argc, char *argv[])
 {
 	struct atheepmgr *aem = &__aem;
 	const struct action *act = NULL;
+	const struct eepmap *user_eepmap = NULL;
 	char *con_arg = NULL;
 	int print_usage = 0;
 	int i, opt;
@@ -891,10 +892,10 @@ int main(int argc, char *argv[])
 			break;
 #endif
 		case 't':
-			aem->eepmap = eepmap_find_by_name(optarg);
-			if (!aem->eepmap)
-				aem->eepmap = eepmap_find_by_chip(optarg);
-			if (!aem->eepmap) {
+			user_eepmap = eepmap_find_by_name(optarg);
+			if (!user_eepmap)
+				user_eepmap = eepmap_find_by_chip(optarg);
+			if (!user_eepmap) {
 				fprintf(stderr, "Unknown EEPROM map type or chip name: %s\n",
 					optarg);
 				goto exit;
@@ -948,7 +949,7 @@ int main(int argc, char *argv[])
 		goto exit;
 	}
 
-	if ((act->flags & ACT_F_DATA) && !aem->eepmap &&
+	if ((act->flags & ACT_F_DATA) && !user_eepmap &&
 	    !(aem->con->caps & CON_CAP_HW)) {
 		fprintf(stderr, "EEPROM map type option is mandatory for connectors without direct HW access\n");
 		goto exit;
@@ -964,6 +965,25 @@ int main(int argc, char *argv[])
 	ret = aem->con->init(aem, con_arg);
 	if (ret)
 		goto exit;
+
+	if (!aem->eepmap && !user_eepmap) {
+		if ((aem->con->caps & CON_CAP_PNP) && aem->verbose)
+			printf("Connector failed to autodetect EEPROM type, fallback to SREV register based autodetection\n");
+	} else if (!aem->eepmap && user_eepmap) {
+		if ((aem->con->caps & CON_CAP_PNP) && aem->verbose)
+			printf("Connector failed to autodetect EEPROM type, use manually configured %s type\n",
+			       user_eepmap->name);
+		aem->eepmap = user_eepmap;
+	} else if (aem->eepmap && !user_eepmap) {
+		if (aem->verbose)
+			printf("Autodetected EEPROM map type is %s\n",
+			       aem->eepmap->name);
+	} else if (aem->eepmap != user_eepmap) {
+		if (aem->verbose)
+			printf("Override autodetected %s EEPROM type with manually configured %s type\n",
+			       aem->eepmap->name, user_eepmap->name);
+		aem->eepmap = user_eepmap;
+	}
 
 	if (aem->con->caps & CON_CAP_HW) {
 		ret = hw_init(aem);
