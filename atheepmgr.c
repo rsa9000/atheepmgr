@@ -151,7 +151,12 @@ int chips_find_by_pci_id(uint16_t dev_id, const struct chip *res[], int nmemb)
 
 static const struct eepmap *eepmap_find_by_chip(const char *name)
 {
-	int i;
+	const struct chip *chip;
+	int i, pci_dev_id;
+	char *endp;
+
+	if (strncasecmp("pci:", name, 4) == 0)
+		goto search_by_pci_id;
 
 	for (i = 0; i < ARRAY_SIZE(chips); ++i) {
 		if (strcasecmp(chips[i].name, name) == 0)
@@ -159,6 +164,20 @@ static const struct eepmap *eepmap_find_by_chip(const char *name)
 	}
 
 	return NULL;
+
+search_by_pci_id:
+	name += 4;	/* Skip 'PCI:' prefix */
+	errno = 0;
+	pci_dev_id = strtoul(name, &endp, 16);
+	if (pci_dev_id <= 0 || pci_dev_id > 0xffff || *endp != '\0' || errno) {
+		fprintf(stderr, "Invalid PCI Device ID string format -- %s\n", name);
+		return NULL;
+	}
+
+	if (chips_find_by_pci_id(pci_dev_id, &chip, 1) == 0)
+		return NULL;
+
+	return chip->eepmap;
 }
 
 static const struct eepmap *eepmap_find_by_name(const char *name)
@@ -777,6 +796,13 @@ static void usage(struct atheepmgr *aem, char *name)
 		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
 		"                  for connectors, without direct HW access. EEPROM map type\n"
 		"                  could be specified by its name or by a name of chip.\n"
+		"                  Also map type could be specified by a chip PCI Device ID,\n"
+		"                  which should be prefixed with 'PCI:' string (e.g. 'PCI:0029'\n"
+		"                  for AR9220 chip). Such method will be useful if you have no\n"
+		"                  PCI connector, access chip via I/O memory connector and do not\n"
+		"                  shure about an exact chip type. So you could check PCI Id with\n"
+		"                  help of pciconf(8)/lspci(8)/pcidump(8) utility and then use\n"
+		"                  obtained identifier to specify chip (and EEPROM map) type.\n"
 		"  -v              Be verbose. I.e. print detailed help message, log action\n"
 		"                  stages, print all EEPROM data including unused parameters.\n"
 		"  -h              Print this cruft. Use -v option to see more details.\n"
@@ -896,7 +922,7 @@ int main(int argc, char *argv[])
 			if (!user_eepmap)
 				user_eepmap = eepmap_find_by_chip(optarg);
 			if (!user_eepmap) {
-				fprintf(stderr, "Unknown EEPROM map type or chip name: %s\n",
+				fprintf(stderr, "Unknown EEPROM map type or chip name or chip Id: %s\n",
 					optarg);
 				goto exit;
 			}
