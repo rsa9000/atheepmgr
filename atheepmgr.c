@@ -192,29 +192,6 @@ static const struct eepmap *eepmap_find_by_name(const char *name)
 	return NULL;
 }
 
-static int eepmap_detect(struct atheepmgr *aem)
-{
-	if (AR_SREV_9300_20_OR_LATER(aem)) {
-		aem->eepmap = &eepmap_9300;
-	} else if (AR_SREV_9287(aem)) {
-		aem->eepmap = &eepmap_9287;
-	} else if (AR_SREV_9285(aem)) {
-		aem->eepmap = &eepmap_9285;
-	} else if (AR_SREV_5416_OR_LATER(aem)) {
-		aem->eepmap = &eepmap_5416;
-	} else if (AR_SREV_5211_OR_LATER(aem)) {
-		aem->eepmap = &eepmap_5211;
-	} else {
-		fprintf(stderr, "Unable to determine an EEPROM map suitable for this chip\n");
-		return -ENOENT;
-	}
-
-	if (aem->verbose)
-		printf("Detected EEPROM map: %s\n", aem->eepmap->name);
-
-	return 0;
-}
-
 static const struct eepmap_section {
 	const char *name;
 	const char *desc;
@@ -794,8 +771,9 @@ static void usage(struct atheepmgr *aem, char *name)
 		"                  used.\n"
 #endif
 		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
-		"                  for connectors, without direct HW access. EEPROM map type\n"
-		"                  could be specified by its name or by a name of chip.\n"
+		"                  for connectors, without PnP (map type autodetection) support.\n"
+		"                  EEPROM map type could be specified by its name or by a name of\n"
+		"                  chip.\n"
 		"                  Also map type could be specified by a chip PCI Device ID,\n"
 		"                  which should be prefixed with 'PCI:' string (e.g. 'PCI:0029'\n"
 		"                  for AR9220 chip). Such method will be useful if you have no\n"
@@ -975,9 +953,8 @@ int main(int argc, char *argv[])
 		goto exit;
 	}
 
-	if ((act->flags & ACT_F_DATA) && !user_eepmap &&
-	    !(aem->con->caps & CON_CAP_HW)) {
-		fprintf(stderr, "EEPROM map type option is mandatory for connectors without direct HW access\n");
+	if (!user_eepmap && !(aem->con->caps & CON_CAP_PNP)) {
+		fprintf(stderr, "EEPROM map type option is mandatory for connectors without chip autodetection (Plug and Play) support\n");
 		goto exit;
 	}
 
@@ -993,8 +970,8 @@ int main(int argc, char *argv[])
 		goto exit;
 
 	if (!aem->eepmap && !user_eepmap) {
-		if ((aem->con->caps & CON_CAP_PNP) && aem->verbose)
-			printf("Connector failed to autodetect EEPROM type, fallback to SREV register based autodetection\n");
+		fprintf(stderr, "Connector failed to autodetect EEPROM type, you need to specify it manually\n");
+		goto con_clean;
 	} else if (!aem->eepmap && user_eepmap) {
 		if ((aem->con->caps & CON_CAP_PNP) && aem->verbose)
 			printf("Connector failed to autodetect EEPROM type, use manually configured %s type\n",
@@ -1029,12 +1006,6 @@ int main(int argc, char *argv[])
 
 		hw_eeprom_set_ops(aem);
 		hw_otp_set_ops(aem);
-
-		if (!aem->eepmap) {
-			ret = eepmap_detect(aem);
-			if (ret)
-				goto con_clean;
-		}
 
 		aem->eepmap_priv = malloc(aem->eepmap->priv_data_sz);
 		if (!aem->eepmap_priv) {

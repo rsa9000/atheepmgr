@@ -54,12 +54,19 @@ Example: to print the EEPROM content of a wireless NIC, which is located at PCI 
 
 Accessing the device's EEPROM by directly specifying the device I/O memory location can be useful for embedded platforms where using the libpciaccess library could be an overkill.
 
-Example: print EEPROM content of the device, which I/O region starts at 0x21000000:
+Example: print EEPROM content of an AR9220 based device, which I/O region starts at 0x21000000:
 
 ```
-# atheepmgr -M 0x21000000
+# atheepmgr -t AR9220 -M 0x21000000
 ```
 
+or
+
+```
+# atheepmgr -t PCI:0029 -M 0x21000000
+```
+
+*NB*: Former form is useful when you do not know an exact chip type, but you are still able to obtain PCI Device Id via some side interface (e.g. pciconf(8), lspci(8) or pcidump(8) utility, or Linux sysfs).
 *NB*: To obtain the device I/O region location you can examine the output of the `dmesg(1)` command (or check the /proc/iomem file on GNU/Linux based platforms) .
 
 ### Parse and print contents of an EEPROM file dump
@@ -85,7 +92,7 @@ or using chip name instead of EEPROM map (layout) name:
 Example: preserve a wireless NIC EEPROM content to the eep.bin file
 
 ```
-# atheepmgr -M 0x21000000 save eep.bin
+# atheepmgr -t PCI:0029 -M 0x21000000 save eep.bin
 ```
 
 TODO
