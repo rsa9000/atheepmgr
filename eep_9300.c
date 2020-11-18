@@ -866,6 +866,9 @@ static bool eep_9300_update_eeprom(struct atheepmgr *aem, int param,
 const struct eepmap eepmap_9300 = {
 	.name = "9300",
 	.desc = "EEPROM map for modern .11n chips (AR93xx/AR94xx/AR95xx/etc.)",
+	.chip_regs = {
+		.srev = 0x4020,
+	},
 	.priv_data_sz = sizeof(struct eep_9300_priv),
 	.eep_buf_sz = AR9300_EEPROM_SIZE / sizeof(uint16_t),
 	.unpacked_buf_sz = sizeof(struct ar9300_eeprom),

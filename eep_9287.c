@@ -321,6 +321,9 @@ static void eep_9287_dump_power_info(struct atheepmgr *aem)
 const struct eepmap eepmap_9287 = {
 	.name = "9287",
 	.desc = "AR9287 chip EEPROM map",
+	.chip_regs = {
+		.srev = 0x4020,
+	},
 	.priv_data_sz = sizeof(struct eep_9287_priv),
 	.eep_buf_sz = AR9287_DATA_START_LOC + AR9287_DATA_SZ,
 	.load_eeprom  = eep_9287_load_eeprom,

@@ -18,7 +18,7 @@
 #ifndef HW_H
 #define HW_H
 
-#define AR_SREV			0x4020
+#define AR5211_SREV		0x4020
 #define AR_SREV_ID		0x000000FF
 #define AR_SREV_VERSION		0x000000F0
 #define AR_SREV_VERSION_S	4

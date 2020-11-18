@@ -316,6 +316,9 @@ static void eep_9285_dump_power_info(struct atheepmgr *aem)
 const struct eepmap eepmap_9285 = {
 	.name = "9285",
 	.desc = "AR9285 chip EEPROM map",
+	.chip_regs = {
+		.srev = 0x4020,
+	},
 	.priv_data_sz = sizeof(struct eep_9285_priv),
 	.eep_buf_sz = AR9285_DATA_START_LOC + AR9285_DATA_SZ,
 	.load_eeprom  = eep_9285_load_eeprom,

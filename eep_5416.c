@@ -719,6 +719,9 @@ static bool eep_5416_update_eeprom(struct atheepmgr *aem, int param,
 const struct eepmap eepmap_5416 = {
 	.name = "5416",
 	.desc = "Default EEPROM map for earlier .11n chips (AR5416/AR9160/AR92xx/etc.)",
+	.chip_regs = {
+		.srev = 0x4020,
+	},
 	.priv_data_sz = sizeof(struct eep_5416_priv),
 	.eep_buf_sz = AR5416_DATA_START_LOC + AR5416_DATA_SZ,
 	.load_eeprom  = eep_5416_load_eeprom,

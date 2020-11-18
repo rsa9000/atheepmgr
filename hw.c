@@ -96,7 +96,7 @@ static const char *mac_bb_name2(uint32_t mac_bb_version, uint8_t mac_bb_type)
 
 static void hw_read_revisions(struct atheepmgr *aem)
 {
-	uint32_t val = REG_READ(AR_SREV);
+	uint32_t val = REG_READ(aem->eepmap->chip_regs.srev);
 
 	if ((val & AR_SREV_ID) == 0xFF) {
 		uint8_t type = (val & AR_SREV_TYPE2) >> AR_SREV_TYPE2_S;
@@ -591,6 +591,11 @@ bool hw_otp_read(struct atheepmgr *aem, uint32_t off, uint8_t *data)
 
 int hw_init(struct atheepmgr *aem)
 {
+	if (!aem->eepmap->chip_regs.srev) {
+		fprintf(stderr, "Unable read chip SREV/Id since EEPROM map does not define a SREV register offset\n");
+		return -1;
+	}
+
 	hw_read_revisions(aem);
 
 	if (AR_SREV_5416_OR_LATER(aem)) {

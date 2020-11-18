@@ -208,6 +208,9 @@ struct eeptemplate {
 struct eepmap {
 	const char *name;
 	const char *desc;
+	struct chip_regs {
+		uint32_t srev;
+	} chip_regs;
 	size_t priv_data_sz;
 	size_t eep_buf_sz;		/* EEP buffer size in 16-bit words */
 	size_t unpacked_buf_sz;		/* Buffer size for unpacked data */

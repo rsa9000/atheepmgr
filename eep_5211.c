@@ -1542,6 +1542,9 @@ static bool eep_5211_update_eeprom(struct atheepmgr *aem, int param,
 const struct eepmap eepmap_5211 = {
 	.name = "5211",
 	.desc = "Legacy .11abg chips EEPROM map (AR5211/AR5212/AR5414/etc.)",
+	.chip_regs = {
+		.srev = 0x4020,
+	},
 	.priv_data_sz = sizeof(struct eep_5211_priv),
 	.eep_buf_sz = AR5211_SIZE_MAX,
 	.load_eeprom = eep_5211_load_eeprom,
