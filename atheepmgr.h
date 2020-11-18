@@ -133,6 +133,8 @@ typedef int bool;
 	((_aem)->macVersion == AR_SREV_VERSION_9550)
 #define AR_SREV_9565(_aem) \
 	((_aem)->macVersion == AR_SREV_VERSION_9565)
+#define AR_SREV_AFTER_9550(_aem) \
+	((_aem)->macVersion > AR_SREV_VERSION_9550)
 
 #define AH_WAIT_TIMEOUT		100000 /* (us) */
 #define AH_TIME_QUANTUM		10

@@ -522,6 +522,9 @@ void hw_eeprom_set_ops(struct atheepmgr *aem)
 		if (aem->verbose)
 			printf("EEPROM access ops: use connector's ops\n");
 		aem->eep = aem->con->eep;
+	} else if (AR_SREV_AFTER_9550(aem)) {
+		if (aem->verbose)
+			printf("Chip does not support EEPROM\n");
 	} else if (AR_SREV_5416_OR_LATER(aem)) {
 		if (aem->verbose)
 			printf("EEPROM access ops: use AR9xxx ops\n");
@@ -569,6 +572,8 @@ void hw_otp_set_ops(struct atheepmgr *aem)
 		if (aem->verbose)
 			printf("OTP access ops: use connector's ops\n");
 		aem->otp = aem->con->otp;
+	} else if (AR_SREV_AFTER_9550(aem)) {
+		printf("Unable to select OTP access ops due to unsupported chip\n");
 	} else if (AR_SREV_9300_20_OR_LATER(aem)) {
 		if (aem->verbose)
 			printf("OTP access ops: use AR93xx ops\n");
@@ -598,7 +603,12 @@ int hw_init(struct atheepmgr *aem)
 
 	hw_read_revisions(aem);
 
-	if (AR_SREV_5416_OR_LATER(aem)) {
+	if (AR_SREV_AFTER_9550(aem)) {
+		if (aem->verbose)
+			printf("Unable to select GPIO access ops due to unsupported chip\n");
+		if (aem->eep_wp_gpio_num == EEP_WP_GPIO_AUTO)
+			aem->eep_wp_gpio_num = EEP_WP_GPIO_NONE;
+	} if (AR_SREV_5416_OR_LATER(aem)) {
 		aem->gpio = &gpio_ops_ar9xxx;
 
 		if (AR_SREV_9300_20_OR_LATER(aem))
