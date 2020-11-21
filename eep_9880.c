@@ -560,6 +560,9 @@ static void eep_9880_dump_power_info(struct atheepmgr *aem)
 const struct eepmap eepmap_9880 = {
 	.name = "9880",
 	.desc = "EEPROM map for earlier .11ac chips (QCA9880/QCA9882/QCA9892/etc.)",
+	.chip_regs = {
+		.srev = 0x40ec,
+	},
 	.priv_data_sz = sizeof(struct eep_9880_priv),
 	.eep_buf_sz = QCA9880_EEPROM_SIZE / sizeof(uint16_t),
 	.unpacked_buf_sz = sizeof(struct qca9880_eeprom),

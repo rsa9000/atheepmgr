@@ -104,6 +104,7 @@ typedef int bool;
 #define AR_SREV_VERSION_9565		0x2c0
 #define AR_SREV_VERSION_9340		0x300
 #define AR_SREV_VERSION_9550		0x400
+#define AR_SREV_VERSION_9880		0x4300
 
 #define AR_SREV_5211_OR_LATER(_aem) \
 	((_aem)->macVersion >= AR_SREV_VERSION_5211)
@@ -135,6 +136,8 @@ typedef int bool;
 	((_aem)->macVersion == AR_SREV_VERSION_9565)
 #define AR_SREV_AFTER_9550(_aem) \
 	((_aem)->macVersion > AR_SREV_VERSION_9550)
+#define AR_SREV_9880(_aem) \
+	((_aem)->macVersion == AR_SREV_VERSION_9880)
 
 #define AH_WAIT_TIMEOUT		100000 /* (us) */
 #define AH_TIME_QUANTUM		10

@@ -56,6 +56,8 @@ static struct {
 	{ AR_SREV_VERSION_9565, 0xff, "QCA9565" },
 	{ AR_SREV_VERSION_9340, 0xff, "AR9340" },
 	{ AR_SREV_VERSION_9550, 0xff, "AR9550" },
+	{ AR_SREV_VERSION_9880, 0x22, "QCA9882" },
+	{ AR_SREV_VERSION_9880, 0x20, "QCA9880" },/* Keep last as common name */
 };
 
 static const char *mac_bb_name(uint32_t ver, uint32_t rev)

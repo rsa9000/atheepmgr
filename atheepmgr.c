@@ -122,12 +122,12 @@ static const struct chip chips[] = {
 	{ AEM_CHIP_EEP9300("AR9350") },
 
 	/* QCA988x EEPROM map PCIe chip(s) */
-	{ AEM_CHIP_EEP9880("QCA9860") },
-	{ AEM_CHIP_EEP9880("QCA9862") },
-	{ AEM_CHIP_EEP9880("QCA9880") },
-	{ AEM_CHIP_EEP9880("QCA9882") },
-	{ AEM_CHIP_EEP9880("QCA9890") },
-	{ AEM_CHIP_EEP9880("QCA9892") },
+	{ AEM_CHIP_EEP9880("QCA9860"), .pciids = {{ .dev_id = 0x003c }} },
+	{ AEM_CHIP_EEP9880("QCA9862"), .pciids = {{ .dev_id = 0x003c }} },
+	{ AEM_CHIP_EEP9880("QCA9880"), .pciids = {{ .dev_id = 0x003c }} },
+	{ AEM_CHIP_EEP9880("QCA9882"), .pciids = {{ .dev_id = 0x003c }} },
+	{ AEM_CHIP_EEP9880("QCA9890"), .pciids = {{ .dev_id = 0x003c }} },
+	{ AEM_CHIP_EEP9880("QCA9892"), .pciids = {{ .dev_id = 0x003c }} },
 };
 
 int chips_find_by_pci_id(uint16_t dev_id, const struct chip *res[], int nmemb)
