@@ -588,6 +588,14 @@ void hw_otp_set_ops(struct atheepmgr *aem)
 	}
 }
 
+bool hw_otp_enable(struct atheepmgr *aem, int enable)
+{
+	if (!aem->otp || !aem->otp->enable)
+		return true;
+
+	return aem->otp->enable(aem, enable);
+}
+
 bool hw_otp_read(struct atheepmgr *aem, uint32_t off, uint8_t *data)
 {
 	if (!aem->otp)

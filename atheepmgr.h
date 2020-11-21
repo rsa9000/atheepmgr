@@ -171,6 +171,7 @@ struct eep_ops {
 };
 
 struct otp_ops {
+	bool (*enable)(struct atheepmgr *aem, int enable);
 	bool (*read)(struct atheepmgr *aem, uint32_t off, uint8_t *data);
 };
 
@@ -267,6 +268,7 @@ struct atheepmgr {
 	const struct eep_ops *eep;
 
 	const struct otp_ops *otp;
+	int otp_was_enabled;
 
 	const struct gpio_ops *gpio;
 	unsigned gpio_num;			/* Number of GPIO lines */
@@ -293,6 +295,7 @@ bool hw_eeprom_read(struct atheepmgr *aem, uint32_t off, uint16_t *data);
 bool hw_eeprom_write(struct atheepmgr *aem, uint32_t off, uint16_t data);
 void hw_eeprom_lock(struct atheepmgr *aem, int lock);
 void hw_otp_set_ops(struct atheepmgr *aem);
+bool hw_otp_enable(struct atheepmgr *aem, int enable);
 bool hw_otp_read(struct atheepmgr *aem, uint32_t off, uint8_t *data);
 int hw_init(struct atheepmgr *aem);
 
@@ -304,6 +307,10 @@ int hw_init(struct atheepmgr *aem);
 		hw_eeprom_lock(aem, 1)
 #define EEP_UNLOCK()			\
 		hw_eeprom_lock(aem, 0)
+#define OTP_ENABLE()			\
+		hw_otp_enable(aem, 1)
+#define OTP_DISABLE()			\
+		hw_otp_enable(aem, 0);
 #define OTP_READ(_off, _data)		\
 		hw_otp_read(aem, _off, _data)
 #define REG_READ(_reg)			\
