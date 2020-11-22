@@ -120,6 +120,11 @@ static bool eep_9880_load_otp(struct atheepmgr *aem)
 	uint8_t strcode;
 	uint8_t *p, *s;
 
+	if (!OTP_ENABLE()) {
+		fprintf(stderr, "Unable to enable chip OTP memory access");
+		return false;
+	}
+
 	for (addr = 0; addr < QCA9880_OTP_SIZE; ++addr) {
 		if (!OTP_READ(addr, &buf[addr])) {
 			fprintf(stderr, "Unable to read OTP at 0x%04x\n", addr);
@@ -233,6 +238,8 @@ static bool eep_9880_load_otp(struct atheepmgr *aem)
 	memcpy(&emp->eep, aem->unpacked_buf, sizeof(emp->eep));
 
 exit:
+	OTP_DISABLE();
+
 	return aem->eep_len != 0;
 }
 

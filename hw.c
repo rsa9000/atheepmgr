@@ -484,6 +484,45 @@ static const struct eep_ops hw_eep_5211 = {
 	.lock = hw_eeprom_lock_gpio,
 };
 
+static bool hw_otp_enable_988x(struct atheepmgr *aem, int enable)
+{
+	uint32_t ctrl = REG_READ(QCA988X_OTP_CTRL);
+
+	if (enable) {
+		if (ctrl & QCA988X_OTP_CTRL_VDD12) {
+			if (aem->verbose)
+				printf("Looks like OTP was already enabled, disable operation will be skipped\n");
+			aem->otp_was_enabled = 1;
+		} else {
+			REG_WRITE(QCA988X_OTP_CTRL, QCA988X_OTP_CTRL_VDD12);
+		}
+
+		if (!hw_wait(aem, QCA988X_OTP_STATUS,
+			     QCA988X_OTP_STATUS_VDD12_RDY,
+			     QCA988X_OTP_STATUS_VDD12_RDY, 1000))
+			return false;
+
+		REG_WRITE(QCA988X_OTP_RD_STRB_PW, 6);	/* Robust read timing */
+	} else {
+		if (!aem->otp_was_enabled)
+			REG_WRITE(QCA988X_OTP_CTRL, 0);
+	}
+
+	return true;
+}
+
+static bool hw_otp_read_988x(struct atheepmgr *aem, uint32_t off, uint8_t *data)
+{
+	*data = REG_READ(QCA988X_OTP_DATA + 4 * off);
+
+	return true;
+}
+
+static const struct otp_ops hw_otp_988x = {
+	.enable = hw_otp_enable_988x,
+	.read = hw_otp_read_988x,
+};
+
 /**
  * Chip reads OTP by 32-bits words. We cache readed word value and return
  * cached data if user request octet from a same word. Such caching greatly (x4)
@@ -574,6 +613,10 @@ void hw_otp_set_ops(struct atheepmgr *aem)
 		if (aem->verbose)
 			printf("OTP access ops: use connector's ops\n");
 		aem->otp = aem->con->otp;
+	} else if (AR_SREV_9880(aem)) {
+		if (aem->verbose)
+			printf("OTP access ops: use QCA988x ops\n");
+		aem->otp = &hw_otp_988x;
 	} else if (AR_SREV_AFTER_9550(aem)) {
 		printf("Unable to select OTP access ops due to unsupported chip\n");
 	} else if (AR_SREV_9300_20_OR_LATER(aem)) {
