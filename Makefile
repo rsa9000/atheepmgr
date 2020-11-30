@@ -13,6 +13,8 @@ OBJ=\
 	hw.o		\
 	utils.o		\
 
+DEP=$(OBJ:%.o=%.d)
+
 DEFS=
 
 HAVE_LIBPCIACCESS=$(shell pkg-config pciaccess && echo y || echo n)
@@ -39,6 +41,8 @@ CC?=gcc
 
 CFLAGS+=-Wall
 
+DEPFLAGS=-MMD -MP
+
 .PHONY: all clean
 
 all: $(TARGET)
@@ -47,8 +51,11 @@ $(TARGET): $(OBJ)
 	$(CC) $^ $(LDFLAGS) -o $@
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
+	$(CC) $(DEPFLAGS) $(CFLAGS) $(DEFS) -c $< -o $@
 
 clean:
 	rm -rf $(TARGET)
 	rm -rf $(OBJ)
+	rm -rf $(DEP)
+
+-include $(DEP)
