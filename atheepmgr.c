@@ -174,6 +174,45 @@ static int act_eep_save(struct atheepmgr *aem, int argc, char *argv[])
 	return res == eep_len ? 0 : -EIO;
 }
 
+static int act_eep_unpack(struct atheepmgr *aem, int argc, char *argv[])
+{
+	const struct eepmap *eepmap = aem->eepmap;
+	size_t res, data_len = aem->unpacked_len;
+	const uint8_t *buf = aem->unpacked_buf;
+	FILE *fp;
+
+	if (!eepmap->unpacked_buf_sz) {
+		fprintf(stderr, "EEPROM map does not support unpacked data saving\n");
+		return -EOPNOTSUPP;
+	}
+
+	if (argc < 1) {
+		fprintf(stderr, "Output file for unpacked data saving is not specified, aborting\n");
+		return -EINVAL;
+	}
+
+	if (!data_len) {
+		fprintf(stderr, "There are no unpacked data were produced, possibly data were not packed\n");
+		return -ENOENT;
+	}
+
+	fp = fopen(argv[0], "wb");
+	if (!fp) {
+		fprintf(stderr, "Unable to open output file for writing: %s\n",
+			strerror(errno));
+		return -errno;
+	}
+
+	res = fwrite(buf, 1, data_len, fp);
+	if (res != data_len)
+		fprintf(stderr, "Unable to save unpacked data: %s\n",
+			strerror(errno));
+
+	fclose(fp);
+
+	return res == data_len ? 0 : -EIO;
+}
+
 static const struct eepmap_param {
 	int id;
 	const char *name;
@@ -373,6 +412,10 @@ static const struct action {
 		.func = act_eep_save,
 		.flags = ACT_F_DATA,
 	}, {
+		.name = "unpack",
+		.func = act_eep_unpack,
+		.flags = ACT_F_DATA,
+	}, {
 		.name = "update",
 		.func = act_eep_update,
 		.flags = ACT_F_DATA,
@@ -418,6 +461,8 @@ static void usage_eepmap(struct atheepmgr *aem, const struct eepmap *eepmap)
 	if (aem->verbose < 1)
 		return;
 
+	printf("%18sSupport for unpacked data saving: %s\n", "",
+	       eepmap->unpacked_buf_sz ? "Yes" : "No");
 	printf("%18s%s:\n", "", "Supported sections for dumping");
 	for (i = 0; i < EEP_SECT_MAX; ++i) {
 		if (!eepmap->dump[i])
@@ -499,6 +544,9 @@ static void usage(struct atheepmgr *aem, char *name)
 			"                  The default action behaviour is to print the contents of all\n"
 			"                  supported EEPROM sections.\n"
 			"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
+			"  unpack <file>   Save unpacked EEPROM/OTP data to the file <file>. Saved data\n"
+			"                  type depends on EEPROM map type, usually only calibration\n"
+			"                  data are saved.\n"
 			"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>. See per-map\n"
 			"                  supported parameters list below.\n"
 			"  gpiodump        Dump GPIO lines state to the terminal.\n"
@@ -511,6 +559,7 @@ static void usage(struct atheepmgr *aem, char *name)
 			"Available actions (use -v option to see details):\n"
 			"  dump [<sects>]  Read & dump parsed EEPROM content to the terminal.\n"
 			"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
+			"  unpack <file>   Save unpacked EEPROM/OTP calibration data to the file <file>.\n"
 			"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>.\n"
 			"  gpiodump        Dump GPIO lines state to the terminal.\n"
 			"  regread <addr>  Read register at address <addr> and print it value.\n"
@@ -683,6 +732,15 @@ int main(int argc, char *argv[])
 			ret = -ENOMEM;
 			goto con_clean;
 		}
+		if (aem->eepmap->unpacked_buf_sz) {
+			aem->unpacked_buf =
+					malloc(aem->eepmap->unpacked_buf_sz);
+			if (!aem->unpacked_buf) {
+				fprintf(stderr, "Unable to allocate memory for buffer of unpacked data\n");
+				ret = -ENOMEM;
+				goto con_clean;
+			}
+		}
 
 		if (aem->con->blob && aem->eepmap->load_blob) {
 			tries++;
@@ -729,6 +787,7 @@ con_clean:
 	aem->con->clean(aem);
 
 exit:
+	free(aem->unpacked_buf);
 	free(aem->eep_buf);
 	free(aem->eepmap_priv);
 	free(aem->con_priv);

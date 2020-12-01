@@ -203,6 +203,7 @@ struct eepmap {
 	const char *desc;
 	size_t priv_data_sz;
 	size_t eep_buf_sz;		/* EEP buffer size in 16-bit words */
+	size_t unpacked_buf_sz;		/* Buffer size for unpacked data */
 	bool (*load_blob)(struct atheepmgr *aem);
 	bool (*load_eeprom)(struct atheepmgr *aem);
 	bool (*load_otp)(struct atheepmgr *aem);
@@ -230,6 +231,9 @@ struct atheepmgr {
 	int eep_io_swap;			/* Swap words */
 	uint16_t *eep_buf;			/* Intermediated EEPROM buf */
 	size_t eep_len;			/* Read size of EEPROM data in the buffer */
+
+	uint8_t *unpacked_buf;			/* Buffer for unpacked data */
+	size_t unpacked_len;			/* Unpacked data length */
 
 	int eep_wp_gpio_num;			/* EEPROM WP GPIO number */
 	int eep_wp_gpio_pol;			/* EEPROM WP unlock polarity */
