@@ -338,7 +338,7 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 		}
 
 		res = ar9300_compress_decision(aem, it, &blkh,
-					       (uint8_t *)&emp->eep, buf,
+					       aem->unpacked_buf, buf,
 					       sizeof(emp->eep));
 		if (res == 0)
 			valid_blocks++;
@@ -389,7 +389,7 @@ static bool eep_9300_load_eeprom(struct atheepmgr *aem)
 	uint16_t magic;
 	int cptr;
 
-	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
+	memcpy(aem->unpacked_buf, &ar9300_default, sizeof(emp->eep));
 
 	emp->buf_is_be = 0;	/* EEPROM is always in Little-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
@@ -435,6 +435,9 @@ static bool eep_9300_load_eeprom(struct atheepmgr *aem)
 found:
 	emp->data_src = DATA_SRC_EEPROM;
 	aem->eep_len = (cptr + 1) / 2;	/* Set actual EEPROM size */
+	aem->unpacked_len = sizeof(struct ar9300_eeprom);
+	memcpy(&emp->eep, aem->unpacked_buf, sizeof(emp->eep));
+
 	return true;
 }
 
@@ -446,7 +449,7 @@ static bool eep_9300_load_otp(struct atheepmgr *aem)
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	int cptr;
 
-	memcpy(&emp->eep, &ar9300_default, sizeof(emp->eep));
+	memcpy(aem->unpacked_buf, &ar9300_default, sizeof(emp->eep));
 
 	emp->buf_is_be = aem->host_is_be;	/* OTP utilize native-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
@@ -470,6 +473,9 @@ static bool eep_9300_load_otp(struct atheepmgr *aem)
 found:
 	emp->data_src = DATA_SRC_OTP;
 	aem->eep_len = (cptr + 1) / 2;	/* Set actual EEPROM size */
+	aem->unpacked_len = sizeof(struct ar9300_eeprom);
+	memcpy(&emp->eep, aem->unpacked_buf, sizeof(emp->eep));
+
 	return true;
 }
 
@@ -974,6 +980,7 @@ const struct eepmap eepmap_9300 = {
 	.desc = "EEPROM map for modern .11n chips (AR93xx/AR94xx/AR95xx/etc.)",
 	.priv_data_sz = sizeof(struct eep_9300_priv),
 	.eep_buf_sz = AR9300_EEPROM_SIZE / sizeof(uint16_t),
+	.unpacked_buf_sz = sizeof(struct ar9300_eeprom),
 	.load_blob = eep_9300_load_blob,
 	.load_eeprom = eep_9300_load_eeprom,
 	.load_otp = eep_9300_load_otp,
