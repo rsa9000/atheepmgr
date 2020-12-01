@@ -31,6 +31,7 @@ struct eep_9300_blk_hdr {
 };
 
 struct eep_9300_priv {
+	int curr_ref_tpl;		/* Current reference EEPROM template */
 	uint8_t unpack_buf[0x800];	/* Unpacking temporary data buffer */
 	enum {
 		DATA_SRC_NONE = 0,
@@ -213,7 +214,7 @@ static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *mptr,
 static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 				    struct eep_9300_blk_hdr *blkh,
 				    uint8_t *mptr, uint8_t *word,
-				    int mdata_size)
+				    int mdata_size, int *pcurrref)
 {
 	const struct ar9300_eeprom *eep = NULL;
 	bool res;
@@ -232,7 +233,7 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 			       it, blkh->len);
 		break;
 	case _CompressBlock:
-		if (blkh->ref != 0) {
+		if (blkh->ref != *pcurrref) {
 			eep = ar9300_eeprom_struct_find_by_id(blkh->ref);
 			if (eep == NULL) {
 				fprintf(stderr,
@@ -241,6 +242,7 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 				return -1;
 			}
 			memcpy(mptr, eep, mdata_size);
+			*pcurrref = blkh->ref;
 		}
 		if (aem->verbose)
 			printf("Restore eeprom %d: block, reference %d, length %d\n",
@@ -305,6 +307,8 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 	uint8_t *ptr;
 	int it, res;
 
+	emp->curr_ref_tpl = -1;	/* Reset reference template */
+
 	for (it = 0; it < MSTATE; it++) {
 		ar9300_buf2bstr(aem, cptr, buf, COMP_HDR_LEN);
 
@@ -339,7 +343,8 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 
 		res = ar9300_compress_decision(aem, it, &blkh,
 					       aem->unpacked_buf, buf,
-					       sizeof(emp->eep));
+					       sizeof(emp->eep),
+					       &emp->curr_ref_tpl);
 		if (res == 0)
 			valid_blocks++;
 
@@ -388,8 +393,6 @@ static bool eep_9300_load_eeprom(struct atheepmgr *aem)
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	uint16_t magic;
 	int cptr;
-
-	memcpy(aem->unpacked_buf, &ar9300_default, sizeof(emp->eep));
 
 	emp->buf_is_be = 0;	/* EEPROM is always in Little-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
@@ -448,8 +451,6 @@ static bool eep_9300_load_otp(struct atheepmgr *aem)
 {
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	int cptr;
-
-	memcpy(aem->unpacked_buf, &ar9300_default, sizeof(emp->eep));
 
 	emp->buf_is_be = aem->host_is_be;	/* OTP utilize native-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
