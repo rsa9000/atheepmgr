@@ -57,13 +57,14 @@ static const struct ar9300_eeprom * const ar9300_eep_templates[] = {
 	&ar9300_x113,
 };
 
-static const struct ar9300_eeprom *ar9300_eeprom_struct_find_by_id(int id)
+static const uint8_t *ar9300_template_find_by_id(int id)
 {
 	int it;
 
 	for (it = 0; it < ARRAY_SIZE(ar9300_eep_templates); it++)
 		if (ar9300_eep_templates[it]->templateVersion == id)
-			return ar9300_eep_templates[it];
+			return (uint8_t *)ar9300_eep_templates[it];
+
 	return NULL;
 }
 
@@ -214,9 +215,9 @@ static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *mptr,
 static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 				    struct eep_9300_blk_hdr *blkh,
 				    uint8_t *mptr, uint8_t *word,
-				    int mdata_size, int *pcurrref)
+				    int mdata_size, int *pcurrref,
+				    const uint8_t *(*tpl_lookup_cb)(int))
 {
-	const struct ar9300_eeprom *eep = NULL;
 	bool res;
 
 	switch (blkh->comp) {
@@ -234,14 +235,16 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 		break;
 	case _CompressBlock:
 		if (blkh->ref != *pcurrref) {
-			eep = ar9300_eeprom_struct_find_by_id(blkh->ref);
-			if (eep == NULL) {
+			const uint8_t *tpl;
+
+			tpl = tpl_lookup_cb(blkh->ref);
+			if (tpl == NULL) {
 				fprintf(stderr,
 					"can't find reference eeprom struct %d\n",
 					blkh->ref);
 				return -1;
 			}
-			memcpy(mptr, eep, mdata_size);
+			memcpy(mptr, tpl, mdata_size);
 			*pcurrref = blkh->ref;
 		}
 		if (aem->verbose)
@@ -344,7 +347,8 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 		res = ar9300_compress_decision(aem, it, &blkh,
 					       aem->unpacked_buf, buf,
 					       sizeof(emp->eep),
-					       &emp->curr_ref_tpl);
+					       &emp->curr_ref_tpl,
+					       ar9300_template_find_by_id);
 		if (res == 0)
 			valid_blocks++;
 
