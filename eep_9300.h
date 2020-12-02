@@ -76,13 +76,6 @@ struct ar9300_eepFlags {
 	uint8_t eepMisc;
 } __attribute__ ((packed));
 
-enum ar9300_compression_types {
-	AR9300_COMP_NONE = 0,
-	AR9300_COMP_LZMA,
-	AR9300_COMP_PAIRS,
-	AR9300_COMP_BLOCK,
-};
-
 struct ar9300_base_eep_hdr {
 	int16_t regDmn[2];
 	/* 4 bits tx and 4 bits rx */

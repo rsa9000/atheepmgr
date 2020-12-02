@@ -21,15 +21,6 @@
 #include "eep_9300.h"
 #include "eep_9300_templates.h"
 
-/* Unpacked EEPROM compression header */
-struct ar9300_comp_hdr {
-	int comp;	/* Compression type */
-	int ref;	/* Reference EEPROM data */
-	int len;	/* Data length */
-	int maj;
-	int min;
-};
-
 struct eep_9300_priv {
 	int curr_ref_tpl;		/* Current reference EEPROM template */
 	uint8_t unpack_buf[0x800];	/* Unpacking temporary data buffer */
@@ -43,9 +34,6 @@ struct eep_9300_priv {
 	int buf_is_be;			/* Is buf 16-bits word in big-endians */
 	struct ar9300_eeprom eep;
 };
-
-#define AR9300_COMP_HDR_LEN		4
-#define AR9300_COMP_CKSUM_LEN		2
 
 #define EEPROM_DATA_LEN_9485	1088
 
@@ -148,116 +136,6 @@ static int ar9300_otp2buf(struct atheepmgr *aem, int bytes)
 
 	if (addr > aem->eep_len * 2)
 		aem->eep_len = addr / 2;
-
-	return 0;
-}
-
-static void ar9300_comp_hdr_unpack(const uint8_t *p, struct ar9300_comp_hdr *hdr)
-{
-	unsigned long value[4] = {p[0], p[1], p[2], p[3]};
-
-	hdr->comp = (value[0] >> 5) & 0x0007;
-	hdr->ref = (value[0] & 0x001f) | ((value[1] >> 2) & 0x0020);
-	hdr->len = ((value[1] << 4) & 0x07f0) | ((value[2] >> 4) & 0x000f);
-	hdr->maj = value[2] & 0x000f;
-	hdr->min = value[3] & 0x00ff;
-}
-
-static uint16_t ar9300_comp_cksum(const uint8_t *data, int dsize)
-{
-	int it, checksum = 0;
-
-	for (it = 0; it < dsize; it++) {
-		checksum += data[it];
-		checksum &= 0xffff;
-	}
-
-	return checksum;
-}
-
-static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *out,
-				    int out_size, const uint8_t *in, int in_len)
-{
-	int it;
-	int spot;
-	int offset;
-	int length;
-
-	spot = 0;
-
-	for (it = 0; it < in_len; it += length + 2) {
-		offset = in[it];
-		offset &= 0xff;
-		spot += offset;
-		length = in[it + 1];
-		length &= 0xff;
-
-		if (length > 0 && spot >= 0 && spot+length <= out_size) {
-			if (aem->verbose)
-				printf("Restore at %d: spot=%d offset=%d length=%d\n",
-				       it, spot, offset, length);
-			memcpy(&out[spot], &in[it+2], length);
-			spot += length;
-		} else if (length > 0) {
-			fprintf(stderr,
-				"Bad restore at %d: spot=%d offset=%d length=%d\n",
-				it, spot, offset, length);
-			return false;
-		}
-	}
-
-	return true;
-}
-
-static int ar9300_compress_decision(struct atheepmgr *aem, int it,
-				    struct ar9300_comp_hdr *hdr,
-				    uint8_t *out, const uint8_t *data,
-				    int out_size, int *pcurrref,
-				    const uint8_t *(*tpl_lookup_cb)(int))
-{
-	bool res;
-
-	switch (hdr->comp) {
-	case AR9300_COMP_NONE:
-		if (hdr->len != out_size) {
-			fprintf(stderr,
-				"EEPROM structure size mismatch memory=%d eeprom=%d\n",
-				out_size, hdr->len);
-			return -1;
-		}
-		memcpy(out, data, hdr->len);
-		if (aem->verbose)
-			printf("restored eeprom %d: uncompressed, length %d\n",
-			       it, hdr->len);
-		break;
-
-	case AR9300_COMP_BLOCK:
-		if (hdr->ref != *pcurrref) {
-			const uint8_t *tpl;
-
-			tpl = tpl_lookup_cb(hdr->ref);
-			if (tpl == NULL) {
-				fprintf(stderr,
-					"can't find reference eeprom struct %d\n",
-					hdr->ref);
-				return -1;
-			}
-			memcpy(out, tpl, out_size);
-			*pcurrref = hdr->ref;
-		}
-		if (aem->verbose)
-			printf("Restore eeprom %d: block, reference %d, length %d\n",
-			       it, hdr->ref, hdr->len);
-		res = ar9300_uncompress_block(aem, out, out_size,
-					      data, hdr->len);
-		if (!res)
-			return -1;
-		break;
-
-	default:
-		fprintf(stderr, "unknown compression code %d\n", hdr->comp);
-		return -1;
-	}
 
 	return 0;
 }

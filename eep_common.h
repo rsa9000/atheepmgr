@@ -86,6 +86,25 @@
 #define FREQ2FBIN(f, is_2g)	((is_2g) ? (f) - 2300 : ((f) - 4800) / 5)
 #define FBIN2FREQ(b, is_2g)	((is_2g) ? (b) + 2300 : (b) * 5 + 4800)
 
+#define AR9300_COMP_HDR_LEN		4
+#define AR9300_COMP_CKSUM_LEN		2
+
+enum ar9300_compression_types {
+	AR9300_COMP_NONE = 0,
+	AR9300_COMP_LZMA,
+	AR9300_COMP_PAIRS,
+	AR9300_COMP_BLOCK,
+};
+
+/* Unpacked EEPROM compression header */
+struct ar9300_comp_hdr {
+	int comp;	/* Compression type */
+	int ref;	/* Reference EEPROM data */
+	int len;	/* Data length */
+	int maj;
+	int min;
+};
+
 extern const char * const sDeviceType[];
 extern const char * const sAccessType[];
 extern const char * const eep_rates_cck[AR5416_NUM_TARGET_POWER_RATES_LEG];
@@ -169,6 +188,13 @@ void ar5416_dump_ctl(const uint8_t *index,
 		(offsetof(typeof(*eep), __field) / sizeof(uint16_t))
 #define EEP_FIELD_SIZE(__field)						\
 		(sizeof(eep->__field) / sizeof(uint16_t))
+
+void ar9300_comp_hdr_unpack(const uint8_t *p, struct ar9300_comp_hdr *hdr);
+uint16_t ar9300_comp_cksum(const uint8_t *data, int dsize);
+int ar9300_compress_decision(struct atheepmgr *aem, int it,
+			     struct ar9300_comp_hdr *hdr, uint8_t *out,
+			     const uint8_t *data, int out_size, int *pcurrref,
+			     const uint8_t *(*tpl_lookup_cb)(int));
 
 uint16_t eep_calc_csum(const uint16_t *buf, size_t len);
 
