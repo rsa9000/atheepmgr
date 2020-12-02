@@ -44,8 +44,8 @@ struct eep_9300_priv {
 	struct ar9300_eeprom eep;
 };
 
-#define COMP_HDR_LEN		4
-#define COMP_CKSUM_LEN		2
+#define AR9300_COMP_HDR_LEN		4
+#define AR9300_COMP_CKSUM_LEN		2
 
 #define EEPROM_DATA_LEN_9485	1088
 
@@ -218,7 +218,7 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 	bool res;
 
 	switch (hdr->comp) {
-	case _CompressNone:
+	case AR9300_COMP_NONE:
 		if (hdr->len != out_size) {
 			fprintf(stderr,
 				"EEPROM structure size mismatch memory=%d eeprom=%d\n",
@@ -231,7 +231,7 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 			       it, hdr->len);
 		break;
 
-	case _CompressBlock:
+	case AR9300_COMP_BLOCK:
 		if (hdr->ref != *pcurrref) {
 			const uint8_t *tpl;
 
@@ -277,7 +277,7 @@ static int ar9300_check_block_len(struct atheepmgr *aem, int max_len,
 			return 0;
 	}
 
-	if (COMP_HDR_LEN + blk_len + COMP_CKSUM_LEN > max_len)
+	if (AR9300_COMP_HDR_LEN + blk_len + AR9300_COMP_CKSUM_LEN > max_len)
 		return 0;
 
 	return 1;
@@ -313,7 +313,7 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 	emp->curr_ref_tpl = -1;	/* Reset reference template */
 
 	for (it = 0; it < MSTATE; it++) {
-		ar9300_buf2bstr(aem, cptr, buf, COMP_HDR_LEN);
+		ar9300_buf2bstr(aem, cptr, buf, AR9300_COMP_HDR_LEN);
 
 		if (!ar9300_check_header(buf))
 			break;
@@ -326,33 +326,34 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 		if (!ar9300_check_block_len(aem, cptr, hdr.len)) {
 			if (aem->verbose)
 				printf("Skipping bad header\n");
-			cptr -= COMP_HDR_LEN;
+			cptr -= AR9300_COMP_HDR_LEN;
 			continue;
 		}
 
-		ar9300_buf2bstr(aem, cptr, buf,
-				COMP_HDR_LEN + hdr.len + COMP_CKSUM_LEN);
+		ar9300_buf2bstr(aem, cptr, buf, AR9300_COMP_HDR_LEN +
+				hdr.len + AR9300_COMP_CKSUM_LEN);
 
-		checksum = ar9300_comp_cksum(&buf[COMP_HDR_LEN], hdr.len);
-		ptr = &buf[COMP_HDR_LEN + hdr.len];
+		checksum = ar9300_comp_cksum(buf + AR9300_COMP_HDR_LEN,
+					     hdr.len);
+		ptr = buf + AR9300_COMP_HDR_LEN + hdr.len;
 		mchecksum = ptr[0] | (ptr[1] << 8);
 		if (checksum != mchecksum) {
 			if (aem->verbose)
 				printf("Skipping block with bad checksum (got 0x%04x, expect 0x%04x)\n",
 				       checksum, mchecksum);
-			cptr -= COMP_HDR_LEN;
+			cptr -= AR9300_COMP_HDR_LEN;
 			continue;
 		}
 
 		res = ar9300_compress_decision(aem, it, &hdr, aem->unpacked_buf,
-					       buf + COMP_HDR_LEN,
+					       buf + AR9300_COMP_HDR_LEN,
 					       sizeof(emp->eep),
 					       &emp->curr_ref_tpl,
 					       ar9300_template_find_by_id);
 		if (res == 0)
 			valid_blocks++;
 
-		cptr -= COMP_HDR_LEN + hdr.len + COMP_CKSUM_LEN;
+		cptr -= AR9300_COMP_HDR_LEN + hdr.len + AR9300_COMP_CKSUM_LEN;
 	}
 
 	emp->init_data_max_size = cptr;	/* Preserve for future usage */

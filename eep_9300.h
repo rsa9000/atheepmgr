@@ -76,15 +76,11 @@ struct ar9300_eepFlags {
 	uint8_t eepMisc;
 } __attribute__ ((packed));
 
-enum CompressAlgorithm {
-	_CompressNone = 0,
-	_CompressLzma,
-	_CompressPairs,
-	_CompressBlock,
-	_Compress4,
-	_Compress5,
-	_Compress6,
-	_Compress7,
+enum ar9300_compression_types {
+	AR9300_COMP_NONE = 0,
+	AR9300_COMP_LZMA,
+	AR9300_COMP_PAIRS,
+	AR9300_COMP_BLOCK,
 };
 
 struct ar9300_base_eep_hdr {
