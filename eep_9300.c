@@ -152,7 +152,7 @@ static int ar9300_otp2buf(struct atheepmgr *aem, int bytes)
 	return 0;
 }
 
-static void ar9300_comp_hdr_unpack(uint8_t *p, struct ar9300_comp_hdr *hdr)
+static void ar9300_comp_hdr_unpack(const uint8_t *p, struct ar9300_comp_hdr *hdr)
 {
 	unsigned long value[4] = {p[0], p[1], p[2], p[3]};
 
@@ -163,7 +163,7 @@ static void ar9300_comp_hdr_unpack(uint8_t *p, struct ar9300_comp_hdr *hdr)
 	hdr->min = value[3] & 0x00ff;
 }
 
-static uint16_t ar9300_comp_cksum(uint8_t *data, int dsize)
+static uint16_t ar9300_comp_cksum(const uint8_t *data, int dsize)
 {
 	int it, checksum = 0;
 
@@ -176,7 +176,7 @@ static uint16_t ar9300_comp_cksum(uint8_t *data, int dsize)
 }
 
 static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *out,
-				    int out_size, uint8_t *in, int in_len)
+				    int out_size, const uint8_t *in, int in_len)
 {
 	int it;
 	int spot;
@@ -211,7 +211,7 @@ static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *out,
 
 static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 				    struct ar9300_comp_hdr *hdr,
-				    uint8_t *out, uint8_t *data,
+				    uint8_t *out, const uint8_t *data,
 				    int out_size, int *pcurrref,
 				    const uint8_t *(*tpl_lookup_cb)(int))
 {
@@ -225,7 +225,7 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 				out_size, hdr->len);
 			return -1;
 		}
-		memcpy(out, data + COMP_HDR_LEN, hdr->len);
+		memcpy(out, data, hdr->len);
 		if (aem->verbose)
 			printf("restored eeprom %d: uncompressed, length %d\n",
 			       it, hdr->len);
@@ -249,7 +249,7 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 			printf("Restore eeprom %d: block, reference %d, length %d\n",
 			       it, hdr->ref, hdr->len);
 		res = ar9300_uncompress_block(aem, out, out_size,
-					      data + COMP_HDR_LEN, hdr->len);
+					      data, hdr->len);
 		if (!res)
 			return -1;
 		break;
@@ -344,8 +344,8 @@ static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
 			continue;
 		}
 
-		res = ar9300_compress_decision(aem, it, &hdr,
-					       aem->unpacked_buf, buf,
+		res = ar9300_compress_decision(aem, it, &hdr, aem->unpacked_buf,
+					       buf + COMP_HDR_LEN,
 					       sizeof(emp->eep),
 					       &emp->curr_ref_tpl,
 					       ar9300_template_find_by_id);
