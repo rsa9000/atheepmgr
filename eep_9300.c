@@ -152,14 +152,10 @@ static int ar9300_otp2buf(struct atheepmgr *aem, int bytes)
 	return 0;
 }
 
-static void ar9300_comp_hdr_unpack(uint8_t *best, struct ar9300_comp_hdr *hdr)
+static void ar9300_comp_hdr_unpack(uint8_t *p, struct ar9300_comp_hdr *hdr)
 {
-	unsigned long value[4];
+	unsigned long value[4] = {p[0], p[1], p[2], p[3]};
 
-	value[0] = best[0];
-	value[1] = best[1];
-	value[2] = best[2];
-	value[3] = best[3];
 	hdr->comp = (value[0] >> 5) & 0x0007;
 	hdr->ref = (value[0] & 0x001f) | ((value[1] >> 2) & 0x0020);
 	hdr->len = ((value[1] << 4) & 0x07f0) | ((value[2] >> 4) & 0x000f);
@@ -179,8 +175,8 @@ static uint16_t ar9300_comp_cksum(uint8_t *data, int dsize)
 	return checksum;
 }
 
-static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *mptr,
-				    int mdataSize, uint8_t *block, int size)
+static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *out,
+				    int out_size, uint8_t *in, int in_len)
 {
 	int it;
 	int spot;
@@ -189,18 +185,18 @@ static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *mptr,
 
 	spot = 0;
 
-	for (it = 0; it < size; it += (length+2)) {
-		offset = block[it];
+	for (it = 0; it < in_len; it += length + 2) {
+		offset = in[it];
 		offset &= 0xff;
 		spot += offset;
-		length = block[it+1];
+		length = in[it + 1];
 		length &= 0xff;
 
-		if (length > 0 && spot >= 0 && spot+length <= mdataSize) {
+		if (length > 0 && spot >= 0 && spot+length <= out_size) {
 			if (aem->verbose)
 				printf("Restore at %d: spot=%d offset=%d length=%d\n",
 				       it, spot, offset, length);
-			memcpy(&mptr[spot], &block[it+2], length);
+			memcpy(&out[spot], &in[it+2], length);
 			spot += length;
 		} else if (length > 0) {
 			fprintf(stderr,
@@ -209,26 +205,27 @@ static bool ar9300_uncompress_block(struct atheepmgr *aem, uint8_t *mptr,
 			return false;
 		}
 	}
+
 	return true;
 }
 
 static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 				    struct ar9300_comp_hdr *hdr,
-				    uint8_t *mptr, uint8_t *word,
-				    int mdata_size, int *pcurrref,
+				    uint8_t *out, uint8_t *data,
+				    int out_size, int *pcurrref,
 				    const uint8_t *(*tpl_lookup_cb)(int))
 {
 	bool res;
 
 	switch (hdr->comp) {
 	case _CompressNone:
-		if (hdr->len != mdata_size) {
+		if (hdr->len != out_size) {
 			fprintf(stderr,
 				"EEPROM structure size mismatch memory=%d eeprom=%d\n",
-				mdata_size, hdr->len);
+				out_size, hdr->len);
 			return -1;
 		}
-		memcpy(mptr, word + COMP_HDR_LEN, hdr->len);
+		memcpy(out, data + COMP_HDR_LEN, hdr->len);
 		if (aem->verbose)
 			printf("restored eeprom %d: uncompressed, length %d\n",
 			       it, hdr->len);
@@ -245,14 +242,14 @@ static int ar9300_compress_decision(struct atheepmgr *aem, int it,
 					hdr->ref);
 				return -1;
 			}
-			memcpy(mptr, tpl, mdata_size);
+			memcpy(out, tpl, out_size);
 			*pcurrref = hdr->ref;
 		}
 		if (aem->verbose)
 			printf("Restore eeprom %d: block, reference %d, length %d\n",
 			       it, hdr->ref, hdr->len);
-		res = ar9300_uncompress_block(aem, mptr, mdata_size,
-					      word + COMP_HDR_LEN, hdr->len);
+		res = ar9300_uncompress_block(aem, out, out_size,
+					      data + COMP_HDR_LEN, hdr->len);
 		if (!res)
 			return -1;
 		break;
