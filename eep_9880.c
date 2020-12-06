@@ -19,9 +19,17 @@
 #include "eep_common.h"
 #include "eep_9880.h"
 
+static const uint8_t eep_9880_otp_magic[2] = {0xaa, 0x55};
+
 struct eep_9880_priv {
 	struct qca9880_eeprom eep;
 } __attribute__((aligned(4)));	/* Force alignment to make gcc happy */
+
+static struct eep_9880_otp_str_desc {
+	const char *name;
+	void (*proc)(struct atheepmgr *aem, const uint8_t *data, int len);
+} eep_9880_otp_streams[] = {
+};
 
 static bool eep_9880_load_blob(struct atheepmgr *aem)
 {
@@ -42,6 +50,115 @@ static bool eep_9880_load_blob(struct atheepmgr *aem)
 	aem->eep_len = (data_size + 1) / 2;
 
 	return true;
+}
+
+static bool eep_9880_load_otp(struct atheepmgr *aem)
+{
+	uint8_t *buf = (uint8_t *)aem->eep_buf;	/* Use as an array of bytes */
+	unsigned int addr, end_mark_seen;
+	uint8_t strcode;
+	uint8_t *p, *s;
+
+	for (addr = 0; addr < QCA9880_OTP_SIZE; ++addr) {
+		if (!OTP_READ(addr, &buf[addr])) {
+			fprintf(stderr, "Unable to read OTP at 0x%04x\n", addr);
+			goto exit;
+		}
+	}
+
+	/**
+	 * Check OTP magic. Do not have macro to work with big-endian values,
+	 * so check byte by byte.
+	 */
+	if (memcmp(&buf[QCA9880_OTP_MAGIC_OFFSET], eep_9880_otp_magic,
+	           sizeof(eep_9880_otp_magic)) != 0) {
+		if (aem->verbose > 1)
+			printf("Invalid OTP magic 0x%02X%02X, expected value 0x%02X%02X\n",
+			       buf[QCA9880_OTP_MAGIC_OFFSET + 0],
+			       buf[QCA9880_OTP_MAGIC_OFFSET + 1],
+			       eep_9880_otp_magic[0], eep_9880_otp_magic[1]);
+		goto exit;
+	}
+
+	/**
+	 * Now we are ready to parse OTP memory content.
+	 *
+	 * OTP data start from a fixed size header that is followed by a several
+	 * data containers of a variable size. Data containers are stored in a
+	 * stream like format: each container (stream) begins with a predefined
+	 * one octent lenth marker, that is followed by a stream header and
+	 * data, and then stream is finished by an end marker of two identical
+	 * octets. Sream length are never stored, instead the stream length
+	 * should be calculated as a difference between the 'end' and 'begin'
+	 * markers.
+	 *
+	 * Each (begin/end) marker consists of a constant (high nibble) and
+	 * variable (low nibble) parts. Constant part is different for begin
+	 * and for end markers, but stay the same for different streams. While
+	 * variable part should be identical for begin and for end markers of
+	 * item stream, but could differ from stream to stream. Looks like
+	 * the variable part of marker is used to avoid false positivie end
+	 * marker detection. I.e. OTP writing sofware selects value for the
+	 * variable part in a such way that avoids appearing of double end
+	 * marker in the stream data. But we should not care, since we should
+	 * just parse this. So parser extract a value of the variable part
+	 * (lets call it a stream code) of the begin marker and then looking
+	 * for the end marker by checking each next octet of OTP for the
+	 * constant part of the end marker and for variable part (stream code)
+	 * that was extracted from the begin marker.
+	 */
+	strcode = 0xff;
+	s = NULL;	/* Uninit. usage is impossible, but make gcc happy */
+	for (p = buf+QCA9880_OTP_HEADER_SIZE; p < buf+QCA9880_OTP_SIZE; ++p) {
+		if (strcode == 0xff) {		/* Not inside OTP stream */
+			if (*p == 0x00)		/* Unused area begin */
+				break;
+			if (!QCA9880_OTP_STR_MARK_IS_BEGIN(*p)) {
+				fprintf(stderr, "Invalid OTP stream begin marker 0x%02x at 0x%04x\n",
+					*p, (unsigned int)(p - buf));
+				goto exit;
+			}
+			strcode = QCA9880_OTP_STR_MARK_CODE(*p);
+			end_mark_seen = 0;
+			s = p;			/* Catch stream begin */
+		} else if (!QCA9880_OTP_STR_MARK_IS_END(*p) ||
+			   strcode != QCA9880_OTP_STR_MARK_CODE(*p)) {
+			end_mark_seen = 0;
+		} else if (!end_mark_seen) {	/* Got first 'end' mark */
+			end_mark_seen = 1;
+		} else {			/* Got second 'end' mark */
+			const struct eep_9880_otp_str_desc *strdesc;
+			const struct qca9880_otp_str *str = (void *)(s + 1);
+			unsigned int len = p - s - 2;	/* Exclude markers */
+
+			addr = s - buf;
+			if (len < sizeof(*str)) {
+				fprintf(stderr, "Too short OTP stream raw data length %u byte(s) at 0x%04x\n",
+					len, addr);
+				goto exit;
+			}
+
+			strdesc = str->type >= ARRAY_SIZE(eep_9880_otp_streams) ?
+				  NULL : &eep_9880_otp_streams[str->type];
+
+			if (aem->verbose > 1)
+				printf("Found OTP stream (begin: 0x%04x, raw data len: 0x%04x (%u), type: %u (%s), version: %u)\n",
+				       addr, len, len, str->type,
+				       strdesc ? strdesc->name : "unknown",
+				       str->version);
+
+			if (strdesc && strdesc->proc)
+				strdesc->proc(aem, str->data,
+					      len - sizeof(*str));
+
+			strcode = 0xff;	/* Indicate outside stream state */
+		}
+	}
+
+	aem->eep_len = QCA9880_OTP_SIZE / sizeof(uint16_t);
+
+exit:
+	return aem->eep_len != 0;
 }
 
 static int eep_9880_check(struct atheepmgr *aem)
@@ -371,6 +488,7 @@ const struct eepmap eepmap_9880 = {
 	.priv_data_sz = sizeof(struct eep_9880_priv),
 	.eep_buf_sz = QCA9880_EEPROM_SIZE / sizeof(uint16_t),
 	.load_blob = eep_9880_load_blob,
+	.load_otp = eep_9880_load_otp,
 	.check_eeprom = eep_9880_check,
 	.dump = {
 		[EEP_SECT_BASE] = eep_9880_dump_base_header,

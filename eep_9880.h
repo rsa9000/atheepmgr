@@ -84,6 +84,33 @@
 /* Almost arbitrary value, bytes */
 #define QCA9880_EEPROM_SIZE			0x1000
 
+#define QCA9880_OTP_SIZE			0x0400
+#define QCA9880_OTP_HEADER_SIZE			0x0024
+#define QCA9880_OTP_MAGIC_OFFSET		(QCA9880_OTP_SIZE - 2)
+
+#define QCA9880_OTP_STR_MARK_TYPE_MASK		0xf0
+#define QCA9880_OTP_STR_MARK_CODE_MASK		0x0f
+#define QCA9880_OTP_STR_MARK_TYPE(_v)		\
+		((_v) & QCA9880_OTP_STR_MARK_TYPE_MASK)
+#define QCA9880_OTP_STR_MARK_CODE(_v)		\
+		((_v) & QCA9880_OTP_STR_MARK_CODE_MASK)
+#define QCA9880_OTP_STR_MARK_BEGIN		0x20
+#define QCA9880_OTP_STR_MARK_END		0x80
+#define QCA9880_OTP_STR_MARK_IS_BEGIN(_v)	\
+		(QCA9880_OTP_STR_MARK_TYPE(_v) == QCA9880_OTP_STR_MARK_BEGIN)
+#define QCA9880_OTP_STR_MARK_IS_END(_v)		\
+		(QCA9880_OTP_STR_MARK_TYPE(_v) == QCA9880_OTP_STR_MARK_END)
+
+enum qca9880_otp_str_types {
+	QCA9880_OTP_STR_TYPE_UNKNOWN = 0,
+};
+
+struct qca9880_otp_str {
+	uint8_t type;
+	uint8_t version;
+	uint8_t data[];
+};
+
 struct qca9880_eep_flags {
 	uint8_t opFlags;
 	uint8_t featureFlags;
