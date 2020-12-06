@@ -23,18 +23,18 @@
  * the custom one.
  */
 #if __BYTE_ORDER == __BIG_ENDIAN
-#define LE16(__val)		((((uint16_t)(__val) & 0x00ff) << 8) | \
+#define LE16CONST(__val)	((((uint16_t)(__val) & 0x00ff) << 8) | \
 				 (((uint16_t)(__val) & 0xff00) >> 8))
-#define LE32(__val)		((((uint32_t)(__val) & 0x000000ff) << 24) | \
+#define LE32CONST(__val)	((((uint32_t)(__val) & 0x000000ff) << 24) | \
 				 (((uint32_t)(__val) & 0x0000ff00) <<  8) | \
 				 (((uint32_t)(__val) & 0x00ff0000) >>  8) | \
 				 (((uint32_t)(__val) & 0xff000000) >> 24))
 #else
-#define LE16(__val)		((uint16_t)(__val))
-#define LE32(__val)		((uint32_t)(__val))
+#define LE16CONST(__val)	((uint16_t)(__val))
+#define LE32CONST(__val)	((uint32_t)(__val))
 #endif
 
-#define CTL(_tpower, _flag)			((_tpower) | ((_flag) << 6))
+#define CTLPACK(_tpower, _flag)			((_tpower) | ((_flag) << 6))
 
 /**
  * gcc does not like to initialize from structure field, so define template
@@ -56,7 +56,7 @@ static const struct ar9300_eeprom ar9300_default = {
 	.custData = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		     0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	.baseEepHeader = {
-		.regDmn = {LE16(0x0000), LE16(0x001f)},
+		.regDmn = { LE16CONST(0x0000), LE16CONST(0x001f) },
 		.txrxMask =  0x77, /* 4 bits tx and 4 bits rx */
 		.opCapFlags = {
 			.opFlags = AR5416_OPFLAGS_11G | AR5416_OPFLAGS_11A,
@@ -87,9 +87,11 @@ static const struct ar9300_eeprom ar9300_default = {
 	},
 	.modalHeader2G = {
 		/* ar9300_modal_eep_header  2g */
-		.antCtrlCommon = LE32(0x00000110),
-		.antCtrlCommon2 = LE32(0x00022222),
-		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
+		.antCtrlCommon = LE32CONST(0x00000110),
+		.antCtrlCommon2 = LE32CONST(0x00022222),
+		.antCtrlChain = {
+			LE16CONST(0x0150), LE16CONST(0x0150), LE16CONST(0x0150)
+		},
 		/*
 		 * xatten1DB[AR9300_MAX_CHAINS];  3 xatten1_db
 		 * for ar9280 (0xa20c/b20c 5:0)
@@ -276,25 +278,25 @@ static const struct ar9300_eeprom ar9300_default = {
 		}
 	},
 	.ctlPowerData_2G = {
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 1) } },
 
-		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
 
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
 
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1) } }
 	},
 	.modalHeader5G = {
-		.antCtrlCommon = LE32(0x00000110),
-		.antCtrlCommon2 = LE32(0x00022222),
+		.antCtrlCommon = LE32CONST(0x00000110),
+		.antCtrlCommon2 = LE32CONST(0x00022222),
 		/* xatten1DB 3 xatten1_db for AR9280 (0xa20c/b20c 5:0) */
 		.xatten1DB = {0, 0, 0},
 
@@ -551,60 +553,34 @@ static const struct ar9300_eeprom ar9300_default = {
 		}
 	},
 	.ctlPowerData_5G = {
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-			}
-		},
-		{
-			{
-				CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-				CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-				CTL(60, 0), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 0), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-			}
-		},
+		{{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1)
+		}}, {{
+			CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0),
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0),
+			CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1)
+		}}
 	}
 };
 
@@ -614,7 +590,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"x113-023-f0000"},
 	.baseEepHeader = {
-		.regDmn = {LE16(0x0000), LE16(0x001f)},
+		.regDmn = { LE16CONST(0x0000), LE16CONST(0x001f) },
 		.txrxMask =  0x77, /* 4 bits tx and 4 bits rx */
 		.opCapFlags = {
 			.opFlags = AR5416_OPFLAGS_11A,
@@ -645,9 +621,11 @@ static const struct ar9300_eeprom ar9300_x113 = {
 	},
 	.modalHeader2G = {
 	/* ar9300_modal_eep_header  2g */
-		.antCtrlCommon = LE32(0x00000110),
-		.antCtrlCommon2 = LE32(0x00044444),
-		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
+		.antCtrlCommon = LE32CONST(0x00000110),
+		.antCtrlCommon2 = LE32CONST(0x00044444),
+		.antCtrlChain = {
+			LE16CONST(0x0150), LE16CONST(0x0150), LE16CONST(0x0150)
+		},
 		/*
 		 * xatten1DB[AR9300_MAX_CHAINS];  3 xatten1_db
 		 * for ar9280 (0xa20c/b20c 5:0)
@@ -834,26 +812,28 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		}
 	},
 	.ctlPowerData_2G = {
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 1) } },
 
-		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
 
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
 
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1) } }
 	},
 	.modalHeader5G = {
-		.antCtrlCommon = LE32(0x00000220),
-		.antCtrlCommon2 = LE32(0x00011111),
-		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
+		.antCtrlCommon = LE32CONST(0x00000220),
+		.antCtrlCommon2 = LE32CONST(0x00011111),
+		.antCtrlChain = {
+			LE16CONST(0x0150), LE16CONST(0x0150), LE16CONST(0x0150)
+		},
 		/* 4 idle,t1,t2,b (4 bits per setting) */
 		.xatten1DB = {0, 0, 0},
 
@@ -1110,60 +1090,34 @@ static const struct ar9300_eeprom ar9300_x113 = {
 		}
 	},
 	.ctlPowerData_5G = {
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-			}
-		},
-		{
-			{
-				CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-				CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-				CTL(60, 0), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 0), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-			}
-		},
+		{{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1)
+		}}, {{
+			CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0),
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0),
+			CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1)
+		}}
 	}
 };
 
@@ -1174,7 +1128,7 @@ static const struct ar9300_eeprom ar9300_h112 = {
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"h112-241-f0000"},
 	.baseEepHeader = {
-		.regDmn = {LE16(0x0000), LE16(0x001f)},
+		.regDmn = { LE16CONST(0x0000), LE16CONST(0x001f) },
 		.txrxMask =  0x77, /* 4 bits tx and 4 bits rx */
 		.opCapFlags = {
 			.opFlags = AR5416_OPFLAGS_11G | AR5416_OPFLAGS_11A,
@@ -1205,9 +1159,11 @@ static const struct ar9300_eeprom ar9300_h112 = {
 	},
 	.modalHeader2G = {
 		/* ar9300_modal_eep_header  2g */
-		.antCtrlCommon = LE32(0x00000110),
-		.antCtrlCommon2 = LE32(0x00044444),
-		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
+		.antCtrlCommon = LE32CONST(0x00000110),
+		.antCtrlCommon2 = LE32CONST(0x00044444),
+		.antCtrlChain = {
+			LE16CONST(0x0150), LE16CONST(0x0150), LE16CONST(0x0150)
+		},
 		/*
 		 * xatten1DB[AR9300_MAX_CHAINS];  3 xatten1_db
 		 * for ar9280 (0xa20c/b20c 5:0)
@@ -1394,26 +1350,28 @@ static const struct ar9300_eeprom ar9300_h112 = {
 		}
 	},
 	.ctlPowerData_2G = {
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 1) } },
 
-		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
 
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
 
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1) } }
 	},
 	.modalHeader5G = {
-		.antCtrlCommon = LE32(0x00000220),
-		.antCtrlCommon2 = LE32(0x00044444),
-		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
+		.antCtrlCommon = LE32CONST(0x00000220),
+		.antCtrlCommon2 = LE32CONST(0x00044444),
+		.antCtrlChain = {
+			LE16CONST(0x0150), LE16CONST(0x0150), LE16CONST(0x0150)
+		},
 		/* xatten1DB 3 xatten1_db for AR9280 (0xa20c/b20c 5:0) */
 		.xatten1DB = {0, 0, 0},
 
@@ -1670,60 +1628,34 @@ static const struct ar9300_eeprom ar9300_h112 = {
 		}
 	},
 	.ctlPowerData_5G = {
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-			}
-		},
-		{
-			{
-				CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-				CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-				CTL(60, 0), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 0), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-			}
-		},
+		{{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1)
+		}}, {{
+			CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0),
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0),
+			CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1)
+		}}
 	}
 };
 
@@ -1734,7 +1666,7 @@ static const struct ar9300_eeprom ar9300_x112 = {
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"x112-041-f0000"},
 	.baseEepHeader = {
-		.regDmn = {LE16(0x0000), LE16(0x001f)},
+		.regDmn = { LE16CONST(0x0000), LE16CONST(0x001f) },
 		.txrxMask =  0x77, /* 4 bits tx and 4 bits rx */
 		.opCapFlags = {
 			.opFlags = AR5416_OPFLAGS_11G | AR5416_OPFLAGS_11A,
@@ -1765,9 +1697,11 @@ static const struct ar9300_eeprom ar9300_x112 = {
 	},
 	.modalHeader2G = {
 		/* ar9300_modal_eep_header  2g */
-		.antCtrlCommon = LE32(0x00000110),
-		.antCtrlCommon2 = LE32(0x00022222),
-		.antCtrlChain = {LE16(0x0010), LE16(0x0010), LE16(0x0010)},
+		.antCtrlCommon = LE32CONST(0x00000110),
+		.antCtrlCommon2 = LE32CONST(0x00022222),
+		.antCtrlChain = {
+			LE16CONST(0x0010), LE16CONST(0x0010), LE16CONST(0x0010)
+		},
 		/*
 		 * xatten1DB[AR9300_max_chains];  3 xatten1_db
 		 * for ar9280 (0xa20c/b20c 5:0)
@@ -1954,25 +1888,25 @@ static const struct ar9300_eeprom ar9300_x112 = {
 		}
 	},
 	.ctlPowerData_2G = {
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 1) } },
 
-		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
 
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
 
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1) } }
 	},
 	.modalHeader5G = {
-		.antCtrlCommon = LE32(0x00000110),
-		.antCtrlCommon2 = LE32(0x00022222),
+		.antCtrlCommon = LE32CONST(0x00000110),
+		.antCtrlCommon2 = LE32CONST(0x00022222),
 		/* xatten1DB 3 xatten1_db for ar9280 (0xa20c/b20c 5:0) */
 		.xatten1DB = {0x13, 0x19, 0x17},
 
@@ -2229,60 +2163,34 @@ static const struct ar9300_eeprom ar9300_x112 = {
 		}
 	},
 	.ctlPowerData_5G = {
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-			}
-		},
-		{
-			{
-				CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-				CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-				CTL(60, 0), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 0), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-			}
-		},
+		{{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1)
+		}}, {{
+			CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0),
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0),
+			CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1)
+		}}
 	}
 };
 
@@ -2292,7 +2200,7 @@ static const struct ar9300_eeprom ar9300_h116 = {
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"h116-041-f0000"},
 	.baseEepHeader = {
-		.regDmn = {LE16(0x0000), LE16(0x001f)},
+		.regDmn = { LE16CONST(0x0000), LE16CONST(0x001f) },
 		.txrxMask =  0x33, /* 4 bits tx and 4 bits rx */
 		.opCapFlags = {
 			.opFlags = AR5416_OPFLAGS_11G | AR5416_OPFLAGS_11A,
@@ -2323,9 +2231,11 @@ static const struct ar9300_eeprom ar9300_h116 = {
 	},
 	.modalHeader2G = {
 	/* ar9300_modal_eep_header  2g */
-		.antCtrlCommon = LE32(0x00000110),
-		.antCtrlCommon2 = LE32(0x00044444),
-		.antCtrlChain = {LE16(0x0010), LE16(0x0010), LE16(0x0010)},
+		.antCtrlCommon = LE32CONST(0x00000110),
+		.antCtrlCommon2 = LE32CONST(0x00044444),
+		.antCtrlChain = {
+			LE16CONST(0x0010), LE16CONST(0x0010), LE16CONST(0x0010)
+		},
 		/*
 		 * xatten1DB[AR9300_MAX_CHAINS];  3 xatten1_db
 		 * for ar9280 (0xa20c/b20c 5:0)
@@ -2512,26 +2422,28 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		}
 	},
 	.ctlPowerData_2G = {
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 1) } },
 
-		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
 
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
 
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
-		{ { CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1) } },
+		{ { CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1) } }
 	},
 	.modalHeader5G = {
-		.antCtrlCommon = LE32(0x00000220),
-		.antCtrlCommon2 = LE32(0x00044444),
-		.antCtrlChain = {LE16(0x0150), LE16(0x0150), LE16(0x0150)},
+		.antCtrlCommon = LE32CONST(0x00000220),
+		.antCtrlCommon2 = LE32CONST(0x00044444),
+		.antCtrlChain = {
+			LE16CONST(0x0150), LE16CONST(0x0150), LE16CONST(0x0150)
+		},
 		/* xatten1DB 3 xatten1_db for AR9280 (0xa20c/b20c 5:0) */
 		.xatten1DB = {0x19, 0x19, 0x19},
 
@@ -2788,60 +2700,34 @@ static const struct ar9300_eeprom ar9300_h116 = {
 		}
 	},
 	.ctlPowerData_5G = {
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-			}
-		},
-		{
-			{
-				CTL(60, 0), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-				CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-				CTL(60, 0), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 1),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 1), CTL(60, 0),
-			}
-		},
-		{
-			{
-				CTL(60, 1), CTL(60, 0), CTL(60, 1), CTL(60, 1),
-				CTL(60, 1), CTL(60, 1), CTL(60, 0), CTL(60, 1),
-			}
-		},
+		{{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1)
+		}}, {{
+			CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0),
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0),
+			CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0)
+		}}, {{
+			CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1), CTLPACK(60, 1),
+			CTLPACK(60, 1), CTLPACK(60, 1), CTLPACK(60, 0), CTLPACK(60, 1)
+		}}
 	}
 };
 
