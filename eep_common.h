@@ -96,6 +96,8 @@
 #define AR5416_NUM_TARGET_POWER_RATES_LEG	4
 #define AR5416_NUM_TARGET_POWER_RATES_HT	8
 
+#define PWR2X(__dbm)				((unsigned int)(__dbm * 2))
+
 #define CTL_EDGE_POWER(__ctl)			((__ctl) & 0x3f)
 #define CTL_EDGE_FLAGS(__ctl)			(((__ctl) & 0xc0) >> 6)
 #define CTLPACK(_tpower, _flag)			((_tpower) | ((_flag) << 6))
