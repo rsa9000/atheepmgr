@@ -19,24 +19,6 @@
 #define EEP_9300_TEMPLATES_H
 
 /**
- * NB: there are no portable way to force endian for static values, so create
- * the custom one.
- */
-#if __BYTE_ORDER == __BIG_ENDIAN
-#define LE16CONST(__val)	((((uint16_t)(__val) & 0x00ff) << 8) | \
-				 (((uint16_t)(__val) & 0xff00) >> 8))
-#define LE32CONST(__val)	((((uint32_t)(__val) & 0x000000ff) << 24) | \
-				 (((uint32_t)(__val) & 0x0000ff00) <<  8) | \
-				 (((uint32_t)(__val) & 0x00ff0000) >>  8) | \
-				 (((uint32_t)(__val) & 0xff000000) >> 24))
-#else
-#define LE16CONST(__val)	((uint16_t)(__val))
-#define LE32CONST(__val)	((uint32_t)(__val))
-#endif
-
-#define CTLPACK(_tpower, _flag)			((_tpower) | ((_flag) << 6))
-
-/**
  * gcc does not like to initialize from structure field, so define template
  * versions independently and initialize both template and index with enum
  * values. Use lower case to facilitate index filling with macro.

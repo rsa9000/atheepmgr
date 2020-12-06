@@ -18,6 +18,22 @@
 #ifndef EEP_COMMON_H
 #define EEP_COMMON_H
 
+/**
+ * NB: there are no portable way to force endian for static values, so create
+ * the custom one.
+ */
+#if __BYTE_ORDER == __BIG_ENDIAN
+#define LE16CONST(__val)	((((uint16_t)(__val) & 0x00ff) << 8) | \
+				 (((uint16_t)(__val) & 0xff00) >> 8))
+#define LE32CONST(__val)	((((uint32_t)(__val) & 0x000000ff) << 24) | \
+				 (((uint32_t)(__val) & 0x0000ff00) <<  8) | \
+				 (((uint32_t)(__val) & 0x00ff0000) >>  8) | \
+				 (((uint32_t)(__val) & 0xff000000) >> 24))
+#else
+#define LE16CONST(__val)	((uint16_t)(__val))
+#define LE32CONST(__val)	((uint32_t)(__val))
+#endif
+
 #if __BYTE_ORDER == __BIG_ENDIAN
 #define AR5416_EEPROM_MAGIC	0x5aa5
 #else
@@ -82,6 +98,7 @@
 
 #define CTL_EDGE_POWER(__ctl)			((__ctl) & 0x3f)
 #define CTL_EDGE_FLAGS(__ctl)			(((__ctl) & 0xc0) >> 6)
+#define CTLPACK(_tpower, _flag)			((_tpower) | ((_flag) << 6))
 
 #define FREQ2FBIN(f, is_2g)	((is_2g) ? (f) - 2300 : ((f) - 4800) / 5)
 #define FBIN2FREQ(b, is_2g)	((is_2g) ? (b) + 2300 : (b) * 5 + 4800)
