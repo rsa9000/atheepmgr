@@ -103,6 +103,7 @@
 
 enum qca9880_otp_str_types {
 	QCA9880_OTP_STR_TYPE_UNKNOWN = 0,
+	QCA9880_OTP_STR_TYPE_CALDATA = 1,
 };
 
 struct qca9880_otp_str {

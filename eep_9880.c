@@ -18,17 +18,76 @@
 #include "utils.h"
 #include "eep_common.h"
 #include "eep_9880.h"
+#include "eep_9880_templates.h"
 
 static const uint8_t eep_9880_otp_magic[2] = {0xaa, 0x55};
 
 struct eep_9880_priv {
+	int curr_ref_tpl;		/* Current reference EEPROM template */
 	struct qca9880_eeprom eep;
-} __attribute__((aligned(4)));	/* Force alignment to make gcc happy */
+};
+
+#define QCA9880_TEMPLATE_DESC(__name, __tpl)	\
+	{ qca9880_tpl_ver_ ## __tpl, __name, &qca9880_ ## __tpl }
+
+static const struct eeptemplate eep_9880_templates[] = {
+	QCA9880_TEMPLATE_DESC("CUS223", cus223),
+	QCA9880_TEMPLATE_DESC("XB140", xb140),
+	{ 0, NULL }
+};
+
+static const uint8_t *qca9880_template_find_by_id(int id)
+{
+	const struct eeptemplate *tpl;
+
+	for (tpl = eep_9880_templates; tpl->name; ++tpl)
+		if (tpl->id == id)
+			break;
+
+	return tpl->data;
+}
+
+static void eep_9880_proc_otp_caldata(struct atheepmgr *aem,
+				      const uint8_t *data, int len)
+{
+	struct eep_9880_priv *emp = aem->eepmap_priv;
+	struct ar9300_comp_hdr hdr;
+	uint16_t cksum, _cksum;
+
+	ar9300_comp_hdr_unpack(data, &hdr);
+	if (aem->verbose)
+		printf("Found block at %x: comp=%d ref=%d length=%d major=%d minor=%d\n",
+		       0, hdr.comp, hdr.ref, hdr.len, hdr.maj, hdr.min);
+
+	data += sizeof(AR9300_COMP_HDR_LEN);
+	len -= AR9300_COMP_HDR_LEN + sizeof(cksum);
+	if (hdr.len > len) {
+		if (aem->verbose)
+			printf("Caldata block length greater then OTP stream length\n");
+		return;
+	}
+
+	cksum = ar9300_comp_cksum(data, hdr.len);
+	_cksum = data[hdr.len + 0] | (data[hdr.len + 1] << 8);
+	if (cksum != _cksum) {
+		if (aem->verbose)
+			printf("Bad caldata block checksum (got 0x%04x, expect 0x%04x)\n",
+			       cksum, _cksum);
+		return;
+	}
+
+	ar9300_compress_decision(aem, 0, &hdr, aem->unpacked_buf, data,
+				 sizeof(emp->eep), &emp->curr_ref_tpl,
+				 qca9880_template_find_by_id);
+}
 
 static struct eep_9880_otp_str_desc {
 	const char *name;
 	void (*proc)(struct atheepmgr *aem, const uint8_t *data, int len);
 } eep_9880_otp_streams[] = {
+	[QCA9880_OTP_STR_TYPE_CALDATA] = {
+		"calibration data", eep_9880_proc_otp_caldata
+	},
 };
 
 static bool eep_9880_load_blob(struct atheepmgr *aem)
@@ -54,6 +113,8 @@ static bool eep_9880_load_blob(struct atheepmgr *aem)
 
 static bool eep_9880_load_otp(struct atheepmgr *aem)
 {
+	struct eep_9880_priv *emp = aem->eepmap_priv;
+	struct qca9880_eeprom *eep;
 	uint8_t *buf = (uint8_t *)aem->eep_buf;	/* Use as an array of bytes */
 	unsigned int addr, end_mark_seen;
 	uint8_t strcode;
@@ -79,6 +140,8 @@ static bool eep_9880_load_otp(struct atheepmgr *aem)
 			       eep_9880_otp_magic[0], eep_9880_otp_magic[1]);
 		goto exit;
 	}
+
+	emp->curr_ref_tpl = -1;	/* Reset reference template */
 
 	/**
 	 * Now we are ready to parse OTP memory content.
@@ -155,7 +218,19 @@ static bool eep_9880_load_otp(struct atheepmgr *aem)
 		}
 	}
 
+	/**
+	 * OTP does not contain a checksum correction, so update unpacked
+	 * caldata checksum manually.
+	 */
+	eep = (void *)aem->unpacked_buf;
+	eep->baseEepHeader.checksum = 0xffff;
+	eep->baseEepHeader.checksum =
+		eep_calc_csum((uint16_t *)aem->unpacked_buf,
+			      sizeof(*eep) / sizeof(uint16_t));
+
 	aem->eep_len = QCA9880_OTP_SIZE / sizeof(uint16_t);
+	aem->unpacked_len = sizeof(struct qca9880_eeprom);
+	memcpy(&emp->eep, aem->unpacked_buf, sizeof(emp->eep));
 
 exit:
 	return aem->eep_len != 0;
@@ -487,6 +562,8 @@ const struct eepmap eepmap_9880 = {
 	.desc = "EEPROM map for earlier .11ac chips (QCA9880/QCA9882/QCA9892/etc.)",
 	.priv_data_sz = sizeof(struct eep_9880_priv),
 	.eep_buf_sz = QCA9880_EEPROM_SIZE / sizeof(uint16_t),
+	.unpacked_buf_sz = sizeof(struct qca9880_eeprom),
+	.templates = eep_9880_templates,
 	.load_blob = eep_9880_load_blob,
 	.load_otp = eep_9880_load_otp,
 	.check_eeprom = eep_9880_check,
