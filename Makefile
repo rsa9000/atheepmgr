@@ -4,6 +4,7 @@ TARGET=atheepmgr
 OBJ=\
 	atheepmgr.o	\
 	con_file.o	\
+	con_stub.o	\
 	eep_5211.o	\
 	eep_5416.o	\
 	eep_9285.o	\

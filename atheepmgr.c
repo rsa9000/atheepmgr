@@ -398,6 +398,7 @@ static int act_reg_write(struct atheepmgr *aem, int argc, char *argv[])
 
 #define ACT_F_DATA	(1 << 0)	/* Action will interact with EEPROM/OTP data */
 #define ACT_F_HW	(1 << 1)	/* Action require direct HW access */
+#define ACT_F_AUTONOMOUS (1 << 2)	/* Action do not require input data or HW */
 
 static const struct action {
 	const char *name;
@@ -657,11 +658,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (!aem->con) {
-		fprintf(stderr, "Connector is not specified\n");
-		goto exit;
-	}
-
 	if (optind >= argc) {
 		act = &actions[0];
 	} else {
@@ -676,6 +672,15 @@ int main(int argc, char *argv[])
 			goto exit;
 		}
 		optind++;
+	}
+
+	if (!aem->con) {
+		if (act->flags & ACT_F_AUTONOMOUS) {
+			aem->con = &con_stub;	/* to avoid conn. init crash */
+		} else {
+			fprintf(stderr, "Connector is not specified\n");
+			goto exit;
+		}
 	}
 
 	if ((act->flags & ACT_F_HW) && !(aem->con->caps & CON_CAP_HW)) {

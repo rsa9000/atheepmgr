@@ -256,6 +256,7 @@ struct atheepmgr {
 extern const struct connector con_file;
 extern const struct connector con_mem;
 extern const struct connector con_pci;
+extern const struct connector con_stub;
 
 extern const struct eepmap eepmap_5211;
 extern const struct eepmap eepmap_5416;
