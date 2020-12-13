@@ -36,9 +36,22 @@
 
 #define CTL(_tpower, _flag)			((_tpower) | ((_flag) << 6))
 
+/**
+ * gcc does not like to initialize from structure field, so define template
+ * versions independently and initialize both template and index with enum
+ * values. Use lower case to facilitate index filling with macro.
+ */
+enum ar9300_template_versions {
+	ar9300_tpl_ver_default = 2,
+	ar9300_tpl_ver_h112 = 3,
+	ar9300_tpl_ver_h116 = 4,
+	ar9300_tpl_ver_x112 = 5,
+	ar9300_tpl_ver_x113 = 6,
+};
+
 static const struct ar9300_eeprom ar9300_default = {
 	.eepromVersion = 2,
-	.templateVersion = 2,
+	.templateVersion = ar9300_tpl_ver_default,
 	.macAddr = {0, 2, 3, 4, 5, 6},
 	.custData = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		     0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -597,7 +610,7 @@ static const struct ar9300_eeprom ar9300_default = {
 
 static const struct ar9300_eeprom ar9300_x113 = {
 	.eepromVersion = 2,
-	.templateVersion = 6,
+	.templateVersion = ar9300_tpl_ver_x113,
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"x113-023-f0000"},
 	.baseEepHeader = {
@@ -1157,7 +1170,7 @@ static const struct ar9300_eeprom ar9300_x113 = {
 
 static const struct ar9300_eeprom ar9300_h112 = {
 	.eepromVersion = 2,
-	.templateVersion = 3,
+	.templateVersion = ar9300_tpl_ver_h112,
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"h112-241-f0000"},
 	.baseEepHeader = {
@@ -1717,7 +1730,7 @@ static const struct ar9300_eeprom ar9300_h112 = {
 
 static const struct ar9300_eeprom ar9300_x112 = {
 	.eepromVersion = 2,
-	.templateVersion = 5,
+	.templateVersion = ar9300_tpl_ver_x112,
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"x112-041-f0000"},
 	.baseEepHeader = {
@@ -2275,7 +2288,7 @@ static const struct ar9300_eeprom ar9300_x112 = {
 
 static const struct ar9300_eeprom ar9300_h116 = {
 	.eepromVersion = 2,
-	.templateVersion = 4,
+	.templateVersion = ar9300_tpl_ver_h116,
 	.macAddr = {0x00, 0x03, 0x7f, 0x0, 0x0, 0x0},
 	.custData = {"h116-041-f0000"},
 	.baseEepHeader = {

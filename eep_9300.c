@@ -37,23 +37,27 @@ struct eep_9300_priv {
 
 #define EEPROM_DATA_LEN_9485	1088
 
-static const struct ar9300_eeprom * const ar9300_eep_templates[] = {
-	&ar9300_default,
-	&ar9300_x112,
-	&ar9300_h116,
-	&ar9300_h112,
-	&ar9300_x113,
+#define AR9300_TEMPLATE_DESC(__name, __tpl)	\
+	{ ar9300_tpl_ver_ ## __tpl, __name, &ar9300_ ## __tpl }
+
+static const struct eeptemplate eep_9300_templates[] = {
+	AR9300_TEMPLATE_DESC("default", default),
+	AR9300_TEMPLATE_DESC("H112", h112),
+	AR9300_TEMPLATE_DESC("H116", h116),
+	AR9300_TEMPLATE_DESC("X112", x112),
+	AR9300_TEMPLATE_DESC("X113", x113),
+	{ 0, NULL }
 };
 
 static const uint8_t *ar9300_template_find_by_id(int id)
 {
-	int it;
+	const struct eeptemplate *tpl;
 
-	for (it = 0; it < ARRAY_SIZE(ar9300_eep_templates); it++)
-		if (ar9300_eep_templates[it]->templateVersion == id)
-			return (uint8_t *)ar9300_eep_templates[it];
+	for (tpl = eep_9300_templates; tpl->name; ++tpl)
+		if (tpl->id == id)
+			break;
 
-	return NULL;
+	return tpl->data;
 }
 
 /**
@@ -865,6 +869,7 @@ const struct eepmap eepmap_9300 = {
 	.priv_data_sz = sizeof(struct eep_9300_priv),
 	.eep_buf_sz = AR9300_EEPROM_SIZE / sizeof(uint16_t),
 	.unpacked_buf_sz = sizeof(struct ar9300_eeprom),
+	.templates = eep_9300_templates,
 	.load_blob = eep_9300_load_blob,
 	.load_eeprom = eep_9300_load_eeprom,
 	.load_otp = eep_9300_load_otp,

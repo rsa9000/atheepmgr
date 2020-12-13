@@ -486,6 +486,13 @@ static void usage_eepmap(struct atheepmgr *aem, const struct eepmap *eepmap)
 			printf("%20s%-10s %s\n", "", buf, param->desc);
 		}
 	}
+	if (eepmap->templates) {
+		const struct eeptemplate *tpl;
+
+		printf("%18sKnown EEPROM data templates:\n", "");
+		for (tpl = eepmap->templates; tpl->name; ++tpl)
+			printf("%20s%d: %s\n", "", tpl->id, tpl->name);
+	}
 }
 
 static void usage(struct atheepmgr *aem, char *name)

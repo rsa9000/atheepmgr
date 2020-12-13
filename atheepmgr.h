@@ -198,12 +198,19 @@ enum eepmap_param_id {
 	__EEP_PARAM_MAX
 };
 
+struct eeptemplate {
+	int id;			/* Templ. id as specified in the comp. header */
+	const char *name;	/* Template name for user */
+	const void *data;	/* Template data pointer */
+};
+
 struct eepmap {
 	const char *name;
 	const char *desc;
 	size_t priv_data_sz;
 	size_t eep_buf_sz;		/* EEP buffer size in 16-bit words */
 	size_t unpacked_buf_sz;		/* Buffer size for unpacked data */
+	const struct eeptemplate *templates;	/* NULL terminated list */
 	bool (*load_blob)(struct atheepmgr *aem);
 	bool (*load_eeprom)(struct atheepmgr *aem);
 	bool (*load_otp)(struct atheepmgr *aem);
