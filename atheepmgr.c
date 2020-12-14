@@ -15,6 +15,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <limits.h>
+
 #include "atheepmgr.h"
 #include "utils.h"
 
@@ -307,6 +309,65 @@ static int act_eep_update(struct atheepmgr *aem, int argc, char *argv[])
 	return res ? 0 : -EIO;
 }
 
+static int act_eep_tpl_export(struct atheepmgr *aem, int argc, char *argv[])
+{
+	const struct eepmap *eepmap = aem->eepmap;
+	size_t res, data_len;
+	const struct eeptemplate *tpl;
+	unsigned long tplid;
+	char *endp;
+	FILE *fp;
+
+	if (!eepmap) {
+		fprintf(stderr, "EEPROM map is not specified, aborting\n");
+		return -EINVAL;
+	}
+
+	data_len = eepmap->unpacked_buf_sz;
+	if (!eepmap->templates || !data_len) {
+		fprintf(stderr, "EEPROM map does not have any templates\n");
+		return -EOPNOTSUPP;
+	}
+
+	if (argc < 1) {
+		fprintf(stderr, "Template Name or Id is not specified, aborting\n");
+		return -EINVAL;
+	} else if (argc < 2) {
+		fprintf(stderr, "Output file for template export is not specified, aborting\n");
+		return -EINVAL;
+	}
+
+	errno = 0;
+	tplid = strtoul(argv[0], &endp, 0);
+	if (errno != 0 || *endp != '\0')
+		tplid = ULONG_MAX;
+
+	for (tpl = eepmap->templates; tpl->name; ++tpl) {
+		if (tpl->id == tplid || strcasecmp(tpl->name, argv[0]) == 0)
+			break;
+	}
+	if (!tpl->name) {
+		fprintf(stderr, "Unknown template -- %s\n", argv[0]);
+		return -EINVAL;
+	}
+
+	fp = fopen(argv[1], "wb");
+	if (!fp) {
+		fprintf(stderr, "Unable to open output file for template export: %s\n",
+			strerror(errno));
+		return -errno;
+	}
+
+	res = fwrite(tpl->data, 1, data_len, fp);
+	if (res != data_len)
+		fprintf(stderr, "Unable to save template data: %s\n",
+			strerror(errno));
+
+	fclose(fp);
+
+	return res == data_len ? 0 : -EIO;
+}
+
 static int act_gpio_dump(struct atheepmgr *aem, int argc, char *argv[])
 {
 #define FOR_EACH_GPIO(_caption)				\
@@ -421,6 +482,10 @@ static const struct action {
 		.name = "update",
 		.func = act_eep_update,
 		.flags = ACT_F_DATA,
+	}, {
+		.name = "templateexport",
+		.func = act_eep_tpl_export,
+		.flags = ACT_F_AUTONOMOUS,
 	}, {
 		.name = "gpiodump",
 		.func = act_gpio_dump,
@@ -558,6 +623,8 @@ static void usage(struct atheepmgr *aem, char *name)
 			"                  data are saved.\n"
 			"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>. See per-map\n"
 			"                  supported parameters list below.\n"
+			"  templateexport <name-or-id> <file> Export template specified by Name or by Id\n"
+			"                  to the file <file>.\n"
 			"  gpiodump        Dump GPIO lines state to the terminal.\n"
 			"  regread <addr>  Read register at address <addr> and print it value.\n"
 			"  regwrite <addr> <val> Write value <val> to the register at address <addr>.\n"
@@ -570,6 +637,7 @@ static void usage(struct atheepmgr *aem, char *name)
 			"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
 			"  unpack <file>   Save unpacked EEPROM/OTP calibration data to the file <file>.\n"
 			"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>.\n"
+			/* NB: 'templateexport' intentionally skipped to keep usage short. */
 			"  gpiodump        Dump GPIO lines state to the terminal.\n"
 			"  regread <addr>  Read register at address <addr> and print it value.\n"
 			"  regwrite <addr> <val> Write value <val> to the register at address <addr>.\n"
