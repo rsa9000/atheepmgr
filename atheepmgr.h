@@ -275,6 +275,7 @@ struct atheepmgr {
 };
 
 extern const struct connector con_file;
+extern const struct connector con_driver;
 extern const struct connector con_mem;
 extern const struct connector con_pci;
 extern const struct connector con_stub;

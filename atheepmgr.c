@@ -642,10 +642,17 @@ static const struct action {
 #define CON_USAGE_PCI		""
 #define CON_OPTSTR_PCI		""
 #endif
+#if defined(CONFIG_CON_DRIVER)
+#define CON_USAGE_DRIVER	" | -D <dev>"
+#define CON_OPTSTR_DRIVER	"D:"
+#else
+#define CON_USAGE_DRIVER	""
+#define CON_OPTSTR_DRIVER	""
+#endif
 
-#define CON_OPTSTR	"F:" CON_OPTSTR_MEM CON_OPTSTR_PCI
-#if defined(CONFIG_CON_MEM) || defined(CONFIG_CON_PCI)
-#define CON_USAGE	"{" CON_USAGE_FILE CON_USAGE_MEM CON_USAGE_PCI "}"
+#define CON_OPTSTR	"F:" CON_OPTSTR_MEM CON_OPTSTR_PCI CON_OPTSTR_DRIVER
+#if defined(CONFIG_CON_MEM) || defined(CONFIG_CON_PCI) || defined(CONFIG_CON_DRIVER)
+#define CON_USAGE	"{" CON_USAGE_FILE CON_USAGE_MEM CON_USAGE_PCI CON_USAGE_DRIVER "}"
 #else
 #define CON_USAGE	CON_USAGE_FILE
 #endif
@@ -779,6 +786,13 @@ static void usage(struct atheepmgr *aem, char *name)
 		"                  If <func> is omitted then first available function will be\n"
 		"                  used.\n"
 #endif
+#if defined(CONFIG_CON_DRIVER)
+		"  -D <dev>        Use driver debug interface to interact with <dev> card.\n"
+#if defined(__linux__)
+		"                  <dev> could be specified as a cfg80211 phy (e.g. phy0, phy1)\n"
+		"                  or as a network device/interface (e.g. wlan0, wlan1)\n"
+#endif
+#endif
 		"  -t <eepmap>     Override EEPROM map type (see below), this option is required\n"
 		"                  for connectors, without PnP (map type autodetection) support.\n"
 		"                  EEPROM map type could be specified by its name or by a name of\n"
@@ -901,6 +915,12 @@ int main(int argc, char *argv[])
 #if defined(CONFIG_CON_PCI)
 		case 'P':
 			aem->con = &con_pci;
+			con_arg = optarg;
+			break;
+#endif
+#if defined(CONFIG_CON_DRIVER)
+		case 'D':
+			aem->con = &con_driver;
 			con_arg = optarg;
 			break;
 #endif

@@ -19,12 +19,22 @@ DEP=$(OBJ:%.o=%.d)
 
 DEFS=
 
+OS?=$(shell uname -s)
 HAVE_LIBPCIACCESS=$(shell pkg-config pciaccess && echo y || echo n)
 
+CONFIG_CON_DRIVER?=$(if $(filter Linux,$(OS)),y)
 CONFIG_CON_PCI?=$(HAVE_LIBPCIACCESS)
 CONFIG_CON_MEM?=y
 CONFIG_I_KNOW_WHAT_I_AM_DOING?=n
 
+ifeq ($(CONFIG_CON_DRIVER),y)
+  ifeq ($(OS),Linux)
+    DEFS+=-DCONFIG_CON_DRIVER
+    OBJ+=con_driver_linux.o
+  else
+    $(error Driver connector building was requested, but there are no driver access support for OS $(OS))
+  endif
+endif
 ifeq ($(CONFIG_CON_PCI),y)
 DEFS+=-DCONFIG_CON_PCI
 OBJ+=con_pci.o
