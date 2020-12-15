@@ -627,18 +627,27 @@ static const struct action {
 	}
 };
 
-#if defined(CONFIG_CON_PCI) && defined(CONFIG_CON_MEM)
-#define CON_OPTSTR	"F:M:P:"
-#define CON_USAGE	"{-F <eepdump> | -M <ioaddr> | -P <slot>}"
-#elif defined(CONFIG_CON_MEM)
-#define CON_OPTSTR	"F:M:"
-#define CON_USAGE	"{-F <eepdump> | -M <ioaddr>}"
-#elif defined(CONFIG_CON_PCI)
-#define CON_OPTSTR	"F:P:"
-#define CON_USAGE	"{-F <eepdump> | -P <slot>}"
+#define CON_USAGE_FILE		"-F <eepdump>"
+#if defined(CONFIG_CON_MEM)
+#define CON_USAGE_MEM		" | -M <ioaddr>"
+#define CON_OPTSTR_MEM		"M:"
 #else
-#define CON_OPTSTR	"F:"
-#define CON_USAGE	"-F <eepdump>"
+#define CON_USAGE_MEM		""
+#define CON_OPTSTR_MEM		""
+#endif
+#if defined(CONFIG_CON_PCI)
+#define CON_USAGE_PCI		" | -P <slot>"
+#define CON_OPTSTR_PCI		"P:"
+#else
+#define CON_USAGE_PCI		""
+#define CON_OPTSTR_PCI		""
+#endif
+
+#define CON_OPTSTR	"F:" CON_OPTSTR_MEM CON_OPTSTR_PCI
+#if defined(CONFIG_CON_MEM) || defined(CONFIG_CON_PCI)
+#define CON_USAGE	"{" CON_USAGE_FILE CON_USAGE_MEM CON_USAGE_PCI "}"
+#else
+#define CON_USAGE	CON_USAGE_FILE
 #endif
 
 static const char *optstr = CON_OPTSTR "ht:v";
