@@ -102,7 +102,8 @@
 #define CTL_EDGE_FLAGS(__ctl)			(((__ctl) & 0xc0) >> 6)
 #define CTLPACK(_tpower, _flag)			((_tpower) | ((_flag) << 6))
 
-#define FREQ2FBIN(f, is_2g)	((is_2g) ? (f) - 2300 : ((f) - 4800) / 5)
+#define FREQ2FBIN(f, is_2g)			\
+		((uint8_t)((is_2g) ? (f) - 2300 : ((f) - 4800) / 5))
 #define FBIN2FREQ(b, is_2g)	((is_2g) ? (b) + 2300 : (b) * 5 + 4800)
 
 #define AR9300_COMP_HDR_LEN		4
