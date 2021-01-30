@@ -286,6 +286,7 @@ extern const struct eepmap eepmap_9285;
 extern const struct eepmap eepmap_9287;
 extern const struct eepmap eepmap_9300;
 extern const struct eepmap eepmap_9880;
+extern const struct eepmap eepmap_9888;
 
 int chips_find_by_pci_id(uint16_t dev_id, const struct chip *res[], int nmemb);
 

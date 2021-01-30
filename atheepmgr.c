@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012 Qualcomm Atheros, Inc.
- * Copyright (c) 2013,2016-2020 Sergey Ryazanov <ryazanov.s.a@gmail.com>
+ * Copyright (c) 2013,2016-2021 Sergey Ryazanov <ryazanov.s.a@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -29,6 +29,7 @@ static const struct eepmap * const eepmaps[] = {
 	&eepmap_9287,
 	&eepmap_9300,
 	&eepmap_9880,
+	&eepmap_9888,
 };
 
 #define AEM_CHIP(__name, __eepmap)		\
@@ -45,6 +46,8 @@ static const struct eepmap * const eepmaps[] = {
 		AEM_CHIP(__name, &eepmap_9300)
 #define AEM_CHIP_EEP9880(__name)		\
 		AEM_CHIP(__name, &eepmap_9880)
+#define AEM_CHIP_EEP9888(__name)		\
+		AEM_CHIP(__name, &eepmap_9888)
 
 static const struct chip chips[] = {
 	/* AR5211 EEPROM map PCI/PCIe chip(s) */
@@ -128,6 +131,17 @@ static const struct chip chips[] = {
 	{ AEM_CHIP_EEP9880("QCA9882"), .pciids = {{ .dev_id = 0x003c }} },
 	{ AEM_CHIP_EEP9880("QCA9890"), .pciids = {{ .dev_id = 0x003c }} },
 	{ AEM_CHIP_EEP9880("QCA9892"), .pciids = {{ .dev_id = 0x003c }} },
+
+	/* QCA9888 EEPROM map PCIe chip(s) */
+	{ AEM_CHIP_EEP9888("QCA9886"), .pciids = {{ .dev_id = 0x0056 }} },
+	{ AEM_CHIP_EEP9888("QCA9888"), .pciids = {{ .dev_id = 0x0056 }} },
+	{ AEM_CHIP_EEP9888("QCA9896"), .pciids = {{ .dev_id = 0x0056 }} },	/* Check PCI Id */
+	{ AEM_CHIP_EEP9888("QCA9898"), .pciids = {{ .dev_id = 0x0056 }} },	/* Check PCI Id */
+	/* QCA9888 EEPROM map WiSoC (AHB interface) chip(s) */
+	{ AEM_CHIP_EEP9888("IPQ4018") },
+	{ AEM_CHIP_EEP9888("IPQ4019") },
+	{ AEM_CHIP_EEP9888("IPQ4028") },
+	{ AEM_CHIP_EEP9888("IPQ4029") },
 };
 
 int chips_find_by_pci_id(uint16_t dev_id, const struct chip *res[], int nmemb)
