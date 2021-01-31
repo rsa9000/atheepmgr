@@ -25,6 +25,7 @@ static struct atheepmgr __aem;
 static const struct eepmap * const eepmaps[] = {
 	&eepmap_5211,
 	&eepmap_5416,
+	&eepmap_6174,
 	&eepmap_9285,
 	&eepmap_9287,
 	&eepmap_9300,
@@ -38,6 +39,8 @@ static const struct eepmap * const eepmaps[] = {
 		AEM_CHIP(__name, &eepmap_5211)
 #define AEM_CHIP_EEP5416(__name)		\
 		AEM_CHIP(__name, &eepmap_5416)
+#define AEM_CHIP_EEP6174(__name)		\
+		AEM_CHIP(__name, &eepmap_6174)
 #define AEM_CHIP_EEP9285(__name)		\
 		AEM_CHIP(__name, &eepmap_9285)
 #define AEM_CHIP_EEP9287(__name)		\
@@ -131,6 +134,10 @@ static const struct chip chips[] = {
 	{ AEM_CHIP_EEP9880("QCA9882"), .pciids = {{ .dev_id = 0x003c }} },
 	{ AEM_CHIP_EEP9880("QCA9890"), .pciids = {{ .dev_id = 0x003c }} },
 	{ AEM_CHIP_EEP9880("QCA9892"), .pciids = {{ .dev_id = 0x003c }} },
+
+	/* QCA6174 EEPROM map PCIe chip(s) */
+	{ AEM_CHIP_EEP6174("QCA6164"), .pciids = {{ .dev_id = 0x0041 }} },	/* Check PCI Id */
+	{ AEM_CHIP_EEP6174("QCA6174"), .pciids = {{ .dev_id = 0x003e }} },
 
 	/* QCA9888 EEPROM map PCIe chip(s) */
 	{ AEM_CHIP_EEP9888("QCA9886"), .pciids = {{ .dev_id = 0x0056 }} },

@@ -282,6 +282,7 @@ extern const struct connector con_stub;
 
 extern const struct eepmap eepmap_5211;
 extern const struct eepmap eepmap_5416;
+extern const struct eepmap eepmap_6174;
 extern const struct eepmap eepmap_9285;
 extern const struct eepmap eepmap_9287;
 extern const struct eepmap eepmap_9300;

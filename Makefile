@@ -7,6 +7,7 @@ OBJ=\
 	con_stub.o	\
 	eep_5211.o	\
 	eep_5416.o	\
+	eep_6174.o	\
 	eep_9285.o	\
 	eep_9287.o	\
 	eep_9300.o	\

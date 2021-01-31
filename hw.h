@@ -19,6 +19,7 @@
 #define HW_H
 
 #define AR5211_SREV		0x4020
+#define QCA6174_SREV		0x08f0
 #define QCA988X_SREV		0x40ec
 #define QCA9888_SREV		0x800ec
 #define AR_SREV_ID		0x000000FF
