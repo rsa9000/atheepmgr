@@ -423,6 +423,53 @@ int ar9300_compress_decision(struct atheepmgr *aem, int it,
 	return 0;
 }
 
+static void ar9300_dump_ctl_edges(const uint8_t *freqs, const uint8_t *data,
+				  int maxedges, int is_2g)
+{
+	int i, open;
+
+	printf("           Edges, MHz:");
+	for (i = 0, open = 1; i < maxedges; ++i) {
+		if (freqs[i] == 0xff)
+			continue;
+		printf(" %c%4u%c",
+		       !CTL_EDGE_FLAGS(data[i]) && open ? '[' : ' ',
+		       FBIN2FREQ(freqs[i], is_2g),
+		       !CTL_EDGE_FLAGS(data[i]) && !open ? ']' : ' ');
+		if (!CTL_EDGE_FLAGS(data[i]))
+			open = !open;
+	}
+	printf("\n");
+	printf("      MaxTxPower, dBm:");
+	for (i = 0, open = 1; i < maxedges; ++i) {
+		if (freqs[i] == 0xff)
+			continue;
+		printf("  %4.1f ", (double)CTL_EDGE_POWER(data[i]) / 2);
+	}
+	printf("\n");
+}
+
+void ar9300_dump_ctl(const uint8_t *index, const uint8_t *freqs,
+		     const uint8_t *data, int maxctl, int maxedges, int is_2g)
+{
+	uint8_t ctl;
+	int i;
+
+	for (i = 0; i < maxctl; ++i) {
+		ctl = index[i];
+		if (ctl == 0xff)
+			continue;
+		printf("  %s %s:\n", eep_ctldomains[ctl >> 4],
+		       eep_ctlmodes[ctl & 0x0f]);
+
+		ar9300_dump_ctl_edges(freqs + maxedges * i,
+				      data + maxedges * i,
+				      maxedges, is_2g);
+
+		printf("\n");
+	}
+}
+
 uint16_t eep_calc_csum(const uint16_t *buf, size_t len)
 {
 	uint16_t csum = 0;

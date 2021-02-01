@@ -706,53 +706,6 @@ static void eep_9300_dump_tgt_pwr(const uint8_t *freqs, int nfreqs,
 	}
 }
 
-static void eep_9300_dump_ctl_edges(const uint8_t *freqs, const uint8_t *data,
-				    int maxedges, int is_2g)
-{
-	int i, open;
-
-	printf("           Edges, MHz:");
-	for (i = 0, open = 1; i < maxedges; ++i) {
-		if (freqs[i] == 0xff)
-			continue;
-		printf(" %c%4u%c",
-		       !CTL_EDGE_FLAGS(data[i]) && open ? '[' : ' ',
-		       FBIN2FREQ(freqs[i], is_2g),
-		       !CTL_EDGE_FLAGS(data[i]) && !open ? ']' : ' ');
-		if (!CTL_EDGE_FLAGS(data[i]))
-			open = !open;
-	}
-	printf("\n");
-	printf("      MaxTxPower, dBm:");
-	for (i = 0, open = 1; i < maxedges; ++i) {
-		if (freqs[i] == 0xff)
-			continue;
-		printf("  %4.1f ", (double)CTL_EDGE_POWER(data[i]) / 2);
-	}
-	printf("\n");
-}
-
-static void eep_9300_dump_ctl(const uint8_t *index, const uint8_t *freqs,
-			      const uint8_t *data, int maxctl, int maxedges, int is_2g)
-{
-	int i;
-	uint8_t ctl;
-
-	for (i = 0; i < maxctl; ++i) {
-		ctl = index[i];
-		if (ctl == 0xff)
-			continue;
-		printf("  %s %s:\n", eep_ctldomains[ctl >> 4],
-		       eep_ctlmodes[ctl & 0x0f]);
-
-		eep_9300_dump_ctl_edges(freqs + maxedges * i,
-					data + maxedges * i,
-					maxedges, is_2g);
-
-		printf("\n");
-	}
-}
-
 static const char * const eep_9300_rates_cck[4] = {
 	"1-5 mbps (L)", "5 mbps (S)", "11 mbps (L)", "11 mbps (S)"
 };
@@ -814,17 +767,17 @@ static void eep_9300_dump_power_info(struct atheepmgr *aem)
 	EEP_PRINT_SUBSECT_NAME("CTL data");
 
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11G)
-		eep_9300_dump_ctl(eep->ctlIndex_2G,
-				  (uint8_t *)eep->ctl_freqbin_2G,
-				  (uint8_t *)eep->ctlPowerData_2G,
-				  AR9300_NUM_CTLS_2G, AR9300_NUM_BAND_EDGES_2G,
-				  1);
+		ar9300_dump_ctl(eep->ctlIndex_2G,
+				(uint8_t *)eep->ctl_freqbin_2G,
+				(uint8_t *)eep->ctlPowerData_2G,
+				AR9300_NUM_CTLS_2G, AR9300_NUM_BAND_EDGES_2G,
+				1);
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11A)
-		eep_9300_dump_ctl(eep->ctlIndex_5G,
-				  (uint8_t *)eep->ctl_freqbin_5G,
-				  (uint8_t *)eep->ctlPowerData_5G,
-				  AR9300_NUM_CTLS_5G, AR9300_NUM_BAND_EDGES_5G,
-				  0);
+		ar9300_dump_ctl(eep->ctlIndex_5G,
+				(uint8_t *)eep->ctl_freqbin_5G,
+				(uint8_t *)eep->ctlPowerData_5G,
+				AR9300_NUM_CTLS_5G, AR9300_NUM_BAND_EDGES_5G,
+				0);
 }
 
 static bool eep_9300_update_eeprom(struct atheepmgr *aem, int param,

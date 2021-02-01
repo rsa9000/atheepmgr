@@ -216,6 +216,9 @@ int ar9300_compress_decision(struct atheepmgr *aem, int it,
 			     const uint8_t *data, int out_size, int *pcurrref,
 			     const uint8_t *(*tpl_lookup_cb)(int));
 
+void ar9300_dump_ctl(const uint8_t *index, const uint8_t *freqs,
+		     const uint8_t *data, int maxctl, int maxedges, int is_2g);
+
 uint16_t eep_calc_csum(const uint16_t *buf, size_t len);
 
 #endif /* EEP_COMMON_H */
