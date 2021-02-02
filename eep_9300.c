@@ -742,6 +742,15 @@ static void eep_9300_dump_power_info(struct atheepmgr *aem)
 				      __rates, __is_2g);		\
 		printf("\n");						\
 	} while (0);
+#define PR_CTL(__pref, __band, __is_2g)					\
+	do {								\
+		EEP_PRINT_SUBSECT_NAME(__pref " CTL data");		\
+		ar9300_dump_ctl(eep->ctlIndex_ ## __band,		\
+				(uint8_t *)eep->ctl_freqbin_ ## __band,	\
+				(uint8_t *)eep->ctlPowerData_ ## __band,\
+				AR9300_NUM_CTLS_ ## __band,		\
+				AR9300_NUM_BAND_EDGES_ ## __band, __is_2g);\
+	} while (0);
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	struct ar9300_eeprom *eep = &emp->eep;
 
@@ -764,20 +773,14 @@ static void eep_9300_dump_power_info(struct atheepmgr *aem)
 		PR_TARGET_POWER("5 GHz HT40", 5GHT40, eep_9300_rates_ht, 0);
 	}
 
-	EEP_PRINT_SUBSECT_NAME("CTL data");
-
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11G)
-		ar9300_dump_ctl(eep->ctlIndex_2G,
-				(uint8_t *)eep->ctl_freqbin_2G,
-				(uint8_t *)eep->ctlPowerData_2G,
-				AR9300_NUM_CTLS_2G, AR9300_NUM_BAND_EDGES_2G,
-				1);
+		PR_CTL("2 GHz", 2G, 1);
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11A)
-		ar9300_dump_ctl(eep->ctlIndex_5G,
-				(uint8_t *)eep->ctl_freqbin_5G,
-				(uint8_t *)eep->ctlPowerData_5G,
-				AR9300_NUM_CTLS_5G, AR9300_NUM_BAND_EDGES_5G,
-				0);
+		PR_CTL("5 GHz", 5G, 0);
+
+#undef PR_CTL
+#undef PR_TARGET_POWER
+#undef PR_PWR_CAL
 }
 
 static bool eep_9300_update_eeprom(struct atheepmgr *aem, int param,
