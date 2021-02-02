@@ -457,7 +457,7 @@ void ar9300_dump_ctl(const uint8_t *index, const uint8_t *freqs,
 
 	for (i = 0; i < maxctl; ++i) {
 		ctl = index[i];
-		if (ctl == 0xff)
+		if (ctl == 0xff || ctl == 0x00)
 			continue;
 		printf("  %s %s:\n", eep_ctldomains[ctl >> 4],
 		       eep_ctlmodes[ctl & 0x0f]);
