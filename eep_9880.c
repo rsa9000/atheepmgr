@@ -530,6 +530,16 @@ static void eep_9880_dump_power_info(struct atheepmgr *aem)
 					  maxstreams, __is_2g);		\
 		printf("\n");						\
 	} while (0);
+#define PR_CTL(__pref, __band, __is_2g)					\
+	do {								\
+		EEP_PRINT_SUBSECT_NAME(__pref " CTL data");		\
+		ar9300_dump_ctl(eep->ctlIndex ## __band,		\
+				(uint8_t *)eep->ctlFreqBin ## __band,	\
+				(uint8_t *)eep->ctlData ## __band,	\
+				QCA9880_NUM_ ## __band ## _CTLS,	\
+				QCA9880_NUM_ ## __band ## _BAND_EDGES,	\
+				__is_2g);				\
+	} while (0);
 
 	static const int mask2maxstreams[] = {0, 1, 1, 2, 1, 2, 2, 3};
 	const struct eep_9880_priv *emp = aem->eepmap_priv;
@@ -560,6 +570,12 @@ static void eep_9880_dump_power_info(struct atheepmgr *aem)
 		PR_TGT_POW_VHT("5 GHz VHT80", 5GVHT80, 0);
 	}
 
+	if (eep->baseEepHeader.opCapBrdFlags.opFlags & QCA9880_OPFLAGS_11G)
+		PR_CTL("2 GHz", 2G, 1);
+	if (eep->baseEepHeader.opCapBrdFlags.opFlags & QCA9880_OPFLAGS_11A)
+		PR_CTL("5 GHz", 5G, 0);
+
+#undef PR_CTL
 #undef PR_TGT_POW_VHT
 #undef PR_TGT_POW_LEGACY
 }
