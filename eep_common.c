@@ -430,7 +430,7 @@ static void ar9300_dump_ctl_edges(const uint8_t *freqs, const uint8_t *data,
 
 	printf("           Edges, MHz:");
 	for (i = 0, open = 1; i < maxedges; ++i) {
-		if (freqs[i] == 0xff)
+		if (freqs[i] == 0xff || freqs[i] == 0x00)
 			continue;
 		printf(" %c%4u%c",
 		       !CTL_EDGE_FLAGS(data[i]) && open ? '[' : ' ',
@@ -442,7 +442,7 @@ static void ar9300_dump_ctl_edges(const uint8_t *freqs, const uint8_t *data,
 	printf("\n");
 	printf("      MaxTxPower, dBm:");
 	for (i = 0, open = 1; i < maxedges; ++i) {
-		if (freqs[i] == 0xff)
+		if (freqs[i] == 0xff || freqs[i] == 0x00)
 			continue;
 		printf("  %4.1f ", (double)CTL_EDGE_POWER(data[i]) / 2);
 	}
