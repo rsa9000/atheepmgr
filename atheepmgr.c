@@ -786,7 +786,7 @@ static void usage(struct atheepmgr *aem, char *name)
 		"Atheros NIC EEPROM management utility v2.0\n"
 		"Copyright (c) 2008-2011, Atheros Communications Inc.\n"
 		"Copyright (c) 2011-2012, Qualcomm Atheros, Inc.\n"
-		"Copyright (c) 2013-2020, Sergey Ryazanov <ryazanov.s.a@gmail.com>\n"
+		"Copyright (c) 2013-2021, Sergey Ryazanov <ryazanov.s.a@gmail.com>\n"
 		"\n"
 		"Usage:\n"
 		"  %s " CON_USAGE " [-t <eepmap>] [<action> [<actarg>]]\n"
