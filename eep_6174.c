@@ -99,10 +99,28 @@ static void eep_6174_dump_base_header(struct atheepmgr *aem)
 
 static void eep_6174_dump_power_info(struct atheepmgr *aem)
 {
+#define PR_CTL(__pref, __band, __is_2g)					\
+	do {								\
+		EEP_PRINT_SUBSECT_NAME(__pref " CTL data");		\
+		ar9300_dump_ctl(eep->ctlIndex ## __band,		\
+				(uint8_t *)eep->ctlFreqBin ## __band,	\
+				(uint8_t *)eep->ctlData ## __band,	\
+				QCA6174_NUM_ ## __band ## _CTLS,	\
+				QCA6174_NUM_ ## __band ## _BAND_EDGES,	\
+				__is_2g);				\
+	} while (0);
+
 	const struct eep_6174_priv *emp = aem->eepmap_priv;
 	const struct qca6174_eeprom *eep = &emp->eep;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
+
+	if (1)	/* TODO: 2GHz support test */
+		PR_CTL("2 GHz", 2G, 1);
+	if (1)	/* TODO: 5GHz support test */
+		PR_CTL("5 GHz", 5G, 0);
+
+#undef PR_CTL
 }
 
 const struct eepmap eepmap_6174 = {

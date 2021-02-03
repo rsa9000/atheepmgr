@@ -19,6 +19,11 @@
 
 #define QCA6174_CUSTOMER_DATA_SIZE		20
 
+#define QCA6174_NUM_2G_CTLS			18
+#define QCA6174_NUM_2G_BAND_EDGES		4
+#define QCA6174_NUM_5G_CTLS			18
+#define QCA6174_NUM_5G_BAND_EDGES		8
+
 struct qca6174_base_eep_hdr {
 	uint16_t length;
 	uint16_t checksum;
@@ -32,7 +37,21 @@ struct qca6174_base_eep_hdr {
 struct qca6174_eeprom {
 	struct qca6174_base_eep_hdr baseEepHeader;
 
-	uint8_t __unkn_0040[8060]; /* to match structure size to the EEPROM data size */
+	uint8_t __unkn_0040[2008];
+
+	uint8_t ctlIndex2G[QCA6174_NUM_2G_CTLS];
+	uint8_t __pad_082a[2];
+	uint8_t ctlFreqBin2G[QCA6174_NUM_2G_CTLS][QCA6174_NUM_2G_BAND_EDGES];
+	uint8_t ctlData2G[QCA6174_NUM_2G_CTLS][QCA6174_NUM_2G_BAND_EDGES];
+
+	uint8_t __unkn_08bc[3766];
+
+	uint8_t ctlIndex5G[QCA6174_NUM_5G_CTLS];
+	uint8_t __pad_1784[4];
+	uint8_t ctlFreqBin5G[QCA6174_NUM_5G_CTLS][QCA6174_NUM_5G_BAND_EDGES];
+	uint8_t ctlData5G[QCA6174_NUM_5G_CTLS][QCA6174_NUM_5G_BAND_EDGES];
+
+	uint8_t __unkn_18a8[1812]; /* to match structure size to the EEPROM data size */
 } __attribute__ ((packed));
 
 /* Structure size watchdog */
