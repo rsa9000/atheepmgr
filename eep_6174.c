@@ -97,6 +97,14 @@ static void eep_6174_dump_base_header(struct atheepmgr *aem)
 	printf("\n");
 }
 
+static void eep_6174_dump_power_info(struct atheepmgr *aem)
+{
+	const struct eep_6174_priv *emp = aem->eepmap_priv;
+	const struct qca6174_eeprom *eep = &emp->eep;
+
+	EEP_PRINT_SECT_NAME("EEPROM Power Info");
+}
+
 const struct eepmap eepmap_6174 = {
 	.name = "6174",
 	.desc = "EEPROM map for .11ac chips (QCA6174)",
@@ -109,5 +117,6 @@ const struct eepmap eepmap_6174 = {
 	.check_eeprom = eep_6174_check,
 	.dump = {
 		[EEP_SECT_BASE] = eep_6174_dump_base_header,
+		[EEP_SECT_POWER] = eep_6174_dump_power_info,
 	},
 };
