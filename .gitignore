@@ -1,3 +1,5 @@
 atheepmgr
 *.d
 *.o
+.__config
+config.h

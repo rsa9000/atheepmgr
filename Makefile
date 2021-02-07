@@ -61,14 +61,30 @@ DEPFLAGS=-MMD -MP
 
 all: $(TARGET)
 
-$(TARGET): $(OBJ)
-	$(CC) $^ $(LDFLAGS) -o $@
+FORCE:
+
+$(TARGET): config.h $(OBJ)
+	$(CC) $(OBJ) $(LDFLAGS) -o $@
 
 %.o: %.c
-	$(CC) $(DEPFLAGS) $(CFLAGS) $(DEFS) -c $< -o $@
+	$(CC) $(DEPFLAGS) $(CFLAGS) -include config.h -c $< -o $@
+
+.__config: FORCE
+	@echo "$(DEFS)" | tr ' ' '\n' | grep -v '^$$' > $@.tmp
+	@diff $@ $@.tmp > /dev/null 2>&1 && rm -f $@.tmp || mv $@.tmp $@
+
+config.h: .__config
+	@echo "Generate config.h"
+	@echo '/* Automatically generated. DO NOT EDIT. */' > $@.tmp
+	@echo '#ifndef _CONFIG_H_' >> $@.tmp
+	@echo '#define _CONFIG_H_' >> $@.tmp
+	@sed -re 's/-D([A-Z0-9_]+)/#define \1/' $^ >> $@.tmp
+	@echo '#endif' >> $@.tmp
+	@mv $@.tmp $@
 
 clean:
 	rm -rf $(TARGET)
+	rm -rf .__config config.h
 	rm -rf $(OBJ)
 	rm -rf $(DEP)
 
