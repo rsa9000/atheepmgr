@@ -61,6 +61,9 @@ static int eep_6174_check(struct atheepmgr *aem)
 	}
 
 	/**
+	 * Data could come in a compressed form, so calc checksum on the private
+	 * copy of the decomressed calibration data *before* endians fix.
+	 *
 	 * NB: take pointer another one time from container to avoid warning
 	 * about a *possible* unaligned access
 	 */
@@ -69,6 +72,17 @@ static int eep_6174_check(struct atheepmgr *aem)
 	if (sum != 0xffff) {
 		fprintf(stderr, "Bad EEPROM checksum 0x%04x\n", sum);
 		return false;
+	}
+
+	/**
+	 * NB: we still do not know location of the BigEndian format flag, so
+	 * assume that data is always Little Endian.
+	 */
+	if (aem->host_is_be) {
+		printf("EEPROM Endianness is not native.. Changing.\n");
+
+		bswap_16_inplace(pBase->length);
+		bswap_16_inplace(pBase->checksum);
 	}
 
 	return true;
