@@ -880,6 +880,12 @@ static void usage(struct atheepmgr *aem, char *name)
 
 	printf(
 		"Available connectors (card interactions interface):\n"
+#if defined(CONFIG_CON_DRIVER)
+		"  Driver          Interact with card via driver debuging interface, activated\n"
+		"                  by -D option. Since each driver have a specific debug\n"
+		"                  interface, utility first determine serving driver and then\n"
+		"                  automatically configured themself to work with this driver.\n"
+#endif
 		"  File            Read EEPROM dump from file, activated by -F option with dump\n"
 		"                  file path argument.\n"
 #if defined(CONFIG_CON_MEM)
