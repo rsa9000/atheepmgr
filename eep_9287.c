@@ -214,6 +214,8 @@ static void eep_9287_dump_base_header(struct atheepmgr *aem)
 	printf("%-30s : %d\n",
 	       "OpenLoop PowerControl",
 	       (pBase->openLoopPwrCntl & 0x1));
+	printf("%-30s : %d\n", "Power Table Offset, dBm",
+	       pBase->pwrTableOffset);
 
 	if (eep_9287_get_rev(emp) >= AR5416_EEP_MINOR_VER_3) {
 		printf("%-30s : %s\n",
