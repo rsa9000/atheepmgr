@@ -6,6 +6,7 @@ This is a utility to dump and update the EEPROM content of Atheros based wireles
 atheepmgr supports several operations such as parsing and printing the EEPROM content, updating the EEPROM contents and so on. The utility can access EEPROM content of a real NIC and can works with EEPROM data that has been dumped to the file. You can find a few usage examples below.
 
 The following EEPROM content access techniques are supported:
+* via driver specific debug interface (using Linux ath9k/ath10k drivers)
 * via mapping of the PCI device I/O region (using libpciaccess)
 * via mapping of the directly specified device I/O region
 * file dump
@@ -86,6 +87,22 @@ or using chip name instead of EEPROM map (layout) name:
 ```
 
 *NB*: chip autodetection is not supported for file access, so you should specifiy EEPROM map (layout) or chip name manually. To see a full list of supported EEPROM maps use a *-h* option.
+
+### Print EEPROM content of a network interface via driver
+
+*NB*: at the moment only Linux ath9k/ath10k debug interfaces are supported, you driver should be build with enabled debugfs support (true for OpenWrt distro).
+
+This access method useful in case of your Linux kernel blocks device I/O memory access via the /dev/mem. To access device EEPROM you should specify either network interface:
+
+```
+# atheepmgr -t 5415 -D wlan0
+```
+
+or Linux ieee80211 phy name:
+
+```
+# atheepmgr -t 5416 -D phy1
+```
 
 ### Dump NIC EEPROM content to the file
 
