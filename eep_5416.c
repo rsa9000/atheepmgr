@@ -447,7 +447,7 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 	/* Map of Mask Gain bit Index to Calibrated per-Gain icepts set Index */
 	int mgi2cgi[AR5416_NUM_PD_GAINS];
 	int cgii[AR5416_NUM_PD_GAINS];	/* Array of indexes for merge */
-	int gain, ngains, pwr, npwr;	/* Indexes */
+	int gainidx, ngains, pwridx, npwr;	/* Indexes and index limits */
 	uint8_t pwrmin;
 
 	/**
@@ -465,57 +465,58 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 	 * gains.
 	 */
 	ngains = 0;
-	for (gain = 0; gain < AR5416_NUM_PD_GAINS; ++gain) {
-		if (gainmask & (1 << gain)) {
-			mgi2cgi[gain] = ngains;
+	for (gainidx = 0; gainidx < AR5416_NUM_PD_GAINS; ++gainidx) {
+		if (gainmask & (1 << gainidx)) {
+			mgi2cgi[gainidx] = ngains;
 			ngains++;
 		} else {
-			mgi2cgi[gain] = -1;
+			mgi2cgi[gainidx] = -1;
 		}
 	}
 
 	/* Merge calibration per-gain power lists to filter duplicates */
 	memset(merged, 0xff, sizeof(merged));
 	memset(cgii, 0x00, sizeof(cgii));
-	for (pwr = 0; pwr < ARRAY_SIZE(merged); ++pwr) {
+	for (pwridx = 0; pwridx < ARRAY_SIZE(merged); ++pwridx) {
 		pwrmin = 0xff;
 		/* Looking for unmerged yet power value */
-		for (gain = 0; gain < ngains; ++gain) {
-			if (cgii[gain] >= AR5416_PD_GAIN_ICEPTS)
+		for (gainidx = 0; gainidx < ngains; ++gainidx) {
+			if (cgii[gainidx] >= AR5416_PD_GAIN_ICEPTS)
 				continue;
-			if (item->pwrPdg[gain][cgii[gain]] < pwrmin)
-				pwrmin = item->pwrPdg[gain][cgii[gain]];
+			if (item->pwrPdg[gainidx][cgii[gainidx]] < pwrmin)
+				pwrmin = item->pwrPdg[gainidx][cgii[gainidx]];
 		}
 		if (pwrmin == 0xff)
 			break;
-		merged[pwr].pwr = pwrmin;
+		merged[pwridx].pwr = pwrmin;
 		/* Copy Vpd of all gains for this power */
-		for (gain = 0; gain < ngains; ++gain) {
-			if (cgii[gain] >= AR5416_PD_GAIN_ICEPTS ||
-			    item->pwrPdg[gain][cgii[gain]] != pwrmin)
+		for (gainidx = 0; gainidx < ngains; ++gainidx) {
+			if (cgii[gainidx] >= AR5416_PD_GAIN_ICEPTS ||
+			    item->pwrPdg[gainidx][cgii[gainidx]] != pwrmin)
 				continue;
-			merged[pwr].vpd[gain] = item->vpdPdg[gain][cgii[gain]];
-			cgii[gain]++;
+			merged[pwridx].vpd[gainidx] =
+					item->vpdPdg[gainidx][cgii[gainidx]];
+			cgii[gainidx]++;
 		}
 	}
-	npwr = pwr;
+	npwr = pwridx;
 
 	/* Print merged data */
 	printf("      Tx Power, dBm:");
-	for (pwr = 0; pwr < npwr; ++pwr)
-		printf(" %5.2f", (double)merged[pwr].pwr / 4 +
+	for (pwridx = 0; pwridx < npwr; ++pwridx)
+		printf(" %5.2f", (double)merged[pwridx].pwr / 4 +
 				 power_table_offset);
 	printf("\n");
 	printf("      --------------");
-	for (pwr = 0; pwr < npwr; ++pwr)
+	for (pwridx = 0; pwridx < npwr; ++pwridx)
 		printf(" -----");
 	printf("\n");
-	for (gain = 0; gain < AR5416_NUM_PD_GAINS; ++gain) {
-		if (!(gainmask & (1 << gain)))
+	for (gainidx = 0; gainidx < AR5416_NUM_PD_GAINS; ++gainidx) {
+		if (!(gainmask & (1 << gainidx)))
 			continue;
-		printf("      Gain x%-3s VPD:", gains[gain]);
-		for (pwr = 0; pwr < npwr; ++pwr) {
-			uint8_t vpd = merged[pwr].vpd[mgi2cgi[gain]];
+		printf("      Gain x%-3s VPD:", gains[gainidx]);
+		for (pwridx = 0; pwridx < npwr; ++pwridx) {
+			uint8_t vpd = merged[pwridx].vpd[mgi2cgi[gainidx]];
 
 			if (vpd == 0xff)
 				printf("      ");
