@@ -288,6 +288,68 @@ static void eep_9287_dump_modal_header(struct atheepmgr *aem)
 	printf("\n");
 }
 
+static void
+eep_9287_dump_pwrctl_openloop_item(const struct ar9287_cal_data_op_loop *data,
+				   int gainmask)
+{
+	const char * const gains[AR5416_NUM_PD_GAINS] = {"4", "2", "1", "0.5"};
+	int i, pos;
+
+	printf("          Field: pwrPdg vpdPdg  pcdac  empty\n");
+	printf("      ---------- ------ ------ ------ ------\n");
+	pos = -1;
+	for (i = 0; i < ARRAY_SIZE(gains); ++i) {
+		if (!(gainmask & (1 << i)))
+			continue;
+		pos++;
+		if (pos >= ARRAY_SIZE(data->pwrPdg)) {
+			printf("      Too many gains activated, no data available\n");
+			break;
+		}
+		printf("      Gain x%-3s:", gains[i]);
+
+		/**
+		 * In all dumps what I saw, only the first elements of arrays
+		 * are filled with meaningful data. Moreover driver uses only
+		 * first elements too. So do not even try to output garbage
+		 * from other elements.
+		 */
+		printf("  %5.2f", (double)data->pwrPdg[pos][0] / 4);
+		printf("  %5u", data->vpdPdg[pos][0]);
+		printf("  %5u", data->pcdac[pos][0]);
+		printf("  %5u", data->empty[pos][0]);
+		printf("\n");
+	}
+}
+
+static void
+eep_9287_dump_pwrctl_openloop(const uint8_t *freqs, int chainmask, int gainmask,
+			      const union ar9287_cal_data_per_freq_u *data,
+			      int power_table_offset)
+{
+	const union ar9287_cal_data_per_freq_u *item;
+	int chain, freq;	/* Indexes */
+
+	for (chain = 0; chain < AR9287_MAX_CHAINS; ++chain) {
+		if (!(chainmask & (1 << chain)))
+			continue;
+		printf("  Chain %d:\n", chain);
+		printf("\n");
+		for (freq = 0; freq < AR9287_NUM_2G_CAL_PIERS; ++freq) {
+			if (freqs[freq] == AR5416_BCHAN_UNUSED)
+				break;
+
+			printf("    %4u MHz:\n", FBIN2FREQ(freqs[freq], 1));
+			item = data + (chain * AR9287_NUM_2G_CAL_PIERS + freq);
+
+			eep_9287_dump_pwrctl_openloop_item(&item->calDataOpen,
+							   gainmask);
+
+			printf("\n");
+		}
+	}
+}
+
 static void eep_9287_dump_power_info(struct atheepmgr *aem)
 {
 #define PR_TARGET_POWER(__pref, __field, __rates)			\
@@ -306,7 +368,11 @@ static void eep_9287_dump_power_info(struct atheepmgr *aem)
 	EEP_PRINT_SUBSECT_NAME("2 GHz per-freq PD cal. data");
 
 	if (eep->baseEepHeader.openLoopPwrCntl & 0x01) {
-		printf("  Open-loop PD calibration dumping is not supported\n");
+		eep_9287_dump_pwrctl_openloop(eep->calFreqPier2G,
+					      eep->baseEepHeader.txMask,
+					      eep->modalHeader.xpdGain,
+					      &eep->calPierData2G[0][0],
+					      eep->baseEepHeader.pwrTableOffset);
 	} else {
 		ar5416_dump_pwrctl_closeloop(eep->calFreqPier2G,
 					     ARRAY_SIZE(eep->calFreqPier2G), 1,
