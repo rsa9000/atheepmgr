@@ -250,7 +250,7 @@ static void eep_9285_dump_modal_header(struct atheepmgr *aem)
 	PR("TxFrameToXpaOn", "", "d", pModal->txFrameToXpaOn);
 	PR("Thresh 62", "", "d", pModal->thresh62);
 	PR("NF Thresh Chain 0", "", "d", pModal->noiseFloorThreshCh[0]);
-	PR("XPD Gain", "", "d", pModal->xpdGain);
+	PR("XPD Gain", "0x", "x", pModal->xpdGain);
 	PR("XPD", "", "d", pModal->xpd);
 	PR("IQ Cal I Chain 0", "", "d", pModal->iqCalICh[0]);
 	PR("IQ Cal Q Chain 0", "", "d", pModal->iqCalQCh[0]);
@@ -299,6 +299,20 @@ static void eep_9285_dump_power_info(struct atheepmgr *aem)
 	const struct ar9285_eeprom *eep = &emp->eep;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
+
+	EEP_PRINT_SUBSECT_NAME("2 GHz per-freq PD cal. data");
+
+	ar5416_dump_pwrctl_closeloop(eep->calFreqPier2G,
+				     ARRAY_SIZE(eep->calFreqPier2G), 1,
+				     AR9285_MAX_CHAINS,
+				     eep->baseEepHeader.txMask,
+				     (uint8_t *)eep->calPierData2G,
+				     AR5416_PD_GAIN_ICEPTS,
+				     AR9285_NUM_PD_GAINS,
+				     eep->modalHeader.xpdGain,
+				     AR5416_PWR_TABLE_OFFSET_DB);
+
+	printf("\n");
 
 	PR_TARGET_POWER("2 GHz CCK", calTargetPowerCck, eep_rates_cck);
 	PR_TARGET_POWER("2 GHz OFDM", calTargetPower2G, eep_rates_ofdm);
