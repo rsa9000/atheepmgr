@@ -435,157 +435,6 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 #undef PR_LINE
 }
 
-static void
-eep_5416_dump_closeloop_item(const uint8_t *pwr, const uint8_t *vpd,
-			     int maxicepts, int maxstoredgains, int gainmask,
-			     int power_table_offset)
-{
-	const char * const gains[AR5416_NUM_PD_GAINS] = {"4", "2", "1", "0.5"};
-	uint8_t mpwr[maxicepts * maxstoredgains];
-	uint8_t mvpd[ARRAY_SIZE(mpwr) * maxstoredgains];
-	/* Map of Mask Gain bit Index to Calibrated per-Gain icepts set Index */
-	int mgi2cgi[ARRAY_SIZE(gains)];
-	int cgii[maxstoredgains];	/* Array of indexes for merge */
-	int gainidx, ngains, pwridx, npwr;	/* Indexes and index limits */
-	uint8_t pwrmin;
-
-	/**
-	 * Index of bits in the gains mask is not the same as gain index in the
-	 * calibration data. Calibration data are stored without gaps. And non
-	 * available per-gain sets are skipped if gain is not enabled via the
-	 * gains mask.  E.g. if the gains mask have a value of 0x06 then you
-	 * should use sets #0 and #1 from the calibration data. Where set #0 is
-	 * corespond to gains mask bit #1 and set #1 coresponds to gains mask
-	 * bit #3.
-	 *
-	 * To simplify further code we build a map of gain indexes to
-	 * calibration data sets indexes using the gains mask. Also count a
-	 * number of gains mask bit that are set aka number of configured
-	 * gains.
-	 */
-	ngains = 0;
-	for (gainidx = 0; gainidx < ARRAY_SIZE(gains); ++gainidx) {
-		if (gainmask & (1 << gainidx)) {
-			mgi2cgi[gainidx] = ngains;
-			ngains++;
-		} else {
-			mgi2cgi[gainidx] = -1;
-		}
-	}
-	if (ngains > maxstoredgains) {
-		printf("      PD gain mask activates more gains then possible to store -- %d > %d\n",
-		       ngains, maxstoredgains);
-		return;
-	}
-
-	/* Merge calibration per-gain power lists to filter duplicates */
-	memset(mpwr, 0xff, sizeof(mpwr));
-	memset(mvpd, 0xff, sizeof(mvpd));
-	memset(cgii, 0x00, sizeof(cgii));
-	for (pwridx = 0; pwridx < ARRAY_SIZE(mpwr); ++pwridx) {
-		pwrmin = 0xff;
-		/* Looking for unmerged yet power value */
-		for (gainidx = 0; gainidx < ngains; ++gainidx) {
-			if (cgii[gainidx] >= maxicepts)
-				continue;
-			if (pwr[gainidx * maxicepts + cgii[gainidx]] < pwrmin)
-				pwrmin = pwr[gainidx * maxicepts + cgii[gainidx]];
-		}
-		if (pwrmin == 0xff)
-			break;
-		mpwr[pwridx] = pwrmin;
-		/* Copy Vpd of all gains for this power */
-		for (gainidx = 0; gainidx < ngains; ++gainidx) {
-			if (cgii[gainidx] >= AR5416_PD_GAIN_ICEPTS ||
-			    pwr[gainidx * maxicepts + cgii[gainidx]] != pwrmin)
-				continue;
-			mvpd[pwridx * maxstoredgains + gainidx] =
-				vpd[gainidx * maxicepts + cgii[gainidx]];
-			cgii[gainidx]++;
-		}
-	}
-	npwr = pwridx;
-
-	/* Print merged data */
-	printf("      Tx Power, dBm:");
-	for (pwridx = 0; pwridx < npwr; ++pwridx)
-		printf(" %5.2f", (double)mpwr[pwridx] / 4 +
-				 power_table_offset);
-	printf("\n");
-	printf("      --------------");
-	for (pwridx = 0; pwridx < npwr; ++pwridx)
-		printf(" -----");
-	printf("\n");
-	for (gainidx = 0; gainidx < ARRAY_SIZE(gains); ++gainidx) {
-		if (!(gainmask & (1 << gainidx)))
-			continue;
-		printf("      Gain x%-3s VPD:", gains[gainidx]);
-		for (pwridx = 0; pwridx < npwr; ++pwridx) {
-			uint8_t vpd = mvpd[pwridx * maxstoredgains + mgi2cgi[gainidx]];
-
-			if (vpd == 0xff)
-				printf("      ");
-			else
-				printf("   %3u", vpd);
-		}
-		printf("\n");
-	}
-}
-
-/**
- * Data is an array of per-chain & per-frequency sets of calibrations.
- * Each set calibrations consists of two parts: first part contains a set of
- * output power values, while the second part contains a corresponding power
- * detector values. Each part (power and detector) has a similar structure, it
- * is an array of per PD gain sets of measurements (icepts). Each type of
- * values (power and detector) has the similar size of one octet.
- *
- * So to calculate position of per-chain & per-frequency data we should know
- * size of this data. Such data block size is a sum of its parts, i.e. sum of
- * output power data size and power detector data size. The size of each part
- * is a multiplication of a number of PD gains (maxstoredgains) and of a number
- * of calibration points (maxicepts).
- *
- * So having all this numbers we are able to easly calculate size of various
- * elements and their positions.
- */
-static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
-				    int is_2g, int maxchains, int chainmask,
-				    const void *data, int maxicepts,
-				    int maxstoredgains, int gainmask,
-				    int power_table_offset)
-{
-	/* Sizes of TxPower and Detector sets of data */
-	const int fpwrdatasz = maxicepts * maxstoredgains * sizeof(uint8_t);
-	const int fvpddatasz = maxicepts * maxstoredgains * sizeof(uint8_t);
-	const int fdatasz = fpwrdatasz + fvpddatasz;	/* Per-chain & per-freq data sz */
-	const uint8_t *fdata, *fpwrdata, *fvpddata;
-	int chain, freq;	/* Indexes */
-
-	for (chain = 0; chain < maxchains; ++chain) {
-		if (!(chainmask & (1 << chain)))
-			continue;
-		printf("  Chain %d:\n", chain);
-		printf("\n");
-		for (freq = 0; freq < maxfreq; ++freq) {
-			if (freqs[freq] == AR5416_BCHAN_UNUSED)
-				break;
-
-			printf("    %4u MHz:\n", FBIN2FREQ(freqs[freq], is_2g));
-
-			fdata = data + fdatasz * (chain * maxfreq + freq);
-			fpwrdata = fdata + 0;/* Power data begins immediatly */
-			fvpddata = fdata + fpwrdatasz;	/* Skip power data */
-
-			eep_5416_dump_closeloop_item(fpwrdata, fvpddata,
-						     maxicepts, maxstoredgains,
-						     gainmask, power_table_offset);
-
-			printf("\n");
-		}
-	}
-}
-
 static void eep_5416_dump_pd_cal(const uint8_t *freq, int maxfreq,
 				 const void *caldata, int is_openloop,
 				 int is_2g, int chainmask, int gainmask,
@@ -594,11 +443,11 @@ static void eep_5416_dump_pd_cal(const uint8_t *freq, int maxfreq,
 	if (is_openloop) {
 		printf("  Open-loop PD calibration dumping is not supported\n");
 	} else {
-		eep_5416_dump_closeloop(freq, maxfreq, is_2g, AR5416_MAX_CHAINS,
-					chainmask, caldata,
-					AR5416_PD_GAIN_ICEPTS,
-					AR5416_NUM_PD_GAINS,
-					gainmask, power_table_offset);
+		ar5416_dump_pwrctl_closeloop(freq, maxfreq, is_2g,
+					     AR5416_MAX_CHAINS, chainmask,
+					     caldata, AR5416_PD_GAIN_ICEPTS,
+					     AR5416_NUM_PD_GAINS, gainmask,
+					     power_table_offset);
 	}
 }
 

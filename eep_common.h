@@ -197,6 +197,11 @@ bool __ar5416_toggle_byteswap(struct atheepmgr *aem, uint32_t eepmisc_off,
 
 void ar5416_dump_eep_init(const struct ar5416_eep_init *ini, size_t size);
 
+void ar5416_dump_pwrctl_closeloop(const uint8_t *freqs, int maxfreqs, int is_2g,
+				  int maxchains, int chainmask,
+				  const void *data, int maxicepts,
+				  int maxstoredgains, int gainmask,
+				  int power_table_offset);
 void ar5416_dump_target_power(const struct ar5416_cal_target_power *pow,
 			      int maxchans, const char * const rates[],
 			      int nrates, int is_2g);
