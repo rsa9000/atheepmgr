@@ -440,10 +440,8 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 			     int gainmask, int power_table_offset)
 {
 	const char * const gains[AR5416_NUM_PD_GAINS] = {"4", "2", "1", "0.5"};
-	struct {
-		uint8_t pwr;
-		uint8_t vpd[AR5416_NUM_PD_GAINS];
-	} merged[AR5416_PD_GAIN_ICEPTS * AR5416_NUM_PD_GAINS];
+	uint8_t mpwr[AR5416_PD_GAIN_ICEPTS * AR5416_NUM_PD_GAINS];
+	uint8_t mvpd[ARRAY_SIZE(mpwr) * AR5416_NUM_PD_GAINS];
 	/* Map of Mask Gain bit Index to Calibrated per-Gain icepts set Index */
 	int mgi2cgi[AR5416_NUM_PD_GAINS];
 	int cgii[AR5416_NUM_PD_GAINS];	/* Array of indexes for merge */
@@ -475,9 +473,10 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 	}
 
 	/* Merge calibration per-gain power lists to filter duplicates */
-	memset(merged, 0xff, sizeof(merged));
+	memset(mpwr, 0xff, sizeof(mpwr));
+	memset(mvpd, 0xff, sizeof(mvpd));
 	memset(cgii, 0x00, sizeof(cgii));
-	for (pwridx = 0; pwridx < ARRAY_SIZE(merged); ++pwridx) {
+	for (pwridx = 0; pwridx < ARRAY_SIZE(mpwr); ++pwridx) {
 		pwrmin = 0xff;
 		/* Looking for unmerged yet power value */
 		for (gainidx = 0; gainidx < ngains; ++gainidx) {
@@ -488,13 +487,13 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 		}
 		if (pwrmin == 0xff)
 			break;
-		merged[pwridx].pwr = pwrmin;
+		mpwr[pwridx] = pwrmin;
 		/* Copy Vpd of all gains for this power */
 		for (gainidx = 0; gainidx < ngains; ++gainidx) {
 			if (cgii[gainidx] >= AR5416_PD_GAIN_ICEPTS ||
 			    item->pwrPdg[gainidx][cgii[gainidx]] != pwrmin)
 				continue;
-			merged[pwridx].vpd[gainidx] =
+			mvpd[pwridx * AR5416_NUM_PD_GAINS + gainidx] =
 					item->vpdPdg[gainidx][cgii[gainidx]];
 			cgii[gainidx]++;
 		}
@@ -504,7 +503,7 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 	/* Print merged data */
 	printf("      Tx Power, dBm:");
 	for (pwridx = 0; pwridx < npwr; ++pwridx)
-		printf(" %5.2f", (double)merged[pwridx].pwr / 4 +
+		printf(" %5.2f", (double)mpwr[pwridx] / 4 +
 				 power_table_offset);
 	printf("\n");
 	printf("      --------------");
@@ -516,7 +515,7 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 			continue;
 		printf("      Gain x%-3s VPD:", gains[gainidx]);
 		for (pwridx = 0; pwridx < npwr; ++pwridx) {
-			uint8_t vpd = merged[pwridx].vpd[mgi2cgi[gainidx]];
+			uint8_t vpd = mvpd[pwridx * AR5416_NUM_PD_GAINS + mgi2cgi[gainidx]];
 
 			if (vpd == 0xff)
 				printf("      ");
