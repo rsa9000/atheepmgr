@@ -550,9 +550,10 @@ eep_5416_dump_closeloop_item(const uint8_t *pwr, const uint8_t *vpd,
  * elements and their positions.
  */
 static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
-				    int is_2g, int chainmask, const void *data,
-				    int maxicepts, int maxstoredgains,
-				    int gainmask, int power_table_offset)
+				    int is_2g, int maxchains, int chainmask,
+				    const void *data, int maxicepts,
+				    int maxstoredgains, int gainmask,
+				    int power_table_offset)
 {
 	/* Sizes of TxPower and Detector sets of data */
 	const int fpwrdatasz = maxicepts * maxstoredgains * sizeof(uint8_t);
@@ -561,7 +562,7 @@ static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
 	const uint8_t *fdata, *fpwrdata, *fvpddata;
 	int chain, freq;	/* Indexes */
 
-	for (chain = 0; chain < AR5416_MAX_CHAINS; ++chain) {
+	for (chain = 0; chain < maxchains; ++chain) {
 		if (!(chainmask & (1 << chain)))
 			continue;
 		printf("  Chain %d:\n", chain);
@@ -593,10 +594,11 @@ static void eep_5416_dump_pd_cal(const uint8_t *freq, int maxfreq,
 	if (is_openloop) {
 		printf("  Open-loop PD calibration dumping is not supported\n");
 	} else {
-		eep_5416_dump_closeloop(freq, maxfreq, is_2g, chainmask,
-					caldata, AR5416_PD_GAIN_ICEPTS,
-					AR5416_NUM_PD_GAINS, gainmask,
-					power_table_offset);
+		eep_5416_dump_closeloop(freq, maxfreq, is_2g, AR5416_MAX_CHAINS,
+					chainmask, caldata,
+					AR5416_PD_GAIN_ICEPTS,
+					AR5416_NUM_PD_GAINS,
+					gainmask, power_table_offset);
 	}
 }
 
