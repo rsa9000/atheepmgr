@@ -437,14 +437,15 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 
 static void
 eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
-			     int gainmask, int power_table_offset)
+			     int maxstoredgains, int gainmask,
+			     int power_table_offset)
 {
 	const char * const gains[AR5416_NUM_PD_GAINS] = {"4", "2", "1", "0.5"};
-	uint8_t mpwr[AR5416_PD_GAIN_ICEPTS * AR5416_NUM_PD_GAINS];
-	uint8_t mvpd[ARRAY_SIZE(mpwr) * AR5416_NUM_PD_GAINS];
+	uint8_t mpwr[AR5416_PD_GAIN_ICEPTS * maxstoredgains];
+	uint8_t mvpd[ARRAY_SIZE(mpwr) * maxstoredgains];
 	/* Map of Mask Gain bit Index to Calibrated per-Gain icepts set Index */
-	int mgi2cgi[AR5416_NUM_PD_GAINS];
-	int cgii[AR5416_NUM_PD_GAINS];	/* Array of indexes for merge */
+	int mgi2cgi[ARRAY_SIZE(gains)];
+	int cgii[maxstoredgains];	/* Array of indexes for merge */
 	int gainidx, ngains, pwridx, npwr;	/* Indexes and index limits */
 	uint8_t pwrmin;
 
@@ -463,13 +464,18 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 	 * gains.
 	 */
 	ngains = 0;
-	for (gainidx = 0; gainidx < AR5416_NUM_PD_GAINS; ++gainidx) {
+	for (gainidx = 0; gainidx < ARRAY_SIZE(gains); ++gainidx) {
 		if (gainmask & (1 << gainidx)) {
 			mgi2cgi[gainidx] = ngains;
 			ngains++;
 		} else {
 			mgi2cgi[gainidx] = -1;
 		}
+	}
+	if (ngains > maxstoredgains) {
+		printf("      PD gain mask activates more gains then possible to store -- %d > %d\n",
+		       ngains, maxstoredgains);
+		return;
 	}
 
 	/* Merge calibration per-gain power lists to filter duplicates */
@@ -493,7 +499,7 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 			if (cgii[gainidx] >= AR5416_PD_GAIN_ICEPTS ||
 			    item->pwrPdg[gainidx][cgii[gainidx]] != pwrmin)
 				continue;
-			mvpd[pwridx * AR5416_NUM_PD_GAINS + gainidx] =
+			mvpd[pwridx * maxstoredgains + gainidx] =
 					item->vpdPdg[gainidx][cgii[gainidx]];
 			cgii[gainidx]++;
 		}
@@ -510,12 +516,12 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 	for (pwridx = 0; pwridx < npwr; ++pwridx)
 		printf(" -----");
 	printf("\n");
-	for (gainidx = 0; gainidx < AR5416_NUM_PD_GAINS; ++gainidx) {
+	for (gainidx = 0; gainidx < ARRAY_SIZE(gains); ++gainidx) {
 		if (!(gainmask & (1 << gainidx)))
 			continue;
 		printf("      Gain x%-3s VPD:", gains[gainidx]);
 		for (pwridx = 0; pwridx < npwr; ++pwridx) {
-			uint8_t vpd = mvpd[pwridx * AR5416_NUM_PD_GAINS + mgi2cgi[gainidx]];
+			uint8_t vpd = mvpd[pwridx * maxstoredgains + mgi2cgi[gainidx]];
 
 			if (vpd == 0xff)
 				printf("      ");
@@ -528,7 +534,8 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 
 static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
 				    const struct ar5416_cal_data_per_freq *cal,
-				    int is_2g, int chainmask, int gainmask,
+				    int is_2g, int chainmask,
+				    int maxstoredgains, int gainmask,
 				    int power_table_offset)
 {
 	const struct ar5416_cal_data_per_freq *item;
@@ -546,7 +553,8 @@ static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
 			printf("    %4u MHz:\n", FBIN2FREQ(freqs[freq], is_2g));
 			item = cal + (chain * maxfreq + freq);
 
-			eep_5416_dump_closeloop_item(item, gainmask,
+			eep_5416_dump_closeloop_item(item, maxstoredgains,
+						     gainmask,
 						     power_table_offset);
 
 			printf("\n");
@@ -563,8 +571,8 @@ static void eep_5416_dump_pd_cal(const uint8_t *freq, int maxfreq,
 		printf("  Open-loop PD calibration dumping is not supported\n");
 	} else {
 		eep_5416_dump_closeloop(freq, maxfreq, caldata, is_2g,
-					chainmask, gainmask,
-					power_table_offset);
+					chainmask, AR5416_NUM_PD_GAINS,
+					gainmask, power_table_offset);
 	}
 }
 
