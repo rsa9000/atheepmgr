@@ -261,7 +261,7 @@ static void eep_9287_dump_modal_header(struct atheepmgr *aem)
 	PR("CCA Threshold)", "", "d", pModal->thresh62);
 	PR("Chain0 NF Threshold", "", "d", pModal->noiseFloorThreshCh[0]);
 	PR("Chain1 NF Threshold", "", "d", pModal->noiseFloorThreshCh[1]);
-	PR("xpdGain", "", "d", pModal->xpdGain);
+	PR("xpdGain", "0x", "x", pModal->xpdGain);
 	PR("External PD", "", "d", pModal->xpd);
 	PR("Chain0 I Coefficient", "", "d", pModal->iqCalICh[0]);
 	PR("Chain1 I Coefficient", "", "d", pModal->iqCalICh[1]);
@@ -302,6 +302,24 @@ static void eep_9287_dump_power_info(struct atheepmgr *aem)
 	int maxradios = 0, i;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
+
+	EEP_PRINT_SUBSECT_NAME("2 GHz per-freq PD cal. data");
+
+	if (eep->baseEepHeader.openLoopPwrCntl & 0x01) {
+		printf("  Open-loop PD calibration dumping is not supported\n");
+	} else {
+		ar5416_dump_pwrctl_closeloop(eep->calFreqPier2G,
+					     ARRAY_SIZE(eep->calFreqPier2G), 1,
+					     AR9287_MAX_CHAINS,
+					     eep->baseEepHeader.txMask,
+					     (uint8_t *)eep->calPierData2G,
+					     AR9287_PD_GAIN_ICEPTS,
+					     AR5416_NUM_PD_GAINS,
+					     eep->modalHeader.xpdGain,
+					     eep->baseEepHeader.pwrTableOffset);
+	}
+
+	printf("\n");
 
 	PR_TARGET_POWER("2 GHz CCK", calTargetPowerCck, eep_rates_cck);
 	PR_TARGET_POWER("2 GHz OFDM", calTargetPower2G, eep_rates_ofdm);
