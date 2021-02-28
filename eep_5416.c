@@ -436,12 +436,12 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 }
 
 static void
-eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
-			     int maxstoredgains, int gainmask,
+eep_5416_dump_closeloop_item(const uint8_t *pwr, const uint8_t *vpd,
+			     int maxicepts, int maxstoredgains, int gainmask,
 			     int power_table_offset)
 {
 	const char * const gains[AR5416_NUM_PD_GAINS] = {"4", "2", "1", "0.5"};
-	uint8_t mpwr[AR5416_PD_GAIN_ICEPTS * maxstoredgains];
+	uint8_t mpwr[maxicepts * maxstoredgains];
 	uint8_t mvpd[ARRAY_SIZE(mpwr) * maxstoredgains];
 	/* Map of Mask Gain bit Index to Calibrated per-Gain icepts set Index */
 	int mgi2cgi[ARRAY_SIZE(gains)];
@@ -486,10 +486,10 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 		pwrmin = 0xff;
 		/* Looking for unmerged yet power value */
 		for (gainidx = 0; gainidx < ngains; ++gainidx) {
-			if (cgii[gainidx] >= AR5416_PD_GAIN_ICEPTS)
+			if (cgii[gainidx] >= maxicepts)
 				continue;
-			if (item->pwrPdg[gainidx][cgii[gainidx]] < pwrmin)
-				pwrmin = item->pwrPdg[gainidx][cgii[gainidx]];
+			if (pwr[gainidx * maxicepts + cgii[gainidx]] < pwrmin)
+				pwrmin = pwr[gainidx * maxicepts + cgii[gainidx]];
 		}
 		if (pwrmin == 0xff)
 			break;
@@ -497,10 +497,10 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 		/* Copy Vpd of all gains for this power */
 		for (gainidx = 0; gainidx < ngains; ++gainidx) {
 			if (cgii[gainidx] >= AR5416_PD_GAIN_ICEPTS ||
-			    item->pwrPdg[gainidx][cgii[gainidx]] != pwrmin)
+			    pwr[gainidx * maxicepts + cgii[gainidx]] != pwrmin)
 				continue;
 			mvpd[pwridx * maxstoredgains + gainidx] =
-					item->vpdPdg[gainidx][cgii[gainidx]];
+				vpd[gainidx * maxicepts + cgii[gainidx]];
 			cgii[gainidx]++;
 		}
 	}
@@ -532,13 +532,33 @@ eep_5416_dump_closeloop_item(const struct ar5416_cal_data_per_freq *item,
 	}
 }
 
+/**
+ * Data is an array of per-chain & per-frequency sets of calibrations.
+ * Each set calibrations consists of two parts: first part contains a set of
+ * output power values, while the second part contains a corresponding power
+ * detector values. Each part (power and detector) has a similar structure, it
+ * is an array of per PD gain sets of measurements (icepts). Each type of
+ * values (power and detector) has the similar size of one octet.
+ *
+ * So to calculate position of per-chain & per-frequency data we should know
+ * size of this data. Such data block size is a sum of its parts, i.e. sum of
+ * output power data size and power detector data size. The size of each part
+ * is a multiplication of a number of PD gains (maxstoredgains) and of a number
+ * of calibration points (maxicepts).
+ *
+ * So having all this numbers we are able to easly calculate size of various
+ * elements and their positions.
+ */
 static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
-				    const struct ar5416_cal_data_per_freq *cal,
-				    int is_2g, int chainmask,
-				    int maxstoredgains, int gainmask,
-				    int power_table_offset)
+				    int is_2g, int chainmask, const void *data,
+				    int maxicepts, int maxstoredgains,
+				    int gainmask, int power_table_offset)
 {
-	const struct ar5416_cal_data_per_freq *item;
+	/* Sizes of TxPower and Detector sets of data */
+	const int fpwrdatasz = maxicepts * maxstoredgains * sizeof(uint8_t);
+	const int fvpddatasz = maxicepts * maxstoredgains * sizeof(uint8_t);
+	const int fdatasz = fpwrdatasz + fvpddatasz;	/* Per-chain & per-freq data sz */
+	const uint8_t *fdata, *fpwrdata, *fvpddata;
 	int chain, freq;	/* Indexes */
 
 	for (chain = 0; chain < AR5416_MAX_CHAINS; ++chain) {
@@ -551,11 +571,14 @@ static void eep_5416_dump_closeloop(const uint8_t *freqs, int maxfreq,
 				break;
 
 			printf("    %4u MHz:\n", FBIN2FREQ(freqs[freq], is_2g));
-			item = cal + (chain * maxfreq + freq);
 
-			eep_5416_dump_closeloop_item(item, maxstoredgains,
-						     gainmask,
-						     power_table_offset);
+			fdata = data + fdatasz * (chain * maxfreq + freq);
+			fpwrdata = fdata + 0;/* Power data begins immediatly */
+			fvpddata = fdata + fpwrdatasz;	/* Skip power data */
+
+			eep_5416_dump_closeloop_item(fpwrdata, fvpddata,
+						     maxicepts, maxstoredgains,
+						     gainmask, power_table_offset);
 
 			printf("\n");
 		}
@@ -570,9 +593,10 @@ static void eep_5416_dump_pd_cal(const uint8_t *freq, int maxfreq,
 	if (is_openloop) {
 		printf("  Open-loop PD calibration dumping is not supported\n");
 	} else {
-		eep_5416_dump_closeloop(freq, maxfreq, caldata, is_2g,
-					chainmask, AR5416_NUM_PD_GAINS,
-					gainmask, power_table_offset);
+		eep_5416_dump_closeloop(freq, maxfreq, is_2g, chainmask,
+					caldata, AR5416_PD_GAIN_ICEPTS,
+					AR5416_NUM_PD_GAINS, gainmask,
+					power_table_offset);
 	}
 }
 
