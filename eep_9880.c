@@ -31,6 +31,7 @@ struct eep_9880_priv {
 	{ qca9880_tpl_ver_ ## __tpl, __name, &qca9880_ ## __tpl }
 
 static const struct eeptemplate eep_9880_templates[] = {
+	QCA9880_TEMPLATE_DESC("generic", generic),
 	QCA9880_TEMPLATE_DESC("CUS223", cus223),
 	QCA9880_TEMPLATE_DESC("XB140", xb140),
 	{ 0, NULL }

@@ -23,6 +23,7 @@
  * values. Use lower case to facilitate index filling with macro.
  */
 enum qca9880_template_versions {
+	qca9880_tpl_ver_generic = 1,
 	qca9880_tpl_ver_cus223 = 3,
 	qca9880_tpl_ver_xb140 = 14,
 };
@@ -40,6 +41,567 @@ enum qca9880_template_versions {
 		  (PWR2X(_d13) << 4 | (PWR2X(_d12) & 0x0f)) & 0xff, \
 		  (PWR2X(_d15) << 4 | (PWR2X(_d14) & 0x0f)) & 0xff, \
 		  (PWR2X(_d17) << 4 | (PWR2X(_d16) & 0x0f)) & 0xff }
+
+static const struct qca9880_eeprom qca9880_generic = {
+	.baseEepHeader = {
+		.length = LE16CONST(sizeof(struct qca9880_eeprom)),
+		.checksum = LE16CONST(0x9134),
+		.eepromVersion = 3,
+		.templateVersion = qca9880_tpl_ver_generic,
+		.macAddr = {0x00, 0x03, 0x07, 0x12, 0x34, 0x56},
+		.opCapBrdFlags = {
+			.opFlags = QCA9880_OPFLAGS_11A |
+				   QCA9880_OPFLAGS_11G |
+				   QCA9880_OPFLAGS_5G_HT40 |
+				   QCA9880_OPFLAGS_2G_HT40 |
+				   QCA9880_OPFLAGS_5G_HT20 |
+				   QCA9880_OPFLAGS_2G_HT20,
+			.featureFlags = QCA9880_FEATURE_TEMP_COMP |
+					QCA9880_FEATURE_INT_REGULATOR,
+			.boardFlags = LE32CONST(0x00080c44),
+			.opFlags2 = QCA9880_OPFLAGS2_5G_VHT20 |
+				    QCA9880_OPFLAGS2_2G_VHT20 |
+				    QCA9880_OPFLAGS2_5G_VHT40 |
+				    QCA9880_OPFLAGS2_2G_VHT40 |
+				    QCA9880_OPFLAGS2_5G_VHT80,
+		},
+		.txrxMask = 0x77,
+		.swreg = 0xa8,
+		.param_for_tuning_caps = 0x3f,
+		.param_for_tuning_caps1 = 0x3f,
+	},
+	.modalHeader5G = {
+		.xpaBiasLvl = 0x0f,
+		.antennaGain = 0,
+		.antCtrlCommon = LE32CONST(0x00090449),
+		.antCtrlCommon2 = LE32CONST(0x00099999),
+		.antCtrlChain = {
+			LE16CONST(0x0000), LE16CONST(0x0000), LE16CONST(0x0000)
+		},
+		.noiseFloorThresh = 33,
+		.minCcaPwr = {-75, -75, -75},
+	},
+	.modalHeader2G = {
+		.xpaBiasLvl = 0x0a,
+		.antennaGain = 1,
+		.antCtrlCommon = LE32CONST(0x00090229),
+		.antCtrlCommon2 = LE32CONST(0x00099999),
+		.antCtrlChain = {
+			LE16CONST(0x0150), LE16CONST(0x0150), LE16CONST(0x0150)
+		},
+		.noiseFloorThresh = 33,
+		.minCcaPwr = {-50, -50, -50},
+	},
+	.thermCal = {
+		.thermAdcScaledGain = LE16CONST(0x00cd),
+		.rbias = 0x40,
+	},
+	.calFreqPier2G = {
+		FREQ2FBIN(2412, 1), FREQ2FBIN(2442, 1), FREQ2FBIN(2472, 1)
+	},
+	.calPierData2G = {
+		{ .thermCalVal = 121, .voltCalVal = 100 },
+		{ .thermCalVal = 121, .voltCalVal = 100 },
+		{ .thermCalVal = 121, .voltCalVal = 100 }
+	},
+	.targetFreqbin2GCck = {
+		FREQ2FBIN(2412, 1), FREQ2FBIN(2472, 1)
+	},
+	.targetFreqbin2GLeg = {
+		FREQ2FBIN(2412, 1), FREQ2FBIN(2442, 1), FREQ2FBIN(2472, 1)
+	},
+	.targetFreqbin2GVHT20 = {
+		FREQ2FBIN(2412, 1), FREQ2FBIN(2442, 1), FREQ2FBIN(2472, 1)
+	},
+	.targetFreqbin2GVHT40 = {
+		FREQ2FBIN(2412, 1), FREQ2FBIN(2442, 1), FREQ2FBIN(2472, 1)
+	},
+	.targetPower2GCck = {
+		{ { PWR2X(14), PWR2X(14), PWR2X(14), PWR2X(14) } },
+		{ { PWR2X(14), PWR2X(14), PWR2X(14), PWR2X(14) } }
+	},
+	.targetPower2GLeg = {
+		{ { PWR2X(14), PWR2X(14), PWR2X(13), PWR2X(13) } },
+		{ { PWR2X(14), PWR2X(14), PWR2X(13), PWR2X(13) } },
+		{ { PWR2X(14), PWR2X(14), PWR2X(13), PWR2X(13) } },
+	},
+	.targetPower2GVHT20 = {
+		{
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}
+	},
+	.targetPower2GVHT40 = {
+		{
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}
+	},
+	.ctlIndex2G = {
+		0x11, 0x12, 0x15, 0x17, 0x00, 0x00,
+		0x41, 0x42, 0x45, 0x47, 0x00, 0x00,
+		0x31, 0x32, 0x35, 0x37, 0x00, 0x00
+	},
+	.ctlFreqBin2G = {
+		{
+			FREQ2FBIN(2412, 1), FREQ2FBIN(2417, 1),
+			FREQ2FBIN(2457, 1), FREQ2FBIN(2462, 1)
+		}, {
+			FREQ2FBIN(2412, 1), FREQ2FBIN(2417, 1),
+			FREQ2FBIN(2462, 1), 0xff
+		}, {
+			FREQ2FBIN(2412, 1), FREQ2FBIN(2417, 1),
+			FREQ2FBIN(2462, 1), 0xff
+		}, {
+			FREQ2FBIN(2422, 1), FREQ2FBIN(2427, 1),
+			FREQ2FBIN(2447, 1), FREQ2FBIN(2452, 1)
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		},
+
+		{
+			FREQ2FBIN(2412, 1), FREQ2FBIN(2417, 1),
+			FREQ2FBIN(2472, 1), FREQ2FBIN(2484, 1)
+		}, {
+			FREQ2FBIN(2412, 1), FREQ2FBIN(2417, 1),
+			FREQ2FBIN(2472, 1), 0x00,
+		}, {
+			FREQ2FBIN(2412, 1), FREQ2FBIN(2417, 1),
+			FREQ2FBIN(2472, 1), 0x00,
+		}, {
+			FREQ2FBIN(2422, 1), FREQ2FBIN(2427, 1),
+			FREQ2FBIN(2447, 1), FREQ2FBIN(2462, 1),
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		},
+
+		{
+			FREQ2FBIN(2412, 1), FREQ2FBIN(2417, 1),
+			FREQ2FBIN(2472, 1), 0x00,
+		}, {
+			FREQ2FBIN(2412, 1), FREQ2FBIN(2417, 1),
+			FREQ2FBIN(2472, 1), 0x00,
+		}, {
+			FREQ2FBIN(2412, 1), FREQ2FBIN(2417, 1),
+			FREQ2FBIN(2472, 1), 0x00,
+		}, {
+			FREQ2FBIN(2422, 1), FREQ2FBIN(2427, 1),
+			FREQ2FBIN(2447, 1), FREQ2FBIN(2462, 1),
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		}
+	},
+	.ctlData2G = {
+		{
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(61, 0)
+		}, {
+			CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		},
+
+		{
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		},
+
+		{
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0)
+		}, {
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0)
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00
+		}
+	},
+	.alphaThermTbl2G = {
+		{
+			{0x25, 0x25, 0x25, 0x25},
+			{0x25, 0x25, 0x25, 0x25},
+			{0x25, 0x25, 0x25, 0x25},
+			{0x25, 0x25, 0x25, 0x25}
+		}, {
+			{0x25, 0x25, 0x25, 0x25},
+			{0x25, 0x25, 0x25, 0x25},
+			{0x25, 0x25, 0x25, 0x25},
+			{0x25, 0x25, 0x25, 0x25}
+		}, {
+			{0x25, 0x25, 0x25, 0x25},
+			{0x25, 0x25, 0x25, 0x25},
+			{0x25, 0x25, 0x25, 0x25},
+			{0x25, 0x25, 0x25, 0x25}
+		}
+	},
+	.calFreqPier5G = {
+		FREQ2FBIN(5180, 0), FREQ2FBIN(5240, 0),
+		FREQ2FBIN(5260, 0), FREQ2FBIN(5320, 0),
+		FREQ2FBIN(5500, 0), FREQ2FBIN(5600, 0),
+		FREQ2FBIN(5745, 0), FREQ2FBIN(5825, 0)
+	},
+	.calPierData5G = {
+		{ .thermCalVal = 129, .voltCalVal = 98 },
+		{ .thermCalVal = 129, .voltCalVal = 98 },
+		{ .thermCalVal = 129, .voltCalVal = 98 },
+		{ .thermCalVal = 129, .voltCalVal = 98 },
+		{ .thermCalVal = 129, .voltCalVal = 98 },
+		{ .thermCalVal = 129, .voltCalVal = 98 },
+		{ .thermCalVal = 129, .voltCalVal = 98 },
+		{ .thermCalVal = 129, .voltCalVal = 98 }
+	},
+	.targetFreqbin5GLeg = {
+		FREQ2FBIN(5180, 0), FREQ2FBIN(5260, 0), FREQ2FBIN(5320, 0),
+		FREQ2FBIN(5500, 0), FREQ2FBIN(5700, 0), FREQ2FBIN(5825, 0)
+	},
+	.targetFreqbin5GVHT20 = {
+		FREQ2FBIN(5180, 0), FREQ2FBIN(5260, 0), FREQ2FBIN(5320, 0),
+		FREQ2FBIN(5500, 0), FREQ2FBIN(5700, 0), FREQ2FBIN(5825, 0)
+	},
+	.targetFreqbin5GVHT40 = {
+		FREQ2FBIN(5180, 0), FREQ2FBIN(5260, 0), FREQ2FBIN(5320, 0),
+		FREQ2FBIN(5500, 0), FREQ2FBIN(5700, 0), FREQ2FBIN(5825, 0)
+	},
+	.targetFreqbin5GVHT80 = {
+		FREQ2FBIN(5180, 0), FREQ2FBIN(5260, 0), FREQ2FBIN(5320, 0),
+		FREQ2FBIN(5500, 0), FREQ2FBIN(5700, 0), FREQ2FBIN(5825, 0)
+	},
+	.targetPower5GLeg = {
+		{ { PWR2X(14), PWR2X(14), PWR2X(14), PWR2X(13) } },
+		{ { PWR2X(14), PWR2X(14), PWR2X(14), PWR2X(13) } },
+		{ { PWR2X(14), PWR2X(14), PWR2X(14), PWR2X(13) } },
+		{ { PWR2X(14), PWR2X(14), PWR2X(14), PWR2X(13) } },
+		{ { PWR2X(14), PWR2X(14), PWR2X(14), PWR2X(13) } },
+		{ { PWR2X(14), PWR2X(14), PWR2X(14), PWR2X(13) } }
+	},
+	.targetPower5GVHT20 = {
+		{
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}
+	},
+	.targetPower5GVHT40 = {
+		{
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}
+	},
+	.targetPower5GVHT80 = {
+		{
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}, {
+			PWR2XVHTBASE(10, 10, 10),
+			PWR2XVHTDELTA(4, 4, 2,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0,
+				      2, 2, 0, 0, 0)
+		}
+	},
+	.ctlIndex5G = {
+		0x10, 0x16, 0x18, 0x19, 0x00, 0x00,
+		0x40, 0x46, 0x48, 0x49, 0x00, 0x00,
+		0x30, 0x36, 0x38, 0x39, 0x00, 0x00
+	},
+	.ctlFreqBin5G = {
+		{
+			FREQ2FBIN(5180, 0), FREQ2FBIN(5260, 0),
+			FREQ2FBIN(5280, 0), FREQ2FBIN(5500, 0),
+			FREQ2FBIN(5600, 0), FREQ2FBIN(5700, 0),
+			FREQ2FBIN(5745, 0), FREQ2FBIN(5825, 0)
+		}, {
+			FREQ2FBIN(5180, 0), FREQ2FBIN(5260, 0),
+			FREQ2FBIN(5280, 0), FREQ2FBIN(5500, 0),
+			FREQ2FBIN(5520, 0), FREQ2FBIN(5700, 0),
+			FREQ2FBIN(5745, 0), FREQ2FBIN(5825, 0)
+		}, {
+			FREQ2FBIN(5190, 0), FREQ2FBIN(5230, 0),
+			FREQ2FBIN(5270, 0), FREQ2FBIN(5310, 0),
+			FREQ2FBIN(5510, 0), FREQ2FBIN(5550, 0),
+			FREQ2FBIN(5670, 0), FREQ2FBIN(5755, 0)
+		}, {
+			FREQ2FBIN(5210, 0), FREQ2FBIN(5290, 0),
+			FREQ2FBIN(5530, 0), FREQ2FBIN(5610, 0),
+			FREQ2FBIN(5690, 0), FREQ2FBIN(5775, 0),
+			0xff, 0xff
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		},
+
+		{
+			FREQ2FBIN(5180, 0), FREQ2FBIN(5200, 0),
+			FREQ2FBIN(5260, 0), FREQ2FBIN(5320, 0),
+			FREQ2FBIN(5500, 0), FREQ2FBIN(5700, 0),
+			0xff, 0xff
+		}, {
+			FREQ2FBIN(5180, 0), FREQ2FBIN(5260, 0),
+			FREQ2FBIN(5500, 0), FREQ2FBIN(5700, 0),
+			0xff, 0xff, 0xff, 0xff
+		}, {
+			FREQ2FBIN(5190, 0), FREQ2FBIN(5270, 0),
+			FREQ2FBIN(5310, 0), FREQ2FBIN(5510, 0),
+			FREQ2FBIN(5590, 0), FREQ2FBIN(5670, 0),
+			0xff, 0xff
+		}, {
+			FREQ2FBIN(5210, 0), FREQ2FBIN(5290, 0),
+			FREQ2FBIN(5530, 0), FREQ2FBIN(5610, 0),
+			FREQ2FBIN(5690, 0), FREQ2FBIN(5775, 0),
+			0xff, 0xff
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		},
+
+		{
+			FREQ2FBIN(5180, 0), FREQ2FBIN(5200, 0),
+			FREQ2FBIN(5220, 0), FREQ2FBIN(5260, 0),
+			FREQ2FBIN(5500, 0), FREQ2FBIN(5600, 0),
+			FREQ2FBIN(5700, 0), FREQ2FBIN(5745, 0)
+		}, {
+			FREQ2FBIN(5180, 0), FREQ2FBIN(5260, 0),
+			FREQ2FBIN(5320, 0), FREQ2FBIN(5500, 0),
+			FREQ2FBIN(5560, 0), FREQ2FBIN(5700, 0),
+			FREQ2FBIN(5745, 0), FREQ2FBIN(5825, 0)
+		}, {
+			FREQ2FBIN(5190, 0), FREQ2FBIN(5230, 0),
+			FREQ2FBIN(5270, 0), FREQ2FBIN(5510, 0),
+			FREQ2FBIN(5550, 0), FREQ2FBIN(5670, 0),
+			FREQ2FBIN(5755, 0), FREQ2FBIN(5795, 0)
+		}, {
+			FREQ2FBIN(5210, 0), FREQ2FBIN(5290, 0),
+			FREQ2FBIN(5530, 0), FREQ2FBIN(5610, 0),
+			FREQ2FBIN(5690, 0), FREQ2FBIN(5775, 0),
+			0xff, 0xff
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		}
+	},
+	.ctlData5G = {
+		{
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0),
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0),
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(61, 0),
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0)
+		}, {
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0),
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0)
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		},
+
+		{
+			CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0),
+			CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0),
+			CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0),
+			CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0),
+			CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0), CTLPACK(60, 0)
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		},
+
+		{
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0),
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0)
+		}, {
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(61, 0),
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0)
+		}, {
+			CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(61, 0), CTLPACK(61, 0),
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(61, 0)
+		}, {
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0), CTLPACK(61, 0),
+			CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(61, 0), CTLPACK(60, 0)
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		}, {
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		}
+	},
+	.alphaThermTbl5G = {
+		{
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24},
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24},
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24},
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24}
+		}, {
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24},
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24},
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24},
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24}
+		}, {
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24},
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24},
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24},
+			{0x27, 0x26, 0x25, 0x24}, {0x27, 0x26, 0x25, 0x24}
+		},
+	},
+};
 
 static const struct qca9880_eeprom qca9880_cus223 = {
 	.baseEepHeader = {
