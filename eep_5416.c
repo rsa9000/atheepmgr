@@ -46,8 +46,8 @@ static bool eep_5416_load_eeprom(struct atheepmgr *aem, bool raw)
 	uint16_t *buf = aem->eep_buf;
 	int addr;
 
-	/* Check byteswaping requirements */
-	if (!AR5416_TOGGLE_BYTESWAP(5416))
+	/* Check byteswaping requirements for non-RAW operation */
+	if (!raw && !AR5416_TOGGLE_BYTESWAP(5416))
 		return false;
 
 	/* Read to the intermediate buffer */
@@ -58,6 +58,9 @@ static bool eep_5416_load_eeprom(struct atheepmgr *aem, bool raw)
 		}
 	}
 	aem->eep_len = addr;
+
+	if (raw)	/* Earlier exit on RAW contents loading */
+		return true;
 
 	/* Copy from buffer to the Init data */
 	for (addr = 0; addr < AR5416_DATA_START_LOC; ++addr)
@@ -602,6 +605,7 @@ static bool eep_5416_update_eeprom(struct atheepmgr *aem, int param,
 const struct eepmap eepmap_5416 = {
 	.name = "5416",
 	.desc = "Default EEPROM map for earlier .11n chips (AR5416/AR9160/AR92xx/etc.)",
+	.features = EEPMAP_F_RAW_EEP,
 	.chip_regs = {
 		.srev = 0x4020,
 	},

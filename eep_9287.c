@@ -46,8 +46,8 @@ static bool eep_9287_load_eeprom(struct atheepmgr *aem, bool raw)
 	uint16_t *buf = aem->eep_buf;
 	int addr;
 
-	/* Check byteswaping requirements */
-	if (!AR5416_TOGGLE_BYTESWAP(9287))
+	/* Check byteswaping requirements for non-RAW operation */
+	if (!raw && !AR5416_TOGGLE_BYTESWAP(9287))
 		return false;
 
 	/* Read to the intermediate buffer */
@@ -58,6 +58,9 @@ static bool eep_9287_load_eeprom(struct atheepmgr *aem, bool raw)
 		}
 	}
 	aem->eep_len = addr;
+
+	if (raw)	/* Earlier exit on RAW contents loading */
+		return true;
 
 	/* Copy from buffer to the Init data */
 	for (addr = 0; addr < AR9287_DATA_START_LOC; ++addr)
@@ -407,6 +410,7 @@ static void eep_9287_dump_power_info(struct atheepmgr *aem)
 const struct eepmap eepmap_9287 = {
 	.name = "9287",
 	.desc = "AR9287 chip EEPROM map",
+	.features = EEPMAP_F_RAW_EEP,
 	.chip_regs = {
 		.srev = 0x4020,
 	},
