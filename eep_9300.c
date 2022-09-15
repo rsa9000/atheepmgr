@@ -275,7 +275,7 @@ static bool eep_9300_load_blob(struct atheepmgr *aem)
 /*
  * Read the configuration data from the eeprom uncompress it if necessary.
  */
-static bool eep_9300_load_eeprom(struct atheepmgr *aem)
+static bool eep_9300_load_eeprom(struct atheepmgr *aem, bool raw)
 {
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	uint16_t magic;
@@ -334,7 +334,7 @@ found:
 /*
  * Read the configuration data from the OTP memory uncompress it if necessary.
  */
-static bool eep_9300_load_otp(struct atheepmgr *aem)
+static bool eep_9300_load_otp(struct atheepmgr *aem, bool raw)
 {
 	struct eep_9300_priv *emp = aem->eepmap_priv;
 	int cptr;

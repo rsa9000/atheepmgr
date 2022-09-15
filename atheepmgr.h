@@ -190,6 +190,12 @@ struct connector {
 	const struct otp_ops *otp;
 };
 
+enum eepmap_feature {
+	EEPMAP_F_RAW_EEP = 1 << 0,	/* Support RAW EEPROM loading */
+	EEPMAP_F_RAW_OTP = 1 << 1,	/* Support RAW OTP mem loading */
+};
+#define EEPMAP_F_RAW_DATA	(EEPMAP_F_RAW_EEP | EEPMAP_F_RAW_OTP)
+
 enum eepmap_section_id {
 	EEP_SECT_INIT,
 	EEP_SECT_BASE,
@@ -214,6 +220,7 @@ struct eeptemplate {
 struct eepmap {
 	const char *name;
 	const char *desc;
+	int features;			/* Supported features */
 	struct chip_regs {
 		uint32_t srev;
 	} chip_regs;
@@ -222,8 +229,8 @@ struct eepmap {
 	size_t unpacked_buf_sz;		/* Buffer size for unpacked data */
 	const struct eeptemplate *templates;	/* NULL terminated list */
 	bool (*load_blob)(struct atheepmgr *aem);
-	bool (*load_eeprom)(struct atheepmgr *aem);
-	bool (*load_otp)(struct atheepmgr *aem);
+	bool (*load_eeprom)(struct atheepmgr *aem, bool raw);
+	bool (*load_otp)(struct atheepmgr *aem, bool raw);
 	int (*check_eeprom)(struct atheepmgr *aem);
 	void (*dump[EEP_SECT_MAX])(struct atheepmgr *aem);
 	bool (*update_eeprom)(struct atheepmgr *aem, int param,

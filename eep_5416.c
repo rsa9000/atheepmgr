@@ -38,7 +38,7 @@ static int eep_5416_get_rev(struct eep_5416_priv *emp)
 	return ((emp->eep.baseEepHeader.version) & 0xFFF);
 }
 
-static bool eep_5416_load_eeprom(struct atheepmgr *aem)
+static bool eep_5416_load_eeprom(struct atheepmgr *aem, bool raw)
 {
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	uint16_t *eep_data = (uint16_t *)&emp->eep;

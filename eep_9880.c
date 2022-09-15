@@ -112,7 +112,7 @@ static bool eep_9880_load_blob(struct atheepmgr *aem)
 	return true;
 }
 
-static bool eep_9880_load_otp(struct atheepmgr *aem)
+static bool eep_9880_load_otp(struct atheepmgr *aem, bool raw)
 {
 	struct eep_9880_priv *emp = aem->eepmap_priv;
 	struct qca9880_eeprom *eep;

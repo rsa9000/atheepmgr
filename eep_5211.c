@@ -922,7 +922,7 @@ static void eep_5211_fill_ctl_data_33(struct atheepmgr *aem)
 	}
 }
 
-static bool eep_5211_load_eeprom(struct atheepmgr *aem)
+static bool eep_5211_load_eeprom(struct atheepmgr *aem, bool raw)
 {
 	struct eep_5211_priv *emp = aem->eepmap_priv;
 	struct ar5211_eeprom *eep = &emp->eep;

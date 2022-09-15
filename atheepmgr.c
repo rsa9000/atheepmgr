@@ -607,6 +607,9 @@ static int act_reg_write(struct atheepmgr *aem, int argc, char *argv[])
 #define ACT_F_DATA	(1 << 0)	/* Action will interact with EEPROM/OTP data */
 #define ACT_F_HW	(1 << 1)	/* Action require direct HW access */
 #define ACT_F_AUTONOMOUS (1 << 2)	/* Action do not require input data or HW */
+#define ACT_F_RAW_EEP	(1 << 3)	/* Action needs only raw EEPROM contents */
+#define ACT_F_RAW_OTP	(1 << 4)	/* Action needs only raw OTP contents */
+#define ACT_F_RAW_DATA	(ACT_F_RAW_EEP | ACT_F_RAW_OTP)
 
 static const struct action {
 	const char *name;
@@ -621,6 +624,18 @@ static const struct action {
 		.name = "save",
 		.func = act_eep_save,
 		.flags = ACT_F_DATA,
+	}, {
+		.name = "saveraw",
+		.func = act_eep_save,
+		.flags = ACT_F_DATA | ACT_F_RAW_EEP | ACT_F_RAW_OTP,
+	}, {
+		.name = "saveraweep",
+		.func = act_eep_save,
+		.flags = ACT_F_DATA | ACT_F_RAW_EEP,
+	}, {
+		.name = "saverawotp",
+		.func = act_eep_save,
+		.flags = ACT_F_DATA | ACT_F_RAW_OTP,
 	}, {
 		.name = "unpack",
 		.func = act_eep_unpack,
@@ -735,6 +750,8 @@ static void usage_eepmap_chips(const struct eepmap *eepmap)
 static void usage_eepmap(struct atheepmgr *aem, const struct eepmap *eepmap)
 {
 	const struct eepmap_param *param;
+	bool raw_eep = eepmap->features & EEPMAP_F_RAW_EEP;
+	bool raw_otp = eepmap->features & EEPMAP_F_RAW_OTP;
 	char buf[0x100];
 	int i;
 
@@ -745,6 +762,9 @@ static void usage_eepmap(struct atheepmgr *aem, const struct eepmap *eepmap)
 
 	usage_eepmap_chips(eepmap);
 
+	printf("%18sSupport for RAW contents saving: %s\n", "",
+	       raw_eep || raw_otp ? "EEPROM, OTP" :
+	       raw_eep ? "EEPROM" : raw_otp ? "OTP" : "none");
 	printf("%18sSupport for unpacked data saving: %s\n", "",
 	       eepmap->unpacked_buf_sz ? "Yes" : "No");
 	printf("%18s%s:\n", "", "Supported sections for dumping");
@@ -851,6 +871,14 @@ static void usage(struct atheepmgr *aem, char *name)
 			"                  The default action behaviour is to print the contents of all\n"
 			"                  supported EEPROM sections.\n"
 			"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
+			"  saveraw <file>  Save the raw contents of the EEPROM or OTP mem without any\n"
+			"                  pre-checks to the file <file>. This option is useful when the\n"
+			"                  data is corrupted or the utility is unable to verify the data\n"
+			"                  due to some internal issues.\n"
+			"  saveraweep <file> Same as 'saveraw', but saves only the EEPROM contents\n"
+			"                  without any other (e.g. OTP) memory types access.\n"
+			"  saverawotp <file> Same as 'saveraw', but saves only the OTP mem contents\n"
+			"                  without any other (e.g. EEPROM) memory types access.\n"
 			"  unpack <file>   Save unpacked EEPROM/OTP data to the file <file>. Saved data\n"
 			"                  type depends on EEPROM map type, usually only calibration\n"
 			"                  data are saved.\n"
@@ -868,6 +896,7 @@ static void usage(struct atheepmgr *aem, char *name)
 			"Available actions (use -v option to see details):\n"
 			"  dump [<sects>]  Read & dump parsed EEPROM content to the terminal.\n"
 			"  save <file>     Save fetched raw EEPROM content to the file <file>.\n"
+			/* NB: 'saveraw' intentionally skipped to keep usage short. */
 			"  unpack <file>   Save unpacked EEPROM/OTP calibration data to the file <file>.\n"
 			"  update <param>[=<val>]  Set EEPROM parameter <param> to <val>.\n"
 			/* NB: 'templateexport' intentionally skipped to keep usage short. */
@@ -1044,6 +1073,22 @@ int main(int argc, char *argv[])
 		aem->eepmap = user_eepmap;
 	}
 
+	if (act->flags & ACT_F_RAW_DATA) {
+		ret = -EINVAL;
+		if ((act->flags & ACT_F_RAW_DATA) == ACT_F_RAW_EEP &&
+		    !(aem->eepmap->features & EEPMAP_F_RAW_EEP))
+			fprintf(stderr, "EEPROM map does not support RAW EEPROM contents loading\n");
+		else if ((act->flags & ACT_F_RAW_DATA) == ACT_F_RAW_OTP &&
+			   !(aem->eepmap->features & EEPMAP_F_RAW_OTP))
+			fprintf(stderr, "EEPROM map does not support RAW OTP contents loading\n");
+		else if (!(aem->eepmap->features & EEPMAP_F_RAW_DATA))
+			fprintf(stderr, "EEPROM map does not support any RAW data loading\n");
+		else
+			ret = 0;
+		if (ret)
+			goto con_clean;
+	}
+
 	if (aem->con->caps & CON_CAP_HW) {
 		ret = hw_init(aem);
 		if (ret)
@@ -1087,6 +1132,27 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		if (act->flags & ACT_F_RAW_EEP &&
+		    aem->eepmap->features & EEPMAP_F_RAW_EEP &&
+		    aem->eep && aem->eepmap->load_eeprom) {
+			tries++;
+			if (aem->verbose > 1)
+				printf("Try to load RAW EEPROM data\n");
+			if (aem->eepmap->load_eeprom(aem, true))
+				goto loading_done;
+		}
+		if (act->flags & ACT_F_RAW_OTP &&
+		    aem->eepmap->features & EEPMAP_F_RAW_OTP &&
+		    aem->otp && aem->eepmap->load_otp) {
+			tries++;
+			if (aem->verbose > 1)
+				printf("Try to load RAW OTP data\n");
+			if (aem->eepmap->load_otp(aem, true))
+				goto loading_done;
+		}
+		if (act->flags & ACT_F_RAW_DATA)
+			goto no_data;
+
 		if (aem->con->blob && aem->eepmap->load_blob) {
 			tries++;
 			if (aem->verbose > 1)
@@ -1098,17 +1164,18 @@ int main(int argc, char *argv[])
 			tries++;
 			if (aem->verbose > 1)
 				printf("Try to load data from EEPROM\n");
-			if (aem->eepmap->load_eeprom(aem))
+			if (aem->eepmap->load_eeprom(aem, false))
 				goto loading_done;
 		}
 		if (aem->otp && aem->eepmap->load_otp) {
 			tries++;
 			if (aem->verbose > 1)
 				printf("Try to load data from OTP memory\n");
-			if (aem->eepmap->load_otp(aem))
+			if (aem->eepmap->load_otp(aem, false))
 				goto loading_done;
 		}
 
+no_data:
 		if (tries) {
 			fprintf(stderr, "Unable to load data from any sources\n");
 			ret = -EIO;
@@ -1119,7 +1186,8 @@ int main(int argc, char *argv[])
 		goto con_clean;
 
 loading_done:
-		if (!aem->eepmap->check_eeprom(aem)) {
+		if (!(act->flags & ACT_F_RAW_DATA) &&
+		    !aem->eepmap->check_eeprom(aem)) {
 			fprintf(stderr, "EEPROM check failed\n");
 			ret = -EINVAL;
 			goto con_clean;
