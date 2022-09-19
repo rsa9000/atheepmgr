@@ -272,6 +272,40 @@ static bool eep_9300_load_blob(struct atheepmgr *aem)
 	return true;
 }
 
+/**
+ * Special handler for RAW EEPROM data loading
+ */
+static bool eep_9300_load_raw_eeprom(struct atheepmgr *aem)
+{
+	const int eepsz = 0x1000;	/* Max EEPROM read length in words */
+	int i;
+
+	if (aem->verbose)
+		printf("RAW EEPROM read [0x0000...0x%04x] words\n", eepsz - 1);
+	if (ar9300_eep2buf(aem, eepsz) != 0)
+		return false;
+
+	/* Check for unsoldered EEPROM */
+	for (i = 0; i < aem->eep_len; ++i)
+		if (aem->eep_buf[i] != 0x0000)
+			break;
+	if (i == aem->eep_len) {
+		fprintf(stderr, "EEPROM contains only 0x0000 words and looks unsoldered, ignoring.\n");
+		return false;
+	}
+
+	/* Check for empty EEPROM */
+	for (i = 0; i < aem->eep_len; ++i)
+		if (aem->eep_buf[i] != 0xffff)
+			break;
+	if (i == aem->eep_len) {
+		fprintf(stderr, "EEPROM contains only 0xffff words and looks empty, ignoring.\n");
+		return false;
+	}
+
+	return true;
+}
+
 /*
  * Read the configuration data from the eeprom uncompress it if necessary.
  */
@@ -283,6 +317,9 @@ static bool eep_9300_load_eeprom(struct atheepmgr *aem, bool raw)
 
 	emp->buf_is_be = 0;	/* EEPROM is always in Little-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
+
+	if (raw)	/* RAW reading is a bit special case */
+		return eep_9300_load_raw_eeprom(aem);
 
 	/* Check byteswaping requirements */
 	if (!EEP_READ(AR5416_EEPROM_MAGIC_OFFSET, &magic)) {
@@ -331,6 +368,25 @@ found:
 	return true;
 }
 
+/**
+ * Special handler for RAW OTP data loading
+ */
+static bool eep_9300_load_raw_otp(struct atheepmgr *aem)
+{
+	const int otpsz = 0x400;	/* Max OTP read length in bytes */
+
+	if (aem->verbose)
+		printf("RAW OTP read [0x0000...0x%04x] bytes\n", otpsz - 1);
+	if (ar9300_otp2buf(aem, otpsz) != 0)
+		return false;
+
+	/* NB: OTP loading is called in last order, so do not check for
+	 * OTP memory emptiness and return the buffer as-is.
+	 */
+
+	return true;
+}
+
 /*
  * Read the configuration data from the OTP memory uncompress it if necessary.
  */
@@ -341,6 +397,9 @@ static bool eep_9300_load_otp(struct atheepmgr *aem, bool raw)
 
 	emp->buf_is_be = aem->host_is_be;	/* OTP utilize native-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
+
+	if (raw)	/* RAW reading is a bit special case */
+		return eep_9300_load_raw_otp(aem);
 
 	cptr = AR9300_BASE_ADDR;
 	if (aem->verbose)
@@ -822,6 +881,7 @@ static bool eep_9300_update_eeprom(struct atheepmgr *aem, int param,
 const struct eepmap eepmap_9300 = {
 	.name = "9300",
 	.desc = "EEPROM map for modern .11n chips (AR93xx/AR94xx/AR95xx/etc.)",
+	.features = EEPMAP_F_RAW_EEP | EEPMAP_F_RAW_OTP,
 	.chip_regs = {
 		.srev = 0x4020,
 	},
