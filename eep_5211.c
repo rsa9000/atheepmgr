@@ -932,6 +932,11 @@ static bool eep_5211_load_eeprom(struct atheepmgr *aem, bool raw)
 	int len = 0, addr;
 	uint16_t *buf = aem->eep_buf;
 
+	if (raw) {	/* Use max size for RAW loading */
+		len = aem->eepmap->eep_buf_sz;
+		goto data_read;
+	}
+
 	/* RAW magic reading with subsequent swaping requirement check */
 	if (!EEP_READ(AR5211_EEP_MAGIC, &magic)) {
 		fprintf(stderr, "EEPROM magic read failed\n");
@@ -965,6 +970,7 @@ static bool eep_5211_load_eeprom(struct atheepmgr *aem, bool raw)
 		len = AR5211_SIZE_DEF;
 	}
 
+data_read:
 	/* Read to intermediated buffer */
 	for (addr = 0; addr < len; ++addr, ++buf) {
 		if (!EEP_READ(addr, buf)) {
@@ -974,6 +980,9 @@ static bool eep_5211_load_eeprom(struct atheepmgr *aem, bool raw)
 	}
 
 	aem->eep_len = addr;
+
+	if (raw)	/* Earlier exit on RAW contents loading */
+		return true;
 
 	memset(&emp->param, 0x00, sizeof(emp->param));
 
@@ -1542,6 +1551,7 @@ static bool eep_5211_update_eeprom(struct atheepmgr *aem, int param,
 const struct eepmap eepmap_5211 = {
 	.name = "5211",
 	.desc = "Legacy .11abg chips EEPROM map (AR5211/AR5212/AR5414/etc.)",
+	.features = EEPMAP_F_RAW_EEP,
 	.chip_regs = {
 		.srev = 0x4020,
 	},
