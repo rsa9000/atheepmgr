@@ -133,6 +133,11 @@ static bool eep_9880_load_otp(struct atheepmgr *aem, bool raw)
 		}
 	}
 
+	if (raw) {	/* Earlier exit on RAW contents loading */
+		aem->eep_len = QCA9880_OTP_SIZE / sizeof(uint16_t);
+		goto exit;
+	}
+
 	/**
 	 * Check OTP magic. Do not have macro to work with big-endian values,
 	 * so check byte by byte.
@@ -584,6 +589,7 @@ static void eep_9880_dump_power_info(struct atheepmgr *aem)
 const struct eepmap eepmap_9880 = {
 	.name = "9880",
 	.desc = "EEPROM map for earlier .11ac chips (QCA9880/QCA9882/QCA9892/etc.)",
+	.features = EEPMAP_F_RAW_OTP,
 	.chip_regs = {
 		.srev = 0x40ec,
 	},
