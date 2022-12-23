@@ -407,6 +407,62 @@ static void eep_9287_dump_power_info(struct atheepmgr *aem)
 #undef PR_TARGET_POWER
 }
 
+static bool eep_9287_update_eeprom(struct atheepmgr *aem, int param,
+				   const void *data)
+{
+	struct eep_9287_priv *emp = aem->eepmap_priv;
+	struct ar9287_eeprom *eep = &emp->eep;
+	uint16_t *buf = aem->eep_buf;
+	int data_pos, data_len = 0, addr, el;
+	uint16_t sum;
+
+	switch (param) {
+	case EEP_UPDATE_MAC:
+		data_pos = AR9287_DATA_START_LOC +
+			   EEP_FIELD_OFFSET(baseEepHeader.macAddr);
+		data_len = EEP_FIELD_SIZE(baseEepHeader.macAddr);
+		memcpy(&buf[data_pos], data, data_len * sizeof(uint16_t));
+		break;
+#ifdef CONFIG_I_KNOW_WHAT_I_AM_DOING
+	case EEP_ERASE_CTL:
+		/* It is enough to erase the CTL index only */
+		data_pos = AR9287_DATA_START_LOC + EEP_FIELD_OFFSET(ctlIndex);
+		data_len = EEP_FIELD_SIZE(ctlIndex);
+		for (addr = data_pos; addr < (data_pos + data_len); ++addr)
+			buf[addr] = 0x0000;
+		break;
+#endif
+	default:
+		fprintf(stderr, "Internal error: unknown parameter Id\n");
+		return false;
+	}
+
+	/* Store updated data */
+	for (addr = data_pos; addr < (data_pos + data_len); ++addr) {
+		if (!EEP_WRITE(addr, buf[addr])) {
+			fprintf(stderr, "Unable to write EEPROM data at 0x%04x\n",
+				addr);
+			return false;
+		}
+	}
+
+	/* Update checksum if need it */
+	if (data_pos > AR9287_DATA_START_LOC) {
+		el = eep->baseEepHeader.length / sizeof(uint16_t);
+		if (el > AR9287_DATA_SZ)
+			el = AR9287_DATA_SZ;
+		buf[AR9287_DATA_CSUM_LOC] = 0xffff;
+		sum = eep_calc_csum(&buf[AR9287_DATA_START_LOC], el);
+		buf[AR9287_DATA_CSUM_LOC] = sum;
+		if (!EEP_WRITE(AR9287_DATA_CSUM_LOC, sum)) {
+			fprintf(stderr, "Unable to update EEPROM checksum\n");
+			return false;
+		}
+	}
+
+	return true;
+}
+
 const struct eepmap eepmap_9287 = {
 	.name = "9287",
 	.desc = "AR9287 chip EEPROM map",
@@ -424,4 +480,10 @@ const struct eepmap eepmap_9287 = {
 		[EEP_SECT_MODAL] = eep_9287_dump_modal_header,
 		[EEP_SECT_POWER] = eep_9287_dump_power_info,
 	},
+	.update_eeprom = eep_9287_update_eeprom,
+	.params_mask = BIT(EEP_UPDATE_MAC)
+#ifdef CONFIG_I_KNOW_WHAT_I_AM_DOING
+		| BIT(EEP_ERASE_CTL)
+#endif
+	,
 };
