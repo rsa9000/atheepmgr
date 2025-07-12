@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #if defined(__OpenBSD__)
 #include <sys/param.h>
@@ -69,13 +70,6 @@
 #define MS(_v, _f)  (((_v) & _f) >> _f##_S)
 #define BIT(_n)				(1 << (_n))
 #define offsetof(_type, _member)	__builtin_offsetof(_type, _member)
-
-enum {
-	false = 0,
-	true = 1
-};
-
-typedef int bool;
 
 #define AR_SREV_VERSION_5211		0x4
 #define AR_SREV_REVISION_5211		0
