@@ -45,7 +45,7 @@ static bool eep_9888_load_blob(struct atheepmgr *aem)
 	return true;
 }
 
-static int eep_9888_check(struct atheepmgr *aem)
+static bool eep_9888_check(struct atheepmgr *aem)
 {
 	struct eep_9888_priv *emp = aem->eepmap_priv;
 	struct qca9888_eeprom *eep = &emp->eep;

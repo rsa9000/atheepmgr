@@ -45,7 +45,7 @@ static bool eep_6174_load_blob(struct atheepmgr *aem)
 	return true;
 }
 
-static int eep_6174_check(struct atheepmgr *aem)
+static bool eep_6174_check(struct atheepmgr *aem)
 {
 	struct eep_6174_priv *emp = aem->eepmap_priv;
 	struct qca6174_eeprom *eep = &emp->eep;

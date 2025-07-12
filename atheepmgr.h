@@ -231,7 +231,7 @@ struct eepmap {
 	bool (*load_blob)(struct atheepmgr *aem);
 	bool (*load_eeprom)(struct atheepmgr *aem, bool raw);
 	bool (*load_otp)(struct atheepmgr *aem, bool raw);
-	int (*check_eeprom)(struct atheepmgr *aem);
+	bool (*check_eeprom)(struct atheepmgr *aem);
 	void (*dump[EEP_SECT_MAX])(struct atheepmgr *aem);
 	bool (*update_eeprom)(struct atheepmgr *aem, int param,
 			      const void *data);

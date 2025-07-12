@@ -249,7 +249,7 @@ exit:
 	return aem->eep_len != 0;
 }
 
-static int eep_9880_check(struct atheepmgr *aem)
+static bool eep_9880_check(struct atheepmgr *aem)
 {
 	struct eep_9880_priv *emp = aem->eepmap_priv;
 	struct qca9880_eeprom *eep = &emp->eep;
