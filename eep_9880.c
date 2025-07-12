@@ -117,7 +117,8 @@ static bool eep_9880_load_otp(struct atheepmgr *aem, bool raw)
 	struct eep_9880_priv *emp = aem->eepmap_priv;
 	struct qca9880_eeprom *eep;
 	uint8_t *buf = (uint8_t *)aem->eep_buf;	/* Use as an array of bytes */
-	unsigned int addr, end_mark_seen;
+	bool end_mark_seen;
+	unsigned int addr;
 	uint8_t strcode;
 	uint8_t *p, *s;
 
@@ -193,13 +194,13 @@ static bool eep_9880_load_otp(struct atheepmgr *aem, bool raw)
 				goto exit;
 			}
 			strcode = QCA9880_OTP_STR_MARK_CODE(*p);
-			end_mark_seen = 0;
+			end_mark_seen = false;
 			s = p;			/* Catch stream begin */
 		} else if (!QCA9880_OTP_STR_MARK_IS_END(*p) ||
 			   strcode != QCA9880_OTP_STR_MARK_CODE(*p)) {
-			end_mark_seen = 0;
+			end_mark_seen = false;
 		} else if (!end_mark_seen) {	/* Got first 'end' mark */
-			end_mark_seen = 1;
+			end_mark_seen = true;
 		} else {			/* Got second 'end' mark */
 			const struct eep_9880_otp_str_desc *strdesc;
 			const struct qca9880_otp_str *str = (void *)(s + 1);
@@ -423,7 +424,7 @@ static void eep_9880_dump_modal_header(struct atheepmgr *aem)
 
 static void eep_9880_dump_tgt_pow_legacy(const uint8_t *freqs, int nfreqs,
 					 const struct qca9880_cal_tgt_pow_legacy *data,
-					 const char * const rates[], int is_2g)
+					 const char * const rates[], bool is_2g)
 {
 #define MARGIN		"    "
 	int i, j;
@@ -448,7 +449,7 @@ static void eep_9880_dump_tgt_pow_legacy(const uint8_t *freqs, int nfreqs,
 static void eep_9880_dump_tgt_pow_vht(const uint8_t *freqs, int nfreqs,
 				      const struct qca9880_cal_tgt_pow_vht *data,
 				      const uint8_t *ext_delta, int bwidx,
-				      int maxstreams, int is_2g)
+				      int maxstreams, bool is_2g)
 {
 #define MARGIN		"    "
 	static const struct {
@@ -563,23 +564,23 @@ static void eep_9880_dump_power_info(struct atheepmgr *aem)
 	maxstreams = mask2maxstreams[txmask];
 
 	if (eep->baseEepHeader.opCapBrdFlags.opFlags & QCA9880_OPFLAGS_11G) {
-		PR_TGT_POW_LEGACY("2 GHz CCK", 2GCck, eep_9880_rates_cck, 1);
-		PR_TGT_POW_LEGACY("2 GHz OFDM", 2GLeg, eep_9880_rates_ofdm, 1);
-		PR_TGT_POW_VHT("2 GHz HT20", 2GVHT20, 1);
-		PR_TGT_POW_VHT("2 GHz HT40", 2GVHT40, 1);
+		PR_TGT_POW_LEGACY("2 GHz CCK", 2GCck, eep_9880_rates_cck, true);
+		PR_TGT_POW_LEGACY("2 GHz OFDM", 2GLeg, eep_9880_rates_ofdm, true);
+		PR_TGT_POW_VHT("2 GHz HT20", 2GVHT20, true);
+		PR_TGT_POW_VHT("2 GHz HT40", 2GVHT40, true);
 	}
 
 	if (eep->baseEepHeader.opCapBrdFlags.opFlags & QCA9880_OPFLAGS_11A) {
-		PR_TGT_POW_LEGACY("5 GHz OFDM", 5GLeg, eep_9880_rates_ofdm, 0);
-		PR_TGT_POW_VHT("5 GHz HT20/VHT20", 5GVHT20, 0);
-		PR_TGT_POW_VHT("5 GHz HT40/VHT40", 5GVHT40, 0);
-		PR_TGT_POW_VHT("5 GHz VHT80", 5GVHT80, 0);
+		PR_TGT_POW_LEGACY("5 GHz OFDM", 5GLeg, eep_9880_rates_ofdm, false);
+		PR_TGT_POW_VHT("5 GHz HT20/VHT20", 5GVHT20, false);
+		PR_TGT_POW_VHT("5 GHz HT40/VHT40", 5GVHT40, false);
+		PR_TGT_POW_VHT("5 GHz VHT80", 5GVHT80, false);
 	}
 
 	if (eep->baseEepHeader.opCapBrdFlags.opFlags & QCA9880_OPFLAGS_11G)
-		PR_CTL("2 GHz", 2G, 1);
+		PR_CTL("2 GHz", 2G, true);
 	if (eep->baseEepHeader.opCapBrdFlags.opFlags & QCA9880_OPFLAGS_11A)
-		PR_CTL("5 GHz", 5G, 0);
+		PR_CTL("5 GHz", 5G, false);
 
 #undef PR_CTL
 #undef PR_TGT_POW_VHT

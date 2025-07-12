@@ -439,8 +439,8 @@ static void eep_5416_dump_modal_header(struct atheepmgr *aem)
 }
 
 static void eep_5416_dump_pd_cal(const uint8_t *freq, int maxfreq,
-				 const void *caldata, int is_openloop,
-				 int is_2g, int chainmask, int gainmask,
+				 const void *caldata, bool is_openloop,
+				 bool is_2g, int chainmask, int gainmask,
 				 int power_table_offset)
 {
 	if (is_openloop) {
@@ -474,24 +474,25 @@ static void eep_5416_dump_power_info(struct atheepmgr *aem)
 
 	struct eep_5416_priv *emp = aem->eepmap_priv;
 	const struct ar5416_eeprom *eep = &emp->eep;
-	int is_openloop = 0, maxradios = 0, i;
+	bool is_openloop = false;
 	int power_table_offset;
+	int maxradios = 0, i;
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
 
 	if (eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_19 &&
 	    eep->baseEepHeader.openLoopPwrCntl & 0x01)
-		is_openloop = 1;
+		is_openloop = true;
 
 	power_table_offset = eep_5416_get_rev(emp) >= AR5416_EEP_MINOR_VER_21 ?
 			     eep->baseEepHeader.power_table_offset :
 			     AR5416_PWR_TABLE_OFFSET_DB;
 
 	if (eep->baseEepHeader.opCapFlags & AR5416_OPFLAGS_11G) {
-		PR_PD_CAL("2 GHz", 2G, 1);
+		PR_PD_CAL("2 GHz", 2G, true);
 	}
 	if (eep->baseEepHeader.opCapFlags & AR5416_OPFLAGS_11A) {
-		PR_PD_CAL("5 GHz", 5G, 0);
+		PR_PD_CAL("5 GHz", 5G, false);
 	}
 
 	if (eep->baseEepHeader.opCapFlags & AR5416_OPFLAGS_11G) {

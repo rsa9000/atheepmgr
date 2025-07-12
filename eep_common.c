@@ -69,8 +69,8 @@ const char * const eep_ctlmodes[] = {
 bool __ar5416_toggle_byteswap(struct atheepmgr *aem, uint32_t eepmisc_off,
 			      uint32_t binbuildnum_off)
 {
+	bool magic_is_be;
 	uint16_t word;
-	int magic_is_be;
 
 	/* First check whether magic is Little-endian or not */
 	if (!EEP_READ(AR5416_EEPROM_MAGIC_OFFSET, &word)) {
@@ -333,8 +333,8 @@ ar5416_dump_pwrctl_closeloop_item(const uint8_t *pwr, const uint8_t *vpd,
  * So having all this numbers we are able to easly calculate size of various
  * elements and their positions.
  */
-void ar5416_dump_pwrctl_closeloop(const uint8_t *freqs, int maxfreqs, int is_2g,
-				  int maxchains, int chainmask,
+void ar5416_dump_pwrctl_closeloop(const uint8_t *freqs, int maxfreqs,
+				  bool is_2g, int maxchains, int chainmask,
 				  const void *data, int maxicepts,
 				  int maxstoredgains, int gainmask,
 				  int power_table_offset)
@@ -374,7 +374,7 @@ void ar5416_dump_pwrctl_closeloop(const uint8_t *freqs, int maxfreqs, int is_2g,
 
 void ar5416_dump_target_power(const struct ar5416_cal_target_power *caldata,
 			      int maxchans, const char * const rates[],
-			      int nrates, int is_2g)
+			      int nrates, bool is_2g)
 {
 #define MARGIN		"    "
 #define TP_ITEM_SIZE	(sizeof(struct ar5416_cal_target_power) + \
@@ -412,17 +412,18 @@ void ar5416_dump_target_power(const struct ar5416_cal_target_power *caldata,
 }
 
 void ar5416_dump_ctl_edges(const struct ar5416_cal_ctl_edges *edges,
-			   int maxradios, int maxedges, int is_2g)
+			   int maxradios, int maxedges, bool is_2g)
 {
 	const struct ar5416_cal_ctl_edges *e;
-	int edge, rnum, open;
+	int edge, rnum;
+	bool open;
 
 	for (rnum = 0; rnum < maxradios; ++rnum) {
 		printf("\n");
 		if (maxradios > 1)
 			printf("    %d radio(s) Tx:\n", rnum + 1);
 		printf("           Edges, MHz:");
-		for (edge = 0, open = 1; edge < maxedges; ++edge) {
+		for (edge = 0, open = true; edge < maxedges; ++edge) {
 			e = &edges[rnum * maxedges + edge];
 			if (!e->bChannel)
 				break;
@@ -577,12 +578,13 @@ int ar9300_compress_decision(struct atheepmgr *aem, int it,
 }
 
 static void ar9300_dump_ctl_edges(const uint8_t *freqs, const uint8_t *data,
-				  int maxedges, int is_2g)
+				  int maxedges, bool is_2g)
 {
-	int i, open;
+	bool open;
+	int i;
 
 	printf("           Edges, MHz:");
-	for (i = 0, open = 1; i < maxedges; ++i) {
+	for (i = 0, open = true; i < maxedges; ++i) {
 		if (freqs[i] == 0xff || freqs[i] == 0x00)
 			continue;
 		printf(" %c%4u%c",
@@ -594,7 +596,7 @@ static void ar9300_dump_ctl_edges(const uint8_t *freqs, const uint8_t *data,
 	}
 	printf("\n");
 	printf("      MaxTxPower, dBm:");
-	for (i = 0, open = 1; i < maxedges; ++i) {
+	for (i = 0, open = true; i < maxedges; ++i) {
 		if (freqs[i] == 0xff || freqs[i] == 0x00)
 			continue;
 		printf("  %4.1f ", (double)CTL_EDGE_POWER(data[i]) / 2);
@@ -603,7 +605,7 @@ static void ar9300_dump_ctl_edges(const uint8_t *freqs, const uint8_t *data,
 }
 
 void ar9300_dump_ctl(const uint8_t *index, const uint8_t *freqs,
-		     const uint8_t *data, int maxctl, int maxedges, int is_2g)
+		     const uint8_t *data, int maxctl, int maxedges, bool is_2g)
 {
 	uint8_t ctl;
 	int i;

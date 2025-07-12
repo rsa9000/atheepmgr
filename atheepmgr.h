@@ -245,7 +245,7 @@ struct chip {
 struct atheepmgr {
 	int verbose;
 
-	int host_is_be;				/* Is host big-endian? */
+	bool host_is_be;			/* Is host big-endian? */
 
 	const struct connector *con;
 	void *con_priv;
@@ -256,7 +256,7 @@ struct atheepmgr {
 	const struct eepmap *eepmap;
 	void *eepmap_priv;
 
-	int eep_io_swap;			/* Swap words */
+	bool eep_io_swap;			/* Swap words */
 	uint16_t *eep_buf;			/* Intermediated EEPROM buf */
 	size_t eep_len;			/* Read size of EEPROM data in the buffer */
 
@@ -269,7 +269,7 @@ struct atheepmgr {
 	const struct eep_ops *eep;
 
 	const struct otp_ops *otp;
-	int otp_was_enabled;
+	bool otp_was_enabled;
 
 	const struct gpio_ops *gpio;
 	unsigned gpio_num;			/* Number of GPIO lines */

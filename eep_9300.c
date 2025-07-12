@@ -31,7 +31,7 @@ struct eep_9300_priv {
 		DATA_SRC_OTP,
 	} data_src;			/* Source of data in buffer */
 	int init_data_max_size;		/* Position of data stream finish */
-	int buf_is_be;			/* Is buf 16-bits word in big-endians */
+	bool buf_is_be;			/* Is buf 16-bits word in big-endians */
 	struct ar9300_eeprom eep;
 };
 
@@ -150,35 +150,35 @@ static bool ar9300_check_header(void *data)
 	return !(*word == 0 || *word == ~0);
 }
 
-static int ar9300_check_block_len(struct atheepmgr *aem, int max_len,
-				  int blk_len)
+static bool ar9300_check_block_len(struct atheepmgr *aem, int max_len,
+				   int blk_len)
 {
 	if (aem->con->caps & CON_CAP_HW) {
 		if ((!AR_SREV_9485(aem) && blk_len >= 1024) ||
 		    (AR_SREV_9485(aem) && blk_len > EEPROM_DATA_LEN_9485))
-			return 0;
+			return false;
 	}
 
 	if (AR9300_COMP_HDR_LEN + blk_len + AR9300_COMP_CKSUM_LEN > max_len)
-		return 0;
+		return false;
 
-	return 1;
+	return true;
 }
 
-static int ar9300_check_eeprom_data(const struct ar9300_eeprom *eep)
+static bool ar9300_check_eeprom_data(const struct ar9300_eeprom *eep)
 {
 	uint8_t txm, rxm;
 
 	txm = eep->baseEepHeader.txrxMask >> 4;
 	rxm = eep->baseEepHeader.txrxMask & 0x0f;
 	if (txm == 0x00 || txm == 0xf || rxm == 0x0 || rxm == 0xf)
-		return 0;
+		return false;
 
 	if (!(eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11A) &&
 	    !(eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11G))
-		return 0;
+		return false;
 
-	return 1;
+	return true;
 }
 
 static int ar9300_process_blocks(struct atheepmgr *aem, int cptr)
@@ -315,7 +315,7 @@ static bool eep_9300_load_eeprom(struct atheepmgr *aem, bool raw)
 	uint16_t magic;
 	int cptr;
 
-	emp->buf_is_be = 0;	/* EEPROM is always in Little-endians */
+	emp->buf_is_be = false;	/* EEPROM is always in Little-endians */
 	aem->eep_len = 0;	/* Reset internal buffer contents */
 
 	if (raw)	/* RAW reading is a bit special case */
@@ -697,7 +697,7 @@ static void eep_9300_dump_modal_header(struct atheepmgr *aem)
 
 static void eep_9300_dump_pwr_cal(const uint8_t *piers, int maxpiers,
 				  const struct ar9300_cal_data_per_freq_op_loop *data,
-				  int is_2g, int chainmask)
+				  bool is_2g, int chainmask)
 {
 	const struct ar9300_cal_data_per_freq_op_loop *d;
 	int i, j;
@@ -743,7 +743,7 @@ static void eep_9300_dump_pwr_cal(const uint8_t *piers, int maxpiers,
 
 static void eep_9300_dump_tgt_pwr(const uint8_t *freqs, int nfreqs,
 				  const uint8_t *tgtpwr, int nrates,
-				  const char * const rates[], int is_2g)
+				  const char * const rates[], bool is_2g)
 {
 #define MARGIN		"    "
 	int i, j;
@@ -816,26 +816,26 @@ static void eep_9300_dump_power_info(struct atheepmgr *aem)
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
 
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11G)
-		PR_PWR_CAL("2 GHz", 2G, 1);
+		PR_PWR_CAL("2 GHz", 2G, true);
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11A)
-		PR_PWR_CAL("5 GHz", 5G, 0);
+		PR_PWR_CAL("5 GHz", 5G, false);
 
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11G) {
-		PR_TARGET_POWER("2 GHz CCK", Cck, eep_9300_rates_cck, 1);
-		PR_TARGET_POWER("2 GHz OFDM", 2G, eep_9300_rates_ofdm, 1);
-		PR_TARGET_POWER("2 GHz HT20", 2GHT20, eep_9300_rates_ht, 1);
-		PR_TARGET_POWER("2 GHz HT40", 2GHT40, eep_9300_rates_ht, 1);
+		PR_TARGET_POWER("2 GHz CCK", Cck, eep_9300_rates_cck, true);
+		PR_TARGET_POWER("2 GHz OFDM", 2G, eep_9300_rates_ofdm, true);
+		PR_TARGET_POWER("2 GHz HT20", 2GHT20, eep_9300_rates_ht, true);
+		PR_TARGET_POWER("2 GHz HT40", 2GHT40, eep_9300_rates_ht, true);
 	}
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11A) {
-		PR_TARGET_POWER("5 GHz OFDM", 5G, eep_9300_rates_ofdm, 0);
-		PR_TARGET_POWER("5 GHz HT20", 5GHT20, eep_9300_rates_ht, 0);
-		PR_TARGET_POWER("5 GHz HT40", 5GHT40, eep_9300_rates_ht, 0);
+		PR_TARGET_POWER("5 GHz OFDM", 5G, eep_9300_rates_ofdm, false);
+		PR_TARGET_POWER("5 GHz HT20", 5GHT20, eep_9300_rates_ht, false);
+		PR_TARGET_POWER("5 GHz HT40", 5GHT40, eep_9300_rates_ht, false);
 	}
 
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11G)
-		PR_CTL("2 GHz", 2G, 1);
+		PR_CTL("2 GHz", 2G, true);
 	if (eep->baseEepHeader.opCapFlags.opFlags & AR5416_OPFLAGS_11A)
-		PR_CTL("5 GHz", 5G, 0);
+		PR_CTL("5 GHz", 5G, false);
 
 #undef PR_CTL
 #undef PR_TARGET_POWER

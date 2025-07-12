@@ -32,7 +32,7 @@ struct pci_priv {
 	void *io_map;
 };
 
-static int is_supported_chipset(struct atheepmgr *aem, struct pci_device *pdev)
+static bool is_supported_chipset(struct atheepmgr *aem, struct pci_device *pdev)
 {
 	const struct chip *chips[10];	/* 10 is an arbitrary expected maximum
 					   number of chips with a same PCI ID */
@@ -56,13 +56,13 @@ static int is_supported_chipset(struct atheepmgr *aem, struct pci_device *pdev)
 
 	aem->eepmap = chips[0]->eepmap;
 
-	return 1;
+	return true;
 
 not_supported:
 	fprintf(stderr, "Device: %04x:%04x not supported\n",
 		pdev->vendor_id, pdev->device_id);
 
-	return 0;
+	return false;
 }
 
 static int pci_device_init(struct atheepmgr *aem, struct pci_device *pdev)

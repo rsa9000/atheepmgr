@@ -18,17 +18,18 @@
 #define UTILS_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
-static inline int macaddr_is_valid(const uint8_t *mac)
+static inline bool macaddr_is_valid(const uint8_t *mac)
 {
 	const uint16_t *m = (uint16_t *)mac;
 
 	if ((m[0] | m[1] | m[2]) == 0)	/* Reject empty */
-		return 0;
+		return false;
 	if (mac[0] & 0x3)		/* Reject broadcast and local */
-		return 0;
+		return false;
 
-	return 1;
+	return true;
 }
 
 int macaddr_parse(const char *str, uint8_t *out);

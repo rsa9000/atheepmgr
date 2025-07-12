@@ -728,7 +728,7 @@ static void usage_eepmap_chips(const struct eepmap *eepmap)
 	l = printf("%18sSupported chip(s):", "");
 	for (i = 0; i < n; ++i) {
 		int _l = 1 + strlen(stridx[i]);
-		int is_last = i + 1 == n;
+		bool is_last = i + 1 == n;
 
 		if (!is_last)
 			_l += 1;	/* account comma symbol */
@@ -943,13 +943,13 @@ int main(int argc, char *argv[])
 	struct atheepmgr *aem = &__aem;
 	const struct action *act = NULL;
 	const struct eepmap *user_eepmap = NULL;
+	bool print_usage = false;
 	char *con_arg = NULL;
-	int print_usage = 0;
 	int i, opt;
 	int ret;
 
 	if (argc == 1)
-		print_usage = 1;
+		print_usage = true;
 
 	aem->host_is_be = __BYTE_ORDER == __BIG_ENDIAN;
 	aem->eep_wp_gpio_num = EEP_WP_GPIO_AUTO;	/* Autodetection */
@@ -994,7 +994,7 @@ int main(int argc, char *argv[])
 			aem->verbose++;
 			break;
 		case 'h':
-			print_usage = 1;
+			print_usage = true;
 			break;
 		default:
 			goto exit;

@@ -197,14 +197,14 @@ bool __ar5416_toggle_byteswap(struct atheepmgr *aem, uint32_t eepmisc_off,
 
 void ar5416_dump_eep_init(const struct ar5416_eep_init *ini, size_t size);
 
-void ar5416_dump_pwrctl_closeloop(const uint8_t *freqs, int maxfreqs, int is_2g,
-				  int maxchains, int chainmask,
+void ar5416_dump_pwrctl_closeloop(const uint8_t *freqs, int maxfreqs,
+				  bool is_2g, int maxchains, int chainmask,
 				  const void *data, int maxicepts,
 				  int maxstoredgains, int gainmask,
 				  int power_table_offset);
 void ar5416_dump_target_power(const struct ar5416_cal_target_power *pow,
 			      int maxchans, const char * const rates[],
-			      int nrates, int is_2g);
+			      int nrates, bool is_2g);
 void ar5416_dump_ctl(const uint8_t *index,
 		     const struct ar5416_cal_ctl_edges *data,
 		     int maxctl, int maxchains, int maxradios, int maxedges);
@@ -222,7 +222,7 @@ int ar9300_compress_decision(struct atheepmgr *aem, int it,
 			     const uint8_t *(*tpl_lookup_cb)(int));
 
 void ar9300_dump_ctl(const uint8_t *index, const uint8_t *freqs,
-		     const uint8_t *data, int maxctl, int maxedges, int is_2g);
+		     const uint8_t *data, int maxctl, int maxedges, bool is_2g);
 
 uint16_t eep_calc_csum(const uint16_t *buf, size_t len);
 

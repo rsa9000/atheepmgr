@@ -492,7 +492,7 @@ static bool hw_otp_enable_988x(struct atheepmgr *aem, int enable)
 		if (ctrl & QCA988X_OTP_CTRL_VDD12) {
 			if (aem->verbose)
 				printf("Looks like OTP was already enabled, disable operation will be skipped\n");
-			aem->otp_was_enabled = 1;
+			aem->otp_was_enabled = true;
 		} else {
 			REG_WRITE(QCA988X_OTP_CTRL, QCA988X_OTP_CTRL_VDD12);
 		}

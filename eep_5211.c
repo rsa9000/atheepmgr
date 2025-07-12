@@ -823,7 +823,7 @@ static void eep_5211_parse_pdcal(struct atheepmgr *aem)
 static void eep_5211_parse_tgtpwr_set(struct atheepmgr *aem,
 				      struct eep_bit_stream *ebs,
 				      struct ar5211_chan_tgtpwr *tgtpwr,
-				      int maxchans, int is_2g)
+				      int maxchans, bool is_2g)
 {
 	struct eep_5211_priv *emp = aem->eepmap_priv;
 	struct ar5211_eeprom *eep = &emp->eep;
@@ -853,11 +853,11 @@ static void eep_5211_parse_tgtpwr(struct atheepmgr *aem)
 	ebs->eep_off = emp->param.tgtpwr_off;
 
 	eep_5211_parse_tgtpwr_set(aem, ebs, eep->tgtpwr_a,
-				  ARRAY_SIZE(eep->tgtpwr_a), 0);
+				  ARRAY_SIZE(eep->tgtpwr_a), false);
 	eep_5211_parse_tgtpwr_set(aem, ebs, eep->tgtpwr_b,
-				  ARRAY_SIZE(eep->tgtpwr_b), 1);
+				  ARRAY_SIZE(eep->tgtpwr_b), true);
 	eep_5211_parse_tgtpwr_set(aem, ebs, eep->tgtpwr_g,
-				  ARRAY_SIZE(eep->tgtpwr_g), 1);
+				  ARRAY_SIZE(eep->tgtpwr_g), true);
 }
 
 static void eep_5211_fill_ctl_index(struct atheepmgr *aem,
@@ -881,7 +881,8 @@ static void eep_5211_fill_ctl_data_30(struct atheepmgr *aem)
 	struct ar5211_eeprom *eep = &emp->eep;
 	int off = emp->param.tgtpwr_off + AR5211_EEP_CTL_DATA;
 	struct eep_bit_stream __ebs = {.eep_off = off}, *ebs = &__ebs;
-	int i, j, is_2g;
+	bool is_2g;
+	int i, j;
 
 	for (i = 0; i < emp->param.ctls_num; ++i) {
 		ebs->havebits = 0;	/* Reset buffer contents */
@@ -1366,7 +1367,7 @@ static void eep_5211_dump_pdcal_pier(const int8_t *gains, int ngains,
 
 static void eep_5211_dump_pdcal(const struct eep_5211_pdcal_param *pdcp,
 				const struct ar5211_pier_pdcal *pdcal,
-				int is_2g)
+				bool is_2g)
 {
 	int pier;
 
@@ -1380,7 +1381,7 @@ static void eep_5211_dump_pdcal(const struct eep_5211_pdcal_param *pdcp,
 
 static void eep_5211_dump_tgtpwr(const struct ar5211_chan_tgtpwr *tgtpwr,
 				 int maxchans, const char * const rates[],
-				 int is_2g)
+				 bool is_2g)
 {
 #define MARGIN		"    "
 
@@ -1410,12 +1411,13 @@ static void eep_5211_dump_tgtpwr(const struct ar5211_chan_tgtpwr *tgtpwr,
 }
 
 static void eep_5211_dump_ctl_edges(const struct ar5211_ctl_edge *edges,
-				    int is_2g)
+				    bool is_2g)
 {
-	int i, open;
+	bool open;
+	int i;
 
 	printf("           Edges, MHz:");
-	for (i = 0, open = 1; i < AR5211_NUM_BAND_EDGES && edges[i].fbin; ++i) {
+	for (i = 0, open = true; i < AR5211_NUM_BAND_EDGES && edges[i].fbin; ++i) {
 		printf(" %c%4u%c",
 		       !CTL_EDGE_FLAGS(edges[i].pwr) && open ? '[' : ' ',
 		       FBIN2FREQ(edges[i].fbin, is_2g),
@@ -1475,13 +1477,13 @@ static void eep_5211_dump_power(struct atheepmgr *aem)
 
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
 
-	PR_PD_CAL("a", a, 0);
-	PR_PD_CAL("b", b, 1);
-	PR_PD_CAL("g", g, 1);
+	PR_PD_CAL("a", a, false);
+	PR_PD_CAL("b", b, true);
+	PR_PD_CAL("g", g, true);
 
-	PR_TGT_PWR("a", a, eep_rates_ofdm, 0);
-	PR_TGT_PWR("b", b, eep_rates_cck, 1);
-	PR_TGT_PWR("g", g, eep_rates_ofdm, 1);
+	PR_TGT_PWR("a", a, eep_rates_ofdm, false);
+	PR_TGT_PWR("b", b, eep_rates_cck, true);
+	PR_TGT_PWR("g", g, eep_rates_ofdm, true);
 
 	EEP_PRINT_SUBSECT_NAME("CTL data");
 	eep_5211_dump_ctl(eep->ctl_index, &eep->ctl_data[0][0],

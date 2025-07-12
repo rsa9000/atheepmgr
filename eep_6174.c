@@ -130,9 +130,9 @@ static void eep_6174_dump_power_info(struct atheepmgr *aem)
 	EEP_PRINT_SECT_NAME("EEPROM Power Info");
 
 	if (1)	/* TODO: 2GHz support test */
-		PR_CTL("2 GHz", 2G, 1);
+		PR_CTL("2 GHz", 2G, true);
 	if (1)	/* TODO: 5GHz support test */
-		PR_CTL("5 GHz", 5G, 0);
+		PR_CTL("5 GHz", 5G, false);
 
 #undef PR_CTL
 }
