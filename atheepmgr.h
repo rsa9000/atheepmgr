@@ -62,6 +62,18 @@
 #define htole32(x)	bswap_32(x)
 #endif
 #endif
+#elif defined(__APPLE__)
+#include <machine/endian.h>
+#include <libkern/OSByteOrder.h>
+#define __BYTE_ORDER	BYTE_ORDER
+#define __BIG_ENDIAN	BIG_ENDIAN
+#define __LITTLE_ENDIAN	LITTLE_ENDIAN
+#define bswap_16	OSSwapInt16
+#define bswap_32	OSSwapInt32
+#define le16toh(x)	OSSwapLittleToHostInt16(x)
+#define htole16(x)	OSSwapHostToLittleInt16(x)
+#define le32toh(x)	OSSwapLittleToHostInt32(x)
+#define htole32(x)	OSSwapHostToLittleInt32(x)
 #endif
 
 #define bswap_16_inplace(__x)	(__x) = bswap_16(__x)
