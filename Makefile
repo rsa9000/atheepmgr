@@ -26,7 +26,8 @@ HAVE_LIBPCIACCESS=$(shell pkg-config pciaccess && echo y || echo n)
 
 CONFIG_CON_DRIVER?=$(if $(filter Linux,$(OS)),y)
 CONFIG_CON_PCI?=$(HAVE_LIBPCIACCESS)
-CONFIG_CON_MEM?=y
+# Darwin has no /dev/mem, so the mem connector is unusable there
+CONFIG_CON_MEM?=$(if $(filter Darwin,$(OS)),n,y)
 CONFIG_I_KNOW_WHAT_I_AM_DOING?=n
 
 ifeq ($(CONFIG_CON_DRIVER),y)
@@ -70,7 +71,7 @@ $(TARGET): config.h $(OBJ)
 	$(CC) $(DEPFLAGS) $(CFLAGS) -include config.h -c $< -o $@
 
 .__config: FORCE
-	@echo "$(DEFS)" | tr ' ' '\n' | grep -v '^$$' > $@.tmp
+	@echo "$(DEFS)" | tr ' ' '\n' | grep -v '^$$' > $@.tmp; true
 	@diff $@ $@.tmp > /dev/null 2>&1 && rm -f $@.tmp || mv $@.tmp $@
 
 config.h: .__config
