@@ -16,6 +16,7 @@ The following OS(s) are tested/supported:
 * FreeBSD
 * GNU/Linux
 * OpenBSD
+* macOS (Darwin)
 
 Warning
 -------
